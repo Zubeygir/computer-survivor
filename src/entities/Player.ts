@@ -5,9 +5,10 @@ const SPEED = 200;
 
 export class Player {
   readonly sprite: Phaser.GameObjects.Arc;
+  readonly radius = 16;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    this.sprite = scene.add.circle(x, y, 16, 0x4caf50);
+    this.sprite = scene.add.circle(x, y, this.radius, 0x4caf50);
   }
 
   /** `direction` must be a unit vector or zero; `delta` is in ms. */

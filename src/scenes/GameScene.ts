@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { Player } from '../entities/Player';
 import { VirtualJoystick } from '../input/VirtualJoystick';
+import { EnemyManager } from '../systems/EnemyManager';
+import { Spawner } from '../systems/Spawner';
 
 const GRID_SIZE = 64;
 
@@ -8,6 +10,8 @@ type MoveKeys = Record<'W' | 'A' | 'S' | 'D' | 'UP' | 'LEFT' | 'DOWN' | 'RIGHT',
 
 export class GameScene extends Phaser.Scene {
   private player!: Player;
+  private enemies!: EnemyManager;
+  private spawner!: Spawner;
   private joystick!: VirtualJoystick;
   private ground!: Phaser.GameObjects.TileSprite;
   private keys!: MoveKeys;
@@ -23,9 +27,13 @@ export class GameScene extends Phaser.Scene {
     // Screen-sized and pinned to the camera; scrolling the tile offset fakes an infinite world
     this.ground = this.add.tileSprite(0, 0, width, height, 'ground').setOrigin(0).setScrollFactor(0);
 
+    // Created before the player so the player draws on top
+    this.enemies = new EnemyManager(this);
     this.player = new Player(this, 0, 0);
+    this.spawner = new Spawner(this.cameras.main, this.player, this.enemies);
     this.joystick = new VirtualJoystick(this);
     this.keys = this.input.keyboard!.addKeys('W,A,S,D,UP,LEFT,DOWN,RIGHT') as MoveKeys;
+    this.createDebugText();
 
     this.scale.on('resize', this.onResize, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.scale.off('resize', this.onResize, this));
@@ -38,6 +46,8 @@ export class GameScene extends Phaser.Scene {
       this.readKeyboard();
     }
     this.player.update(this.move, delta);
+    this.spawner.update(delta);
+    this.enemies.update(delta, this.player);
 
     // Centering manually instead of startFollow: follow is applied after update,
     // which would leave the ground offset one frame behind the camera
@@ -60,6 +70,19 @@ export class GameScene extends Phaser.Scene {
     g.fillStyle(0x2a2a2a).fillRect(0, 0, GRID_SIZE, 1).fillRect(0, 0, 1, GRID_SIZE);
     g.generateTexture('ground', GRID_SIZE, GRID_SIZE);
     g.destroy();
+  }
+
+  private createDebugText() {
+    const text = this.add
+      .text(8, 8, '', { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' })
+      .setScrollFactor(0)
+      .setDepth(2000);
+    // Twice a second rather than every frame: each setText re-rasterizes the text texture
+    this.time.addEvent({
+      delay: 500,
+      loop: true,
+      callback: () => text.setText(`FPS ${Math.round(this.game.loop.actualFps)}  Enemies ${this.enemies.count}`),
+    });
   }
 
   private onResize(gameSize: Phaser.Structs.Size) {
