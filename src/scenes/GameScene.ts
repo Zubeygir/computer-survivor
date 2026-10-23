@@ -3,9 +3,12 @@ import { WEAPONS } from '../data/weapons';
 import { Player } from '../entities/Player';
 import { VirtualJoystick } from '../input/VirtualJoystick';
 import { EnemyManager } from '../systems/EnemyManager';
+import { Experience } from '../systems/Experience';
+import { GemManager } from '../systems/GemManager';
 import { ProjectileManager } from '../systems/ProjectileManager';
 import { Spawner } from '../systems/Spawner';
 import { Weapon } from '../systems/Weapon';
+import { XP_BAR_HEIGHT, XpBar } from '../ui/XpBar';
 
 const GRID_SIZE = 64;
 
@@ -13,10 +16,13 @@ type MoveKeys = Record<'W' | 'A' | 'S' | 'D' | 'UP' | 'LEFT' | 'DOWN' | 'RIGHT',
 
 export class GameScene extends Phaser.Scene {
   private player!: Player;
+  private gems!: GemManager;
   private enemies!: EnemyManager;
   private spawner!: Spawner;
   private projectiles!: ProjectileManager;
   private weapon!: Weapon;
+  private experience!: Experience;
+  private xpBar!: XpBar;
   private joystick!: VirtualJoystick;
   private ground!: Phaser.GameObjects.TileSprite;
   private keys!: MoveKeys;
@@ -32,12 +38,15 @@ export class GameScene extends Phaser.Scene {
     // Screen-sized and pinned to the camera; scrolling the tile offset fakes an infinite world
     this.ground = this.add.tileSprite(0, 0, width, height, 'ground').setOrigin(0).setScrollFactor(0);
 
-    // Created before the player so the player draws on top
-    this.enemies = new EnemyManager(this);
+    // Draw order follows creation order: gems under enemies, enemies under the player
+    this.gems = new GemManager(this);
+    this.enemies = new EnemyManager(this, (x, y, def) => this.gems.spawn(x, y, def.xp));
     this.player = new Player(this, 0, 0);
     this.spawner = new Spawner(this.cameras.main, this.player, this.enemies);
     this.projectiles = new ProjectileManager(this, this.enemies);
     this.weapon = new Weapon(WEAPONS.bolt, this.player, this.enemies, this.projectiles);
+    this.experience = new Experience();
+    this.xpBar = new XpBar(this);
     this.joystick = new VirtualJoystick(this);
     this.keys = this.input.keyboard!.addKeys('W,A,S,D,UP,LEFT,DOWN,RIGHT') as MoveKeys;
     this.createDebugText();
@@ -59,11 +68,31 @@ export class GameScene extends Phaser.Scene {
     this.projectiles.update(delta);
     this.enemies.removeDead();
 
+    const gained = this.gems.update(delta, this.player);
+    if (gained > 0) this.gainXp(gained);
+
     // Centering manually instead of startFollow: follow is applied after update,
     // which would leave the ground offset one frame behind the camera
     const cam = this.cameras.main;
     cam.centerOn(this.player.sprite.x, this.player.sprite.y);
     this.ground.setTilePosition(cam.scrollX, cam.scrollY);
+  }
+
+  private gainXp(amount: number) {
+    const levels = this.experience.add(amount);
+    this.xpBar.set(this.experience.level, this.experience.xp, this.experience.xpNeeded);
+    if (levels > 0) this.showLevelUp();
+  }
+
+  // Placeholder until the upgrade choice screen exists
+  private showLevelUp() {
+    const { width, height } = this.scale;
+    const text = this.add
+      .text(width / 2, height / 3, 'LEVEL UP', { fontFamily: 'monospace', fontSize: '32px', color: '#ffeb3b' })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(2000);
+    this.tweens.add({ targets: text, alpha: 0, y: text.y - 30, duration: 800, onComplete: () => text.destroy() });
   }
 
   private readKeyboard() {
@@ -84,7 +113,7 @@ export class GameScene extends Phaser.Scene {
 
   private createDebugText() {
     const text = this.add
-      .text(8, 8, '', { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' })
+      .text(8, XP_BAR_HEIGHT + 4, '', { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' })
       .setScrollFactor(0)
       .setDepth(2000);
     // Twice a second rather than every frame: each setText re-rasterizes the text texture
@@ -100,5 +129,6 @@ export class GameScene extends Phaser.Scene {
 
   private onResize(gameSize: Phaser.Structs.Size) {
     this.ground.setSize(gameSize.width, gameSize.height);
+    this.xpBar.resize(gameSize.width);
   }
 }

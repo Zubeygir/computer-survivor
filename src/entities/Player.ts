@@ -6,6 +6,8 @@ const SPEED = 200;
 export class Player {
   readonly sprite: Phaser.GameObjects.Arc;
   readonly radius = 16;
+  /** Gems inside this distance start flying to the player. Mutable: magnet upgrades raise it. */
+  pickupRadius = 80;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     this.sprite = scene.add.circle(x, y, this.radius, 0x4caf50);

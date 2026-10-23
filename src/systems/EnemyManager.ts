@@ -22,7 +22,10 @@ export class EnemyManager {
   private readonly hash = new SpatialHash(CELL_SIZE, MAX_ENEMIES);
   private readonly neighbors = new Int32Array(MAX_ENEMIES);
 
-  constructor(scene: Phaser.Scene) {
+  constructor(
+    scene: Phaser.Scene,
+    private readonly onKill: (x: number, y: number, def: EnemyDef) => void,
+  ) {
     for (const def of Object.values(ENEMIES)) createCircleTexture(scene, textureKey(def), def.radius, def.color);
 
     // Images, not shapes: shapes are re-triangulated every frame, images batch into one draw call
@@ -97,6 +100,7 @@ export class EnemyManager {
         i++;
         continue;
       }
+      this.onKill(enemy.sprite.x, enemy.sprite.y, enemy.def);
       // Swap with the last one in play; the swapped-in enemy is checked on the next pass
       enemy.sprite.setVisible(false);
       const last = --this.aliveCount;
