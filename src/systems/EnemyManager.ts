@@ -1,21 +1,24 @@
 import Phaser from 'phaser';
 import { ENEMIES, type EnemyDef } from '../data/enemies';
 import type { Player } from '../entities/Player';
+import { createCircleTexture } from '../textures';
 import { SpatialHash } from './SpatialHash';
 
-const MAX_ENEMIES = 500;
-// Must cover the largest radius sum between two enemies
+export const MAX_ENEMIES = 500;
+// Must cover the largest radius sum between two enemies, and between an enemy and a projectile
 const CELL_SIZE = 64;
 
 export interface Enemy {
   sprite: Phaser.GameObjects.Image;
   def: EnemyDef;
+  hp: number;
 }
 
 export class EnemyManager {
-  /** Fixed pool; the first `count` entries are alive. */
+  /** Fixed pool; the first `count` entries are in play (some may be dead until `removeDead`). */
   readonly enemies: Enemy[] = [];
   private aliveCount = 0;
+  private killCount = 0;
   private readonly hash = new SpatialHash(CELL_SIZE, MAX_ENEMIES);
   private readonly neighbors = new Int32Array(MAX_ENEMIES);
 
@@ -25,7 +28,7 @@ export class EnemyManager {
     // Images, not shapes: shapes are re-triangulated every frame, images batch into one draw call
     for (let i = 0; i < MAX_ENEMIES; i++) {
       const sprite = scene.add.image(0, 0, textureKey(ENEMIES.basic)).setVisible(false);
-      this.enemies.push({ sprite, def: ENEMIES.basic });
+      this.enemies.push({ sprite, def: ENEMIES.basic, hp: 0 });
     }
   }
 
@@ -33,19 +36,74 @@ export class EnemyManager {
     return this.aliveCount;
   }
 
+  get kills(): number {
+    return this.killCount;
+  }
+
   /** Returns false when the pool is full. */
   spawn(def: EnemyDef, x: number, y: number): boolean {
     if (this.aliveCount === MAX_ENEMIES) return false;
     const enemy = this.enemies[this.aliveCount++];
     enemy.def = def;
+    enemy.hp = def.hp;
     enemy.sprite.setTexture(textureKey(def)).setPosition(x, y).setVisible(true);
     return true;
+  }
+
+  isAlive(i: number): boolean {
+    return this.enemies[i].hp > 0;
+  }
+
+  /** Dead enemies keep their index until `removeDead`, so hash query results stay valid all frame. */
+  damage(i: number, amount: number) {
+    this.enemies[i].hp -= amount;
+  }
+
+  /** Index of the closest living enemy, or -1 if there is none. */
+  findNearest(x: number, y: number): number {
+    let best = -1;
+    let bestDistSq = Infinity;
+    for (let i = 0; i < this.aliveCount; i++) {
+      const enemy = this.enemies[i];
+      if (enemy.hp <= 0) continue;
+      const dx = enemy.sprite.x - x;
+      const dy = enemy.sprite.y - y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < bestDistSq) {
+        bestDistSq = d2;
+        best = i;
+      }
+    }
+    return best;
+  }
+
+  /** Enemy indices around (x, y) from this frame's hash; valid only after `update`. */
+  queryNear(x: number, y: number, out: Int32Array): number {
+    return this.hash.query(x, y, out);
   }
 
   update(delta: number, player: Player) {
     this.moveTowards(player, delta);
     this.separate();
     this.pushOutOf(player);
+  }
+
+  /** Call at the end of the frame, after everything that holds enemy indices is done. */
+  removeDead() {
+    let i = 0;
+    while (i < this.aliveCount) {
+      const enemy = this.enemies[i];
+      if (enemy.hp > 0) {
+        i++;
+        continue;
+      }
+      // Swap with the last one in play; the swapped-in enemy is checked on the next pass
+      enemy.sprite.setVisible(false);
+      const last = --this.aliveCount;
+      this.enemies[i] = this.enemies[last];
+      this.enemies[last] = enemy;
+      this.killCount++;
+    }
   }
 
   private moveTowards(player: Player, delta: number) {
@@ -124,12 +182,4 @@ export class EnemyManager {
 
 function textureKey(def: EnemyDef): string {
   return `enemy-${def.id}`;
-}
-
-function createCircleTexture(scene: Phaser.Scene, key: string, radius: number, color: number) {
-  if (scene.textures.exists(key)) return;
-  const g = scene.make.graphics({}, false);
-  g.fillStyle(color).fillCircle(radius, radius, radius);
-  g.generateTexture(key, radius * 2, radius * 2);
-  g.destroy();
 }

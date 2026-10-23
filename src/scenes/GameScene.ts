@@ -1,8 +1,11 @@
 import Phaser from 'phaser';
+import { WEAPONS } from '../data/weapons';
 import { Player } from '../entities/Player';
 import { VirtualJoystick } from '../input/VirtualJoystick';
 import { EnemyManager } from '../systems/EnemyManager';
+import { ProjectileManager } from '../systems/ProjectileManager';
 import { Spawner } from '../systems/Spawner';
+import { Weapon } from '../systems/Weapon';
 
 const GRID_SIZE = 64;
 
@@ -12,6 +15,8 @@ export class GameScene extends Phaser.Scene {
   private player!: Player;
   private enemies!: EnemyManager;
   private spawner!: Spawner;
+  private projectiles!: ProjectileManager;
+  private weapon!: Weapon;
   private joystick!: VirtualJoystick;
   private ground!: Phaser.GameObjects.TileSprite;
   private keys!: MoveKeys;
@@ -31,6 +36,8 @@ export class GameScene extends Phaser.Scene {
     this.enemies = new EnemyManager(this);
     this.player = new Player(this, 0, 0);
     this.spawner = new Spawner(this.cameras.main, this.player, this.enemies);
+    this.projectiles = new ProjectileManager(this, this.enemies);
+    this.weapon = new Weapon(WEAPONS.bolt, this.player, this.enemies, this.projectiles);
     this.joystick = new VirtualJoystick(this);
     this.keys = this.input.keyboard!.addKeys('W,A,S,D,UP,LEFT,DOWN,RIGHT') as MoveKeys;
     this.createDebugText();
@@ -48,6 +55,9 @@ export class GameScene extends Phaser.Scene {
     this.player.update(this.move, delta);
     this.spawner.update(delta);
     this.enemies.update(delta, this.player);
+    this.weapon.update(delta);
+    this.projectiles.update(delta);
+    this.enemies.removeDead();
 
     // Centering manually instead of startFollow: follow is applied after update,
     // which would leave the ground offset one frame behind the camera
@@ -81,7 +91,10 @@ export class GameScene extends Phaser.Scene {
     this.time.addEvent({
       delay: 500,
       loop: true,
-      callback: () => text.setText(`FPS ${Math.round(this.game.loop.actualFps)}  Enemies ${this.enemies.count}`),
+      callback: () =>
+        text.setText(
+          `FPS ${Math.round(this.game.loop.actualFps)}  Enemies ${this.enemies.count}  Kills ${this.enemies.kills}`,
+        ),
     });
   }
 
