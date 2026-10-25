@@ -4,31 +4,30 @@ Last updated: 2026-10-25. Read `CLAUDE.md` first for the stack and architecture 
 
 ## Where we are
 
-Phase: **prototype done → difficulty + weapon framework**. Placeholder shapes only, no art/audio.
+Phase: **full run loop done (waves, bosses, win/lose) → weapon framework next**. Placeholder shapes only, no art/audio. Everything below is committed on `main` and was verified by the user in the desktop browser.
 
-Done and verified by the user in the desktop browser:
+Done:
 - Floating joystick + WASD/arrows fallback, player movement, camera, infinite grid ground
-- Enemy pool (500), off-screen spawner with a linear rate ramp, far-enemy recycling, spatial hash separation
+- Enemy pool (500), spatial hash separation, far-enemy recycling
+- Wave timeline (`data/waves.ts`): one wave per minute with enemy types, minimum quota (refilled when enemies die) and spawn interval; 4 enemy types (bug, spam, worm, trojan)
 - Auto weapon (Bolt) firing at the nearest enemy, multishot fan, projectile pool, enemy HP and death
 - XP gems with magnet pickup, level curve, XP bar
-- Level-up upgrade screen (`UpgradeScene` overlay): 3 random cards per level gained, input lock + press-must-start-on-card guard
-- Data-driven upgrades: Bolt levels and 4 passives (Power, Haste, Swift, Magnet)
-- Player HP, per-second contact damage (stacks per touching enemy, no invulnerability frames — user's decision), HP bar under the player
-- Game over overlay (`GameOverScene`) with time / level / kills and restart (fresh `GameScene`)
+- Level-up upgrade screen (`UpgradeScene` overlay): 3 random cards per level gained, several levels at once → choices in a row
+- Data-driven upgrades: Bolt levels (damage, +1 projectile, cooldown) and 4 passives (Power, Haste, Swift, Magnet)
+- Player HP, per-second contact damage, HP bar under the player
+- Run timer (top center), driven by `Spawner.time`
+- Boss arenas with mini bosses and a final boss (see the decisions below), boss HP bar
+- Run end overlay (`GameOverScene`): "GAME OVER" or "SYSTEM CLEAN" with time / level / kills, restart = fresh `GameScene`
 
-- Run timer (`ui/RunTimer.ts`, top center; also on the game over screen). Run time comes from `Spawner.time`.
-- Wave timeline (`data/waves.ts`, one wave per minute: enemy types, minimum quota, spawn interval); 4 enemy types (bug, spam, worm, trojan); Magnet nerfed to +5% per level. User: "flows well, fun to play".
+Not yet tested on a real phone (user has no device right now). Desktop: 60 FPS at 400+ enemies.
 
-- Boss arenas (see the decisions below). `Arena` system, `data/bosses.ts`, Rootkit / Ransomware enemy defs, top-of-screen `BossBar`, win state on the run-end screen ("SYSTEM CLEAN").
+## Play test feedback (user, 2026-10-25)
 
-Not yet tested on a real phone. Desktop: 60 FPS at 400+ enemies.
-
-## Fun test feedback (user, 2026-10-25)
-
+First test (before waves/bosses):
 - Movement feel is fine.
-- Crowd feeling is too weak; density and enemy variety must grow over time.
-- You can't die: enemies only multiply, never get tougher (one type, fixed 10 HP), and the 500 pool fills around minute 3, after which nothing escalates.
-- Some upgrades are overtuned, Magnet most of all (+200% pickup range at max).
+- Crowd feeling was too weak, you couldn't die, Magnet was overtuned → addressed by the wave timeline, enemy types and the Magnet nerf.
+
+After waves and bosses: "flows well, fun to play".
 
 ## Theme and design decisions
 
@@ -36,6 +35,9 @@ Not yet tested on a real phone. Desktop: 60 FPS at 400+ enemies.
 - **No real brand names or exact likenesses** (Commodore, Nokia, ... are trademarks; store takedown risk). Use generic or inspired names ("Brick Phone", "8-Bit Home Computer") and silhouettes that evoke rather than copy.
 - **Enemies:** computer threats — viruses, bugs, spam, pop-ups, ...
 - **Run length: 10 minutes** (mobile sessions must be short).
+- **Contact damage:** per second while touching, stacking per touching enemy, **no invulnerability frames** (user's decision). Per-hit damage without i-frames would kill in one touch at 60 FPS, hence per second.
+- **Upgrade cards:** a pick counts only if the press starts and ends on the same card, and cards ignore taps for 0.4 s after appearing (the finger is usually on the joystick when a level-up hits). The restart button uses the same guard.
+- **Upgrade content for now:** Bolt levels + 4 passives. More weapons come later; **the user will describe the weapon roster**, so don't invent weapons beyond what is decided here.
 - **Boss arenas** at 2:30, 5:00, 7:30 (mini boss Rootkit, HP x1 / x2 / x3.5) and 10:00 (final boss Ransomware; killing it wins the run):
   - A firewall ring closes around where the player stands; enemies outside it vanish (no gem, no kill), enemies inside keep attacking, the boss appears inside.
   - The wall is solid for the player and harmless; it is not made of enemies (projectiles pass through, never targeted).
@@ -58,9 +60,18 @@ Vampire Survivors' stage design, from https://vampire.survivors.wiki/w/Mad_Fores
 
 ## Next steps (in order)
 
-1. **Boss arena tuning** as play testing shows (boss HP, arena radius). Map events (swarms crossing the screen) are still open.
-2. **Weapon framework.** Weapon behaviours beyond straight shots (arc throw, area damage), pierce ("hits at most N enemies"), and the evolution system.
-3. **Brick Phone** as the first themed weapon, using the framework.
+1. **Weapon framework** (agreed in principle, details to be decided with the user when we start): weapon behaviours beyond straight shots (arc throw with a landing point, area damage), pierce ("hits at most N enemies"), and the evolution system (special level-up card). Propose a file-by-file plan first.
+2. **Brick Phone** as the first themed weapon, using the framework.
+3. **Boss special attacks**, built on the weapon framework.
+
+## Open questions
+
+- The full weapon roster and their paired passives (user will describe).
+- What the 8-bit home computer weapon does.
+- Map events (fast swarms crossing the screen) — not decided.
+- Magnet at +5% per level may be a dead card — revisit after more play.
+- Boss HP / arena radius tuning as play testing shows.
+- Player character / theme of the player (not discussed yet).
 
 ## Code map
 
@@ -109,7 +120,9 @@ Overlays pause `GameScene` with `scene.pause()` (stops update, tweens and timers
 
 ## Working agreement
 
-- User writes in Turkish; reply in Turkish, code/comments/commits in English.
+- User writes in Turkish; reply **only in Turkish**, in plain words (the user doesn't follow English replies). Code/comments/commits in English.
+- If something is unclear or a decision belongs to the user, ask first — with a recommended option — then continue.
 - Propose a plan and wait for explicit approval before any code change.
+- Be direct: point out risks and weak ideas (e.g. trademarks, dead upgrade cards) instead of just agreeing.
 - Verify with `npx tsc` only; the user does all visual testing.
 - Commit/push only when asked.
