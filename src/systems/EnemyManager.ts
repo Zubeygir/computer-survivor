@@ -45,14 +45,17 @@ export class EnemyManager {
     return this.killCount;
   }
 
-  /** Returns false when the pool is full. */
-  spawn(def: EnemyDef, x: number, y: number): boolean {
-    if (this.aliveCount === MAX_ENEMIES) return false;
+  /**
+   * Returns null when the pool is full. `hp` overrides the def's, for scaled bosses.
+   * The returned object is pooled: only hold it while you know the enemy is alive.
+   */
+  spawn(def: EnemyDef, x: number, y: number, hp = def.hp): Enemy | null {
+    if (this.aliveCount === MAX_ENEMIES) return null;
     const enemy = this.enemies[this.aliveCount++];
     enemy.def = def;
-    enemy.hp = def.hp;
+    enemy.hp = hp;
     enemy.sprite.setTexture(textureKey(def)).setPosition(x, y).setVisible(true);
-    return true;
+    return enemy;
   }
 
   isAlive(i: number): boolean {
@@ -104,13 +107,34 @@ export class EnemyManager {
         continue;
       }
       this.onKill(enemy.sprite.x, enemy.sprite.y, enemy.def);
-      // Swap with the last one in play; the swapped-in enemy is checked on the next pass
-      enemy.sprite.setVisible(false);
-      const last = --this.aliveCount;
-      this.enemies[i] = this.enemies[last];
-      this.enemies[last] = enemy;
+      this.release(i);
       this.killCount++;
     }
+  }
+
+  /** Despawns every enemy outside the circle: no gem, no kill. Call only while no enemy indices are held. */
+  removeOutside(cx: number, cy: number, radius: number) {
+    const r2 = radius * radius;
+    let i = 0;
+    while (i < this.aliveCount) {
+      const s = this.enemies[i].sprite;
+      const dx = s.x - cx;
+      const dy = s.y - cy;
+      if (dx * dx + dy * dy <= r2) {
+        i++;
+        continue;
+      }
+      this.release(i);
+    }
+  }
+
+  /** Swaps with the last one in play, so the caller must re-check index `i` instead of advancing. */
+  private release(i: number) {
+    const enemy = this.enemies[i];
+    enemy.sprite.setVisible(false);
+    const last = --this.aliveCount;
+    this.enemies[i] = this.enemies[last];
+    this.enemies[last] = enemy;
   }
 
   private moveTowards(player: Player, delta: number) {

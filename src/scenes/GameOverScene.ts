@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { formatTime } from '../ui/RunTimer';
 
 export interface GameOverSceneData {
+  /** True when the final boss was killed, false when the player died. */
+  won: boolean;
   /** Seconds survived. */
   time: number;
   level: number;
@@ -14,7 +16,7 @@ const BUTTON_W = 220;
 const BUTTON_H = 64;
 const FONT = 'monospace';
 
-/** Overlay launched over the paused GameScene; restarting replaces both with a fresh run. */
+/** Run end overlay (death or win) over the paused GameScene; restarting replaces both with a fresh run. */
 export class GameOverScene extends Phaser.Scene {
   private backdrop!: Phaser.GameObjects.Rectangle;
   private title!: Phaser.GameObjects.Text;
@@ -30,7 +32,11 @@ export class GameOverScene extends Phaser.Scene {
   create(data: GameOverSceneData) {
     this.backdrop = this.add.rectangle(0, 0, 1, 1, 0x000000, 0.7).setOrigin(0);
     this.title = this.add
-      .text(0, 0, 'GAME OVER', { fontFamily: FONT, fontSize: '36px', color: '#e53935' })
+      .text(0, 0, data.won ? 'SYSTEM CLEAN' : 'GAME OVER', {
+        fontFamily: FONT,
+        fontSize: '36px',
+        color: data.won ? '#66bb6a' : '#e53935',
+      })
       .setOrigin(0.5);
     this.summary = this.add
       // Two lines: one line of all three overflows a narrow portrait phone

@@ -16,9 +16,10 @@ Done and verified by the user in the desktop browser:
 - Player HP, per-second contact damage (stacks per touching enemy, no invulnerability frames — user's decision), HP bar under the player
 - Game over overlay (`GameOverScene`) with time / level / kills and restart (fresh `GameScene`)
 
-Written but **not yet tested / committed**:
 - Run timer (`ui/RunTimer.ts`, top center; also on the game over screen). Run time comes from `Spawner.time`.
-- Wave timeline (`data/waves.ts`, one wave per minute: enemy types, minimum quota, spawn interval) replacing the linear ramp; 4 enemy types (bug, spam, worm, trojan); Magnet nerfed to +5% per level.
+- Wave timeline (`data/waves.ts`, one wave per minute: enemy types, minimum quota, spawn interval); 4 enemy types (bug, spam, worm, trojan); Magnet nerfed to +5% per level. User: "flows well, fun to play".
+
+- Boss arenas (see the decisions below). `Arena` system, `data/bosses.ts`, Rootkit / Ransomware enemy defs, top-of-screen `BossBar`, win state on the run-end screen ("SYSTEM CLEAN").
 
 Not yet tested on a real phone. Desktop: 60 FPS at 400+ enemies.
 
@@ -35,6 +36,11 @@ Not yet tested on a real phone. Desktop: 60 FPS at 400+ enemies.
 - **No real brand names or exact likenesses** (Commodore, Nokia, ... are trademarks; store takedown risk). Use generic or inspired names ("Brick Phone", "8-Bit Home Computer") and silhouettes that evoke rather than copy.
 - **Enemies:** computer threats — viruses, bugs, spam, pop-ups, ...
 - **Run length: 10 minutes** (mobile sessions must be short).
+- **Boss arenas** at 2:30, 5:00, 7:30 (mini boss Rootkit, HP x1 / x2 / x3.5) and 10:00 (final boss Ransomware; killing it wins the run):
+  - A firewall ring closes around where the player stands; enemies outside it vanish (no gem, no kill), enemies inside keep attacking, the boss appears inside.
+  - The wall is solid for the player and harmless; it is not made of enemies (projectiles pass through, never targeted).
+  - Waves and the run clock stop during the fight, so the run is ~10 min + boss fights.
+  - Bosses are for now big, tanky chasers with high contact damage; special attacks come after the weapon framework and will share it.
 - **Magnet: +5% per level** (user's call; it is barely noticeable at 4 px per level — revisit after testing).
 - **Evolution:** a weapon evolves when it is at **max level** and the player **owns** its paired passive (any level). When eligible, the evolution shows up as a special card on the next level-up (no chest/boss system needed).
 - **Brick Phone (first themed weapon):** thrown toward a target in a fake-3D arc (shadow on the ground, phone in the air). Base form hits at most 2 enemies along the way. Paired passive: Power. Evolved form lands and deals area damage at the impact point.
@@ -52,7 +58,7 @@ Vampire Survivors' stage design, from https://vampire.survivors.wiki/w/Mad_Fores
 
 ## Next steps (in order)
 
-1. **Difficulty.** Wave timeline, enemy types and Magnet nerf are written (see above) and need a play test and tuning. Still open: what happens at 10:00 (run-ending enemy / win screen), elites/bosses, map events (swarms crossing the screen, enemy walls).
+1. **Boss arena tuning** as play testing shows (boss HP, arena radius). Map events (swarms crossing the screen) are still open.
 2. **Weapon framework.** Weapon behaviours beyond straight shots (arc throw, area damage), pierce ("hits at most N enemies"), and the evolution system.
 3. **Brick Phone** as the first themed weapon, using the framework.
 
@@ -63,22 +69,23 @@ Vampire Survivors' stage design, from https://vampire.survivors.wiki/w/Mad_Fores
 | `src/main.ts` | Phaser config (`RESIZE`), scene list |
 | `src/scenes/GameScene.ts` | Wires everything; owns the per-frame order |
 | `src/scenes/UpgradeScene.ts` | Level-up overlay; rolls and applies choices, resumes `GameScene` |
-| `src/scenes/GameOverScene.ts` | Game over overlay; restart starts a fresh `GameScene` |
+| `src/scenes/GameOverScene.ts` | Run end overlay (death or win); restart starts a fresh `GameScene` |
 | `src/input/VirtualJoystick.ts` | Floating joystick, unit `direction`, `reset()` before pausing |
 | `src/entities/Player.ts` | Movement, `radius`, mutable `stats` (copy of base) and `hp` |
 | `src/systems/SpatialHash.ts` | Allocation-free grid, rebuilt every frame |
 | `src/systems/EnemyManager.ts` | Enemy pool, movement, separation, contact damage, deferred death (`removeDead`) |
 | `src/systems/Spawner.ts` | Runs the wave timeline (interval spawns + quota refill), recycling; owns the run clock (`time`) |
+| `src/systems/Arena.ts` | Boss events: wall ring, clearing outside enemies, boss spawn, holding the player inside, win flag |
 | `src/systems/ProjectileManager.ts` | Projectile pool, hit tests via the enemy hash |
 | `src/systems/Weapon.ts` | Cooldown, nearest-enemy targeting, multishot; mutable `stats` |
 | `src/systems/Upgrades.ts` | Taken levels per upgrade, random rolls, applying stat deltas |
 | `src/systems/GemManager.ts` | Gem pool, attraction, returns XP collected per frame |
 | `src/systems/Experience.ts` | Level/XP state, `add()` returns levels gained |
-| `src/ui/XpBar.ts`, `HpBar.ts`, `RunTimer.ts` | HUD |
+| `src/ui/XpBar.ts`, `HpBar.ts`, `RunTimer.ts`, `BossBar.ts` | HUD |
 | `src/data/*.ts` | Player base stats, enemies, weapons, upgrades, level curve |
 | `src/textures.ts` | Generated circle textures |
 
-Frame order in `GameScene.update` matters: input → player → spawner/timer → enemies (builds hash, returns contact damage) → death check (early return) → weapon → projectiles (uses hash) → `removeDead` (drops gems) → gems → XP/level-up → camera/ground. Enemy indices are only stable until `removeDead`.
+Frame order in `GameScene.update` matters: input → player → arena (starts fights, holds the player inside) → spawner/timer (skipped during a fight) or boss bar → enemies (builds hash, returns contact damage) → death check (early return) → weapon → projectiles (uses hash) → `removeDead` (drops gems, may end a fight) → win check (early return) → gems → XP/level-up → camera/ground. Enemy indices are only stable until `removeDead`.
 
 Overlays pause `GameScene` with `scene.pause()` (stops update, tweens and timers) and reset the joystick first, since a paused scene never receives the `pointerup`.
 
@@ -97,6 +104,7 @@ Overlays pause `GameScene` with `scene.pause()` (stops update, tweens and timers
 - Without a phone: Chrome DevTools device mode (`Ctrl+Shift+M`) emulates touch.
 - Stress test: temporarily set the first wave's `minimum` in `src/data/waves.ts` to `500` to fill the enemy pool in seconds. Revert before committing.
 - Late waves: temporarily start `elapsed` in `src/systems/Spawner.ts` at e.g. `8 * 60`. Revert before committing.
+- Bosses: start `elapsed` a few seconds before an event (e.g. `145`). Every skipped event still fires in order, so to reach the final boss also start `nextEvent` in `src/systems/Arena.ts` at `3`. Revert before committing.
 - Fast level-ups: temporarily lower `xpToNext` in `src/data/progression.ts`. Revert before committing.
 
 ## Working agreement
