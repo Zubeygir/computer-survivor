@@ -1,13 +1,11 @@
 import Phaser from 'phaser';
-
-// Pixels per second. Moves to character data once multiple characters exist.
-const SPEED = 200;
+import { BASE_PLAYER_STATS, type PlayerStats } from '../data/player';
 
 export class Player {
   readonly sprite: Phaser.GameObjects.Arc;
   readonly radius = 16;
-  /** Gems inside this distance start flying to the player. Mutable: magnet upgrades raise it. */
-  pickupRadius = 80;
+  /** A copy, since upgrades mutate it during the run. */
+  readonly stats: PlayerStats = { ...BASE_PLAYER_STATS };
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     this.sprite = scene.add.circle(x, y, this.radius, 0x4caf50);
@@ -15,7 +13,7 @@ export class Player {
 
   /** `direction` must be a unit vector or zero; `delta` is in ms. */
   update(direction: Phaser.Math.Vector2, delta: number) {
-    const step = (SPEED * delta) / 1000;
+    const step = (this.stats.moveSpeed * delta) / 1000;
     this.sprite.x += direction.x * step;
     this.sprite.y += direction.y * step;
   }

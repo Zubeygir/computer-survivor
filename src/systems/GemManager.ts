@@ -47,7 +47,7 @@ export class GemManager {
     const seconds = delta / 1000;
     const px = player.sprite.x;
     const py = player.sprite.y;
-    const pickupSq = player.pickupRadius * player.pickupRadius;
+    const pickupSq = player.stats.pickupRadius * player.stats.pickupRadius;
     let collected = 0;
 
     let i = 0;

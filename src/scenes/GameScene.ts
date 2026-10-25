@@ -7,8 +7,10 @@ import { Experience } from '../systems/Experience';
 import { GemManager } from '../systems/GemManager';
 import { ProjectileManager } from '../systems/ProjectileManager';
 import { Spawner } from '../systems/Spawner';
+import { Upgrades } from '../systems/Upgrades';
 import { Weapon } from '../systems/Weapon';
 import { XP_BAR_HEIGHT, XpBar } from '../ui/XpBar';
+import type { UpgradeSceneData } from './UpgradeScene';
 
 const GRID_SIZE = 64;
 
@@ -22,6 +24,7 @@ export class GameScene extends Phaser.Scene {
   private projectiles!: ProjectileManager;
   private weapon!: Weapon;
   private experience!: Experience;
+  private upgrades!: Upgrades;
   private xpBar!: XpBar;
   private joystick!: VirtualJoystick;
   private ground!: Phaser.GameObjects.TileSprite;
@@ -46,6 +49,7 @@ export class GameScene extends Phaser.Scene {
     this.projectiles = new ProjectileManager(this, this.enemies);
     this.weapon = new Weapon(WEAPONS.bolt, this.player, this.enemies, this.projectiles);
     this.experience = new Experience();
+    this.upgrades = new Upgrades(this.player, [this.weapon]);
     this.xpBar = new XpBar(this);
     this.joystick = new VirtualJoystick(this);
     this.keys = this.input.keyboard!.addKeys('W,A,S,D,UP,LEFT,DOWN,RIGHT') as MoveKeys;
@@ -81,18 +85,15 @@ export class GameScene extends Phaser.Scene {
   private gainXp(amount: number) {
     const levels = this.experience.add(amount);
     this.xpBar.set(this.experience.level, this.experience.xp, this.experience.xpNeeded);
-    if (levels > 0) this.showLevelUp();
+    if (levels > 0 && this.upgrades.anyLeft) this.openUpgradeChoice(levels);
   }
 
-  // Placeholder until the upgrade choice screen exists
-  private showLevelUp() {
-    const { width, height } = this.scale;
-    const text = this.add
-      .text(width / 2, height / 3, 'LEVEL UP', { fontFamily: 'monospace', fontSize: '32px', color: '#ffeb3b' })
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(2000);
-    this.tweens.add({ targets: text, alpha: 0, y: text.y - 30, duration: 800, onComplete: () => text.destroy() });
+  private openUpgradeChoice(count: number) {
+    this.joystick.reset();
+    // Pausing stops update, tweens and timers together; the overlay resumes us when done
+    this.scene.pause();
+    const data: UpgradeSceneData = { upgrades: this.upgrades, count };
+    this.scene.launch('UpgradeScene', data);
   }
 
   private readKeyboard() {

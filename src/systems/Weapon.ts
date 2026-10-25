@@ -1,18 +1,22 @@
-import type { WeaponDef } from '../data/weapons';
+import type { WeaponDef, WeaponStats } from '../data/weapons';
 import type { Player } from '../entities/Player';
 import type { EnemyManager } from './EnemyManager';
 import type { ProjectileManager } from './ProjectileManager';
 
 /** Fires at the nearest enemy whenever the cooldown allows. */
 export class Weapon {
+  /** Starts from the def; weapon upgrades add to it. */
+  readonly stats: WeaponStats;
   private cooldownLeft = 0;
 
   constructor(
-    private readonly def: WeaponDef,
+    readonly def: WeaponDef,
     private readonly player: Player,
     private readonly enemies: EnemyManager,
     private readonly projectiles: ProjectileManager,
-  ) {}
+  ) {
+    this.stats = { cooldown: def.cooldown, damage: def.damage, projectiles: def.projectiles };
+  }
 
   update(delta: number) {
     // Floors at zero so waiting with no target doesn't bank shots for a burst later
@@ -27,10 +31,17 @@ export class Weapon {
     const t = this.enemies.enemies[target].sprite;
     const dx = t.x - px;
     const dy = t.y - py;
-    const d = Math.hypot(dx, dy);
-    if (d === 0) return;
+    if (dx === 0 && dy === 0) return;
 
-    this.projectiles.fire(this.def, px, py, dx / d, dy / d);
-    this.cooldownLeft = this.def.cooldown;
+    const { stats, def } = this;
+    const playerStats = this.player.stats;
+    const damage = stats.damage * playerStats.damageMult;
+    const aim = Math.atan2(dy, dx);
+    for (let i = 0; i < stats.projectiles; i++) {
+      // Centered on the aim, so an odd count always has one projectile going straight at the target
+      const angle = aim + (i - (stats.projectiles - 1) / 2) * def.spread;
+      this.projectiles.fire(def, damage, px, py, Math.cos(angle), Math.sin(angle));
+    }
+    this.cooldownLeft = stats.cooldown * playerStats.cooldownMult;
   }
 }

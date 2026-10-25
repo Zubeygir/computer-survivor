@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { GameScene } from './scenes/GameScene';
+import { UpgradeScene } from './scenes/UpgradeScene';
 
 new Phaser.Game({
   type: Phaser.AUTO,
@@ -11,5 +12,6 @@ new Phaser.Game({
     width: '100%',
     height: '100%',
   },
-  scene: [GameScene],
+  // Only the first scene starts automatically; UpgradeScene is launched on level-up
+  scene: [GameScene, UpgradeScene],
 });

@@ -33,13 +33,13 @@ export class ProjectileManager {
   }
 
   /** `dirX`/`dirY` must form a unit vector. Silently drops the shot when the pool is full. */
-  fire(def: WeaponDef, x: number, y: number, dirX: number, dirY: number) {
+  fire(def: WeaponDef, damage: number, x: number, y: number, dirX: number, dirY: number) {
     if (this.aliveCount === MAX_PROJECTILES) return;
     const p = this.projectiles[this.aliveCount++];
     p.vx = dirX * def.projectileSpeed;
     p.vy = dirY * def.projectileSpeed;
     p.life = def.projectileLifetime;
-    p.damage = def.damage;
+    p.damage = damage;
     p.radius = def.projectileRadius;
     p.sprite.setTexture(textureKey(def)).setPosition(x, y).setVisible(true);
   }

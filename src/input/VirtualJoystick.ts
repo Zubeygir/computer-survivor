@@ -62,11 +62,16 @@ export class VirtualJoystick {
     }
   }
 
-  private onUp(pointer: Phaser.Input.Pointer) {
-    if (pointer.id !== this.pointerId) return;
+  /** Releases the stick. Call before pausing the scene: a paused scene never sees the pointerup. */
+  reset() {
     this.pointerId = null;
     this.base.setVisible(false);
     this.knob.setVisible(false);
     this.direction.reset();
+  }
+
+  private onUp(pointer: Phaser.Input.Pointer) {
+    if (pointer.id !== this.pointerId) return;
+    this.reset();
   }
 }
