@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
+import { formatTime } from '../ui/RunTimer';
 
 export interface GameOverSceneData {
+  /** Seconds survived. */
+  time: number;
   level: number;
   kills: number;
 }
@@ -30,7 +33,14 @@ export class GameOverScene extends Phaser.Scene {
       .text(0, 0, 'GAME OVER', { fontFamily: FONT, fontSize: '36px', color: '#e53935' })
       .setOrigin(0.5);
     this.summary = this.add
-      .text(0, 0, `Level ${data.level}   Kills ${data.kills}`, { fontFamily: FONT, fontSize: '18px', color: '#ffffff' })
+      // Two lines: one line of all three overflows a narrow portrait phone
+      .text(0, 0, `Time ${formatTime(data.time)}\nLevel ${data.level}   Kills ${data.kills}`, {
+        fontFamily: FONT,
+        fontSize: '18px',
+        color: '#ffffff',
+        align: 'center',
+        lineSpacing: 6,
+      })
       .setOrigin(0.5);
 
     const bg = this.add.rectangle(0, 0, BUTTON_W, BUTTON_H, 0x263238).setStrokeStyle(2, 0x90a4ae).setInteractive();
@@ -62,8 +72,8 @@ export class GameOverScene extends Phaser.Scene {
     const cx = width / 2;
     const cy = height / 2;
     this.backdrop.setSize(width, height);
-    this.title.setPosition(cx, cy - 90);
-    this.summary.setPosition(cx, cy - 40);
-    this.button.setPosition(cx, cy + 40);
+    this.title.setPosition(cx, cy - 100);
+    this.summary.setPosition(cx, cy - 36);
+    this.button.setPosition(cx, cy + 50);
   }
 }

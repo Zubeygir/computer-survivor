@@ -32,5 +32,5 @@ export const UPGRADES: UpgradeDef[] = [
   { kind: 'passive', name: 'Power', levels: times(5, { text: '+10% damage', stats: { damageMult: 0.1 } }) },
   { kind: 'passive', name: 'Haste', levels: times(5, { text: '-8% weapon cooldown', stats: { cooldownMult: -0.08 } }) },
   { kind: 'passive', name: 'Swift', levels: times(5, { text: '+10% move speed', stats: { moveSpeed: 20 } }) },
-  { kind: 'passive', name: 'Magnet', levels: times(5, { text: '+40% pickup range', stats: { pickupRadius: 32 } }) },
+  { kind: 'passive', name: 'Magnet', levels: times(5, { text: '+5% pickup range', stats: { pickupRadius: 4 } }) },
 ];

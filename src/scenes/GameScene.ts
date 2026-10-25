@@ -10,6 +10,7 @@ import { Spawner } from '../systems/Spawner';
 import { Upgrades } from '../systems/Upgrades';
 import { Weapon } from '../systems/Weapon';
 import { HpBar } from '../ui/HpBar';
+import { RunTimer } from '../ui/RunTimer';
 import { XP_BAR_HEIGHT, XpBar } from '../ui/XpBar';
 import type { GameOverSceneData } from './GameOverScene';
 import type { UpgradeSceneData } from './UpgradeScene';
@@ -29,6 +30,7 @@ export class GameScene extends Phaser.Scene {
   private experience!: Experience;
   private upgrades!: Upgrades;
   private xpBar!: XpBar;
+  private runTimer!: RunTimer;
   private joystick!: VirtualJoystick;
   private ground!: Phaser.GameObjects.TileSprite;
   private keys!: MoveKeys;
@@ -55,6 +57,7 @@ export class GameScene extends Phaser.Scene {
     this.experience = new Experience();
     this.upgrades = new Upgrades(this.player, [this.weapon]);
     this.xpBar = new XpBar(this);
+    this.runTimer = new RunTimer(this);
     this.joystick = new VirtualJoystick(this);
     this.keys = this.input.keyboard!.addKeys('W,A,S,D,UP,LEFT,DOWN,RIGHT') as MoveKeys;
     this.createDebugText();
@@ -72,6 +75,7 @@ export class GameScene extends Phaser.Scene {
     this.player.update(this.move, delta);
     this.hpBar.follow(this.player.sprite.x, this.player.sprite.y + this.player.radius + 8);
     this.spawner.update(delta);
+    this.runTimer.set(this.spawner.time);
 
     const contactDamage = this.enemies.update(delta, this.player);
     if (contactDamage > 0) {
@@ -115,7 +119,11 @@ export class GameScene extends Phaser.Scene {
   private gameOver() {
     this.joystick.reset();
     this.scene.pause();
-    const data: GameOverSceneData = { level: this.experience.level, kills: this.enemies.kills };
+    const data: GameOverSceneData = {
+      time: this.spawner.time,
+      level: this.experience.level,
+      kills: this.enemies.kills,
+    };
     this.scene.launch('GameOverScene', data);
   }
 
@@ -154,5 +162,6 @@ export class GameScene extends Phaser.Scene {
   private onResize(gameSize: Phaser.Structs.Size) {
     this.ground.setSize(gameSize.width, gameSize.height);
     this.xpBar.resize(gameSize.width);
+    this.runTimer.resize(gameSize.width);
   }
 }

@@ -32,8 +32,8 @@ export class EnemyManager {
 
     // Images, not shapes: shapes are re-triangulated every frame, images batch into one draw call
     for (let i = 0; i < MAX_ENEMIES; i++) {
-      const sprite = scene.add.image(0, 0, textureKey(ENEMIES.basic)).setVisible(false);
-      this.enemies.push({ sprite, def: ENEMIES.basic, hp: 0 });
+      const sprite = scene.add.image(0, 0, textureKey(ENEMIES.bug)).setVisible(false);
+      this.enemies.push({ sprite, def: ENEMIES.bug, hp: 0 });
     }
   }
 
