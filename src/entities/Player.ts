@@ -6,6 +6,7 @@ export class Player {
   readonly radius = 16;
   /** A copy, since upgrades mutate it during the run. */
   readonly stats: PlayerStats = { ...BASE_PLAYER_STATS };
+  hp = this.stats.maxHp;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     this.sprite = scene.add.circle(x, y, this.radius, 0x4caf50);

@@ -7,6 +7,8 @@ import { SpatialHash } from './SpatialHash';
 export const MAX_ENEMIES = 500;
 // Must cover the largest radius sum between two enemies, and between an enemy and a projectile
 const CELL_SIZE = 64;
+// Separation can nudge an enemy pressing on the player just out of overlap; this keeps it counted as touching
+const CONTACT_MARGIN = 2;
 
 export interface Enemy {
   sprite: Phaser.GameObjects.Image;
@@ -85,10 +87,11 @@ export class EnemyManager {
     return this.hash.query(x, y, out);
   }
 
-  update(delta: number, player: Player) {
+  /** Returns the contact damage the player takes this frame. */
+  update(delta: number, player: Player): number {
     this.moveTowards(player, delta);
     this.separate();
-    this.pushOutOf(player);
+    return (this.pushOutOf(player) * delta) / 1000;
   }
 
   /** Call at the end of the frame, after everything that holds enemy indices is done. */
@@ -165,22 +168,30 @@ export class EnemyManager {
     }
   }
 
-  /** Enemies can't overlap the player, but the player is never pushed. */
-  private pushOutOf(player: Player) {
+  /**
+   * Enemies can't overlap the player, but the player is never pushed.
+   * Shares the distance math with contact detection; returns the summed DPS of touching enemies.
+   */
+  private pushOutOf(player: Player): number {
     const px = player.sprite.x;
     const py = player.sprite.y;
+    let dps = 0;
     for (let i = 0; i < this.aliveCount; i++) {
       const enemy = this.enemies[i];
       const s = enemy.sprite;
       const minDist = enemy.def.radius + player.radius;
+      const contactDist = minDist + CONTACT_MARGIN;
       const dx = s.x - px;
       const dy = s.y - py;
       const d2 = dx * dx + dy * dy;
+      if (d2 >= contactDist * contactDist) continue;
+      dps += enemy.def.contactDps;
       if (d2 >= minDist * minDist || d2 === 0) continue;
       const k = minDist / Math.sqrt(d2);
       s.x = px + dx * k;
       s.y = py + dy * k;
     }
+    return dps;
   }
 }
 

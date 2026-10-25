@@ -9,7 +9,9 @@ import { ProjectileManager } from '../systems/ProjectileManager';
 import { Spawner } from '../systems/Spawner';
 import { Upgrades } from '../systems/Upgrades';
 import { Weapon } from '../systems/Weapon';
+import { HpBar } from '../ui/HpBar';
 import { XP_BAR_HEIGHT, XpBar } from '../ui/XpBar';
+import type { GameOverSceneData } from './GameOverScene';
 import type { UpgradeSceneData } from './UpgradeScene';
 
 const GRID_SIZE = 64;
@@ -18,6 +20,7 @@ type MoveKeys = Record<'W' | 'A' | 'S' | 'D' | 'UP' | 'LEFT' | 'DOWN' | 'RIGHT',
 
 export class GameScene extends Phaser.Scene {
   private player!: Player;
+  private hpBar!: HpBar;
   private gems!: GemManager;
   private enemies!: EnemyManager;
   private spawner!: Spawner;
@@ -45,6 +48,7 @@ export class GameScene extends Phaser.Scene {
     this.gems = new GemManager(this);
     this.enemies = new EnemyManager(this, (x, y, def) => this.gems.spawn(x, y, def.xp));
     this.player = new Player(this, 0, 0);
+    this.hpBar = new HpBar(this);
     this.spawner = new Spawner(this.cameras.main, this.player, this.enemies);
     this.projectiles = new ProjectileManager(this, this.enemies);
     this.weapon = new Weapon(WEAPONS.bolt, this.player, this.enemies, this.projectiles);
@@ -66,8 +70,20 @@ export class GameScene extends Phaser.Scene {
       this.readKeyboard();
     }
     this.player.update(this.move, delta);
+    this.hpBar.follow(this.player.sprite.x, this.player.sprite.y + this.player.radius + 8);
     this.spawner.update(delta);
-    this.enemies.update(delta, this.player);
+
+    const contactDamage = this.enemies.update(delta, this.player);
+    if (contactDamage > 0) {
+      this.player.hp -= contactDamage;
+      this.hpBar.set(this.player.hp, this.player.stats.maxHp);
+      // Skipping the rest of the frame keeps a level-up from opening on top of the game over
+      if (this.player.hp <= 0) {
+        this.gameOver();
+        return;
+      }
+    }
+
     this.weapon.update(delta);
     this.projectiles.update(delta);
     this.enemies.removeDead();
@@ -94,6 +110,13 @@ export class GameScene extends Phaser.Scene {
     this.scene.pause();
     const data: UpgradeSceneData = { upgrades: this.upgrades, count };
     this.scene.launch('UpgradeScene', data);
+  }
+
+  private gameOver() {
+    this.joystick.reset();
+    this.scene.pause();
+    const data: GameOverSceneData = { level: this.experience.level, kills: this.enemies.kills };
+    this.scene.launch('GameOverScene', data);
   }
 
   private readKeyboard() {

@@ -1,4 +1,5 @@
 export interface PlayerStats {
+  maxHp: number;
   /** Pixels per second. */
   moveSpeed: number;
   /** Gems inside this distance start flying to the player. */
@@ -11,6 +12,7 @@ export interface PlayerStats {
 
 // Moves to per-character data once multiple characters exist
 export const BASE_PLAYER_STATS: PlayerStats = {
+  maxHp: 100,
   moveSpeed: 200,
   pickupRadius: 80,
   damageMult: 1,

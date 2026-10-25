@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GameOverScene } from './scenes/GameOverScene';
 import { GameScene } from './scenes/GameScene';
 import { UpgradeScene } from './scenes/UpgradeScene';
 
@@ -12,6 +13,6 @@ new Phaser.Game({
     width: '100%',
     height: '100%',
   },
-  // Only the first scene starts automatically; UpgradeScene is launched on level-up
-  scene: [GameScene, UpgradeScene],
+  // Only the first scene starts automatically; the overlays are launched by GameScene
+  scene: [GameScene, UpgradeScene, GameOverScene],
 });
