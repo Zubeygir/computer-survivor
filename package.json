@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --host",
     "build": "tsc && vite build",
-    "preview": "vite preview --host"
+    "preview": "vite preview --host",
+    "sim": "vite build --config tools/balance-sim/vite.config.js --logLevel warn && node tools/balance-sim/out/report.js"
   },
   "dependencies": {
     "phaser": "3.90.0"
