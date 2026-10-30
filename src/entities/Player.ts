@@ -15,6 +15,14 @@ export class Player {
     this.sprite = scene.add.circle(x, y, this.radius, 0x4caf50);
   }
 
+  /** Adds permanent upgrades on top of the base stats. Call once, before the run starts. */
+  applyBonus(bonus: Partial<PlayerStats>) {
+    for (const key of Object.keys(bonus) as (keyof PlayerStats)[]) {
+      this.stats[key] += bonus[key] ?? 0;
+    }
+    this.hp = this.stats.maxHp;
+  }
+
   /** `direction` must be a unit vector or zero; `delta` is in ms. */
   update(direction: Phaser.Math.Vector2, delta: number) {
     const step = (this.stats.moveSpeed * delta) / 1000;

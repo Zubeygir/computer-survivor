@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import { progress, type RunReward } from '../systems/Progress';
+import { clearScene, createButton, FONT } from '../ui/Button';
 import { formatTime } from '../ui/RunTimer';
 
 export interface GameOverSceneData {
@@ -8,21 +10,18 @@ export interface GameOverSceneData {
   time: number;
   level: number;
   kills: number;
+  reward: RunReward;
 }
 
-// The player dies mid-swipe on the joystick; a lifted finger or reflex tap must not restart instantly
+// The player dies mid-swipe on the joystick; a lifted finger or reflex tap must not act instantly
 const INPUT_LOCK_MS = 400;
-const BUTTON_W = 220;
-const BUTTON_H = 64;
-const FONT = 'monospace';
+const BUTTON_W = 150;
+const BUTTON_H = 56;
+const BUTTON_GAP = 16;
 
-/** Run end overlay (death or win) over the paused GameScene; restarting replaces both with a fresh run. */
+/** Run end overlay (death or win) over the paused GameScene: results, Data earned, what next. */
 export class GameOverScene extends Phaser.Scene {
-  private backdrop!: Phaser.GameObjects.Rectangle;
-  private title!: Phaser.GameObjects.Text;
-  private summary!: Phaser.GameObjects.Text;
-  private button!: Phaser.GameObjects.Container;
-  private pressed = false;
+  private run!: GameOverSceneData;
   private readyAt = 0;
 
   constructor() {
@@ -30,17 +29,31 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   create(data: GameOverSceneData) {
-    this.backdrop = this.add.rectangle(0, 0, 1, 1, 0x000000, 0.7).setOrigin(0);
-    this.title = this.add
-      .text(0, 0, data.won ? 'SYSTEM CLEAN' : 'GAME OVER', {
+    this.run = data;
+    // Game loop time rather than this.time.now: the scene clock is not synced yet during create
+    this.readyAt = this.game.loop.time + INPUT_LOCK_MS;
+    this.layout();
+    this.scale.on('resize', this.layout, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.scale.off('resize', this.layout, this));
+  }
+
+  /** Rebuilds the screen; only runs on entry and on resize. */
+  private layout() {
+    clearScene(this);
+    const { won, time, level, kills, reward } = this.run;
+    const { width, height } = this.scale;
+    const cx = width / 2;
+    this.add.rectangle(0, 0, width, height, 0x000000, 0.7).setOrigin(0);
+    this.add
+      .text(cx, height * 0.13, won ? 'SYSTEM CLEAN' : 'GAME OVER', {
         fontFamily: FONT,
         fontSize: '36px',
-        color: data.won ? '#66bb6a' : '#e53935',
+        color: won ? '#66bb6a' : '#e53935',
       })
       .setOrigin(0.5);
-    this.summary = this.add
-      // Two lines: one line of all three overflows a narrow portrait phone
-      .text(0, 0, `Time ${formatTime(data.time)}\nLevel ${data.level}   Kills ${data.kills}`, {
+    // Two lines: one line of all three overflows a narrow portrait phone
+    this.add
+      .text(cx, height * 0.3, `Time ${formatTime(time)}\nLevel ${level}   Kills ${kills}`, {
         fontFamily: FONT,
         fontSize: '18px',
         color: '#ffffff',
@@ -48,38 +61,29 @@ export class GameOverScene extends Phaser.Scene {
         lineSpacing: 6,
       })
       .setOrigin(0.5);
+    this.add
+      .text(cx, height * 0.45, [`+${reward.total} Data`, `Total ${progress.data}`, ...reward.lines].join('\n'), {
+        fontFamily: FONT,
+        fontSize: '15px',
+        color: '#26c6da',
+        align: 'center',
+        lineSpacing: 4,
+        wordWrap: { width: width - 32 },
+      })
+      .setOrigin(0.5, 0);
 
-    const bg = this.add.rectangle(0, 0, BUTTON_W, BUTTON_H, 0x263238).setStrokeStyle(2, 0x90a4ae).setInteractive();
-    const label = this.add
-      .text(0, 0, 'RESTART', { fontFamily: FONT, fontSize: '22px', color: '#ffeb3b' })
-      .setOrigin(0.5);
-    this.button = this.add.container(0, 0, [bg, label]);
-
-    // Game loop time rather than this.time.now: the scene clock is not synced yet during create
-    this.readyAt = this.game.loop.time + INPUT_LOCK_MS;
-    this.pressed = false;
-    bg.on('pointerdown', () => {
-      if (this.game.loop.time >= this.readyAt) this.pressed = true;
+    const y = height - BUTTON_H / 2 - 16;
+    const offset = (BUTTON_W + BUTTON_GAP) / 2;
+    const buttons = { width: BUTTON_W, height: BUTTON_H, readyAt: this.readyAt };
+    // Starting another scene from here also stops this one
+    createButton(this, cx - offset, y, { ...buttons, label: 'RESTART', onClick: () => this.scene.start('GameScene') });
+    createButton(this, cx + offset, y, {
+      ...buttons,
+      label: 'MENU',
+      onClick: () => {
+        this.scene.stop('GameScene');
+        this.scene.start('MenuScene');
+      },
     });
-    bg.on('pointerup', () => {
-      // Starting GameScene from here also stops this scene
-      if (this.pressed) this.scene.start('GameScene');
-    });
-    // Game object 'pointerup' fires before this, so a restart is handled before the press is cleared
-    this.input.on('pointerup', () => (this.pressed = false));
-
-    this.layout();
-    this.scale.on('resize', this.layout, this);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.scale.off('resize', this.layout, this));
-  }
-
-  private layout() {
-    const { width, height } = this.scale;
-    const cx = width / 2;
-    const cy = height / 2;
-    this.backdrop.setSize(width, height);
-    this.title.setPosition(cx, cy - 100);
-    this.summary.setPosition(cx, cy - 36);
-    this.button.setPosition(cx, cy + 50);
   }
 }

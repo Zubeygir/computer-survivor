@@ -1,4 +1,5 @@
 import { ARENA_RADIUS, BOSS_KILL_HEAL } from '../../src/data/bosses';
+import { RUN_REWARDS, STARTING_WEAPONS, WORKSHOP, workshopBonus } from '../../src/data/meta';
 import { EVOLUTIONS, UPGRADES } from '../../src/data/upgrades';
 import { WEAPONS } from '../../src/data/weapons';
 import { Player } from '../../src/entities/Player';
@@ -47,9 +48,11 @@ const camera = { width: 390, height: 844 };
  * Plays one run, following the frame order of `GameScene.update`.
  * `bot` is 'still' or 'strafe', `start` a weapon id, `pick(options)` returns a card or null to skip.
  * `damageTaken` scales everything that hurts the player, to test late waves with a sturdier bot.
+ * `unlocked(id)` and `bonus` stand in for saved progress.
  */
-export function run({ bot, start, pick, damageTaken = 1 }) {
+export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, bonus = {} }) {
   const player = new Player(scene, 0, 0);
+  player.applyBonus(bonus);
   const bullets = new EnemyBullets(scene);
   const gems = new GemManager(scene);
   let arena;
@@ -73,7 +76,7 @@ export function run({ bot, start, pick, damageTaken = 1 }) {
     return weapon;
   };
   addWeapon(start);
-  const upgrades = new Upgrades(player, weapons, addWeapon);
+  const upgrades = new Upgrades(player, weapons, addWeapon, unlocked);
   const experience = new Experience();
 
   const move = { x: 0, y: 0 };
@@ -90,6 +93,7 @@ export function run({ bot, start, pick, damageTaken = 1 }) {
       level: experience.level,
       kills: enemies.kills,
       bossesKilled,
+      data: dataEarned(outcome === 'won', spawner.time, enemies.kills, bossesKilled),
       fights,
       evolvedAt,
       levelAtMinute,
@@ -124,7 +128,7 @@ export function run({ bot, start, pick, damageTaken = 1 }) {
 
     const gained = gems.update(DELTA, player);
     if (gained > 0) {
-      const levels = experience.add(gained);
+      const levels = experience.add(gained * player.stats.xpMult);
       for (let i = 0; i < levels; i++) {
         const card = pick(upgrades.roll(3));
         if (!card) continue;
@@ -137,6 +141,16 @@ export function run({ bot, start, pick, damageTaken = 1 }) {
     levelAtMinute[minute] ??= experience.level;
   }
   return result('timeout');
+}
+
+function dataEarned(won, time, kills, bosses) {
+  const miniBosses = bosses - (won ? 1 : 0);
+  return (
+    Math.floor(kills / RUN_REWARDS.killsPerData) +
+    Math.floor(time / 60) * RUN_REWARDS.perMinute +
+    miniBosses * RUN_REWARDS.miniBoss +
+    (won ? RUN_REWARDS.finalBoss : 0)
+  );
 }
 
 /** A decent human: circles the crowd instead of fleeing it, swaps direction, grabs gems when safe. */
@@ -223,3 +237,14 @@ export const randomPick = (options) => options[Math.floor(Math.random() * option
 export const noPick = () => null;
 
 export const weaponIds = UPGRADES.filter((upgrade) => upgrade.kind === 'weapon').map((upgrade) => upgrade.weapon);
+
+/** Fresh save: only the starting weapons, no Workshop levels. */
+export const newPlayer = { unlocked: (id) => STARTING_WEAPONS.includes(id), bonus: {} };
+
+/** Finished save: everything unlocked, every Workshop upgrade at max level. */
+export const maxedPlayer = {
+  unlocked: () => true,
+  bonus: workshopBonus(Object.fromEntries(WORKSHOP.map((def) => [def.id, def.prices.length]))),
+};
+
+export const startingWeapons = STARTING_WEAPONS;

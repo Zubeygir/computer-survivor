@@ -23,6 +23,7 @@ export class Upgrades {
     private readonly player: Player,
     private readonly weapons: Weapon[],
     private readonly addWeapon: (id: WeaponId) => Weapon,
+    private readonly isUnlocked: (id: WeaponId) => boolean,
   ) {
     // Starting weapons are already at level 1 of their upgrade
     for (const def of UPGRADES) {
@@ -78,7 +79,8 @@ export class Upgrades {
     const level = this.levelOf(def);
     if (level >= def.levels.length) return false;
     if (level > 0) return true;
-    return def.kind === 'weapon' ? this.weapons.length < MAX_WEAPONS : this.passiveCount < MAX_PASSIVES;
+    if (def.kind === 'weapon') return this.isUnlocked(def.weapon) && this.weapons.length < MAX_WEAPONS;
+    return this.passiveCount < MAX_PASSIVES;
   }
 
   private canEvolve(def: EvolutionUpgrade): boolean {

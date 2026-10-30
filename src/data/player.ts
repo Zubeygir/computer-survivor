@@ -20,6 +20,8 @@ export interface PlayerStats {
   damageTakenMult: number;
   /** HP per second. */
   regen: number;
+  /** Multiplies XP picked up. */
+  xpMult: number;
 }
 
 // Moves to per-character data once multiple characters exist
@@ -35,4 +37,5 @@ export const BASE_PLAYER_STATS: PlayerStats = {
   bonusProjectiles: 0,
   damageTakenMult: 1,
   regen: 0,
+  xpMult: 1,
 };

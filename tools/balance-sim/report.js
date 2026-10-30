@@ -1,11 +1,11 @@
 // npm run sim -- [runs per scenario] [comma-separated sections]
-// Sections: still, solo, build, random, late. Example: npm run sim -- 8 build,random
-import { focused, noPick, randomPick, run, weaponIds } from './game.js';
+// Sections: still, solo, build, random, late, new, maxed. Example: npm run sim -- 8 new,maxed
+import { focused, maxedPlayer, newPlayer, noPick, randomPick, run, startingWeapons, weaponIds } from './game.js';
 
 const LATE_DAMAGE_TAKEN = 0.15;
 
 const runs = Number(process.argv[2]) || 6;
-const sections = (process.argv[3] ?? 'still,solo,build,random,late').split(',');
+const sections = (process.argv[3] ?? 'still,solo,build,random,late,new,maxed').split(',');
 
 const clock = (seconds) => {
   const minutes = String(Math.floor(seconds / 60)).padStart(2, '0');
@@ -34,6 +34,7 @@ function scenario(label, config) {
     `lvl ${average(results, (r) => r.level).toFixed(0).padStart(2)}`,
     `lvl@5m ${atFive.length > 0 ? average(atFive, (r) => r.levelAtMinute[5]).toFixed(0).padStart(2) : ' -'}`,
     `kills ${average(results, (r) => r.kills).toFixed(0).padStart(4)}`,
+    `data ${average(results, (r) => r.data).toFixed(0).padStart(3)}`,
     `bosses ${average(results, (r) => r.bossesKilled).toFixed(1)} [${[0, 1, 2, 3].map((boss) => fightTime(results, boss)).join(' ')}]`,
     `evolved ${evolved.length}/${runs}${evolved.length > 0 ? ` at ${clock(average(evolved, (r) => r.evolvedAt))}` : ''}`,
   ];
@@ -61,5 +62,18 @@ if (sections.includes('late')) {
   console.log(`--- Focused build, bot takes ${LATE_DAMAGE_TAKEN * 100}% damage: is the late game beatable? ---`);
   for (const id of weaponIds) {
     scenario(id, { bot: 'strafe', start: 'cursor', pick: focused(id), damageTaken: LATE_DAMAGE_TAKEN });
+  }
+}
+if (sections.includes('new')) {
+  console.log('--- Fresh save: starting weapons only, no Workshop ---');
+  for (const id of startingWeapons) {
+    scenario(id, { bot: 'strafe', start: 'cursor', pick: focused(id), ...newPlayer });
+  }
+  scenario('random picks', { bot: 'strafe', start: 'cursor', pick: randomPick, ...newPlayer });
+}
+if (sections.includes('maxed')) {
+  console.log('--- Finished save: everything unlocked, Workshop maxed ---');
+  for (const id of weaponIds) {
+    scenario(id, { bot: 'strafe', start: 'cursor', pick: focused(id), ...maxedPlayer });
   }
 }

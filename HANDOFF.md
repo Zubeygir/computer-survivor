@@ -4,9 +4,14 @@ Last updated: 2026-10-25. Read `CLAUDE.md` first for the stack and architecture 
 
 ## Where we are
 
-Phase: **full content pass done and rebalanced, user likes it (2026-10-30) → next direction to be discussed**. Placeholder shapes only, no art/audio.
+Phase: **full content pass and return loop committed; menu screens are functional drafts that must be polished before anyone else sees them**. Placeholder shapes only, no art/audio.
 
 The game design doc is the source of truth for content: https://claude.ai/artifact/8yApVH6VuMDwYmPwAqVosy (Turkish, a Claude Doc outside the repo; read it with the docs tools). It holds the 10 weapons, 11 passives, 10 evolutions, enemies, bosses and the wave table. Numbers live in `src/data/*.ts`; when they change for good, update the doc too.
+
+Committed, with the screens still unreviewed (`npx tsc` and `npm run build` pass, save and reward logic checked with a fake storage). The user has not checked whether Menu, Museum and Workshop fit the screen, and says they must be polished anyway:
+- Return loop from the doc: Data earned per run, Museum weapon unlocks (4 weapons at the start), Workshop permanent upgrades, 3 daily tasks, main menu, result screen with RESTART and MENU
+- Save in `localStorage`; move to Capacitor storage in the mobile phase, since the web view can lose it
+- Rewarded ads are designed but not built; they come with the mobile packaging
 
 Written from that doc, played by the user and committed on `main`:
 - Weapon framework: 11 weapon behaviors in `Weapon`, all driven by `data/weapons.ts`; projectiles with arcs, pierce limits, returning flight, mines, delayed strikes, explosions, sub-stepped hit tests
@@ -32,12 +37,13 @@ Not yet tested on a real phone (user has no device right now). Desktop: 60 FPS a
 
 ## Balance (measured 2026-10-30)
 
-The first content pass felt maxed from level 1 and unlosable (user: "rezil"). Numbers were then measured with the headless simulator in `tools/balance-sim/`: the real systems bundled against a stub `phaser`, driven by bots. Run it with `npm run sim -- <runs> <sections>`, for example `npm run sim -- 8 build,random`. Sections: `still`, `solo`, `build`, `random`, `late`. `game.js` copies the frame order of `GameScene.update`, so keep the two in step. It cannot judge feel or readability, and the bots are weaker than a human.
+The first content pass felt maxed from level 1 and unlosable (user: "rezil"). Numbers were then measured with the headless simulator in `tools/balance-sim/`: the real systems bundled against a stub `phaser`, driven by bots. Run it with `npm run sim -- <runs> <sections>`, for example `npm run sim -- 8 build,random`. Sections: `still`, `solo`, `build`, `random`, `late`, `new` (fresh save), `maxed` (finished save). `game.js` copies the frame order of `GameScene.update`, so keep the two in step. It cannot judge feel or readability, and the bots are weaker than a human.
 
 - Level 1 weapon alone never passes the first boss; standing still dies in 9-18 s
 - Good bot with a focused build dies around 5:00, best runs reach 7:39; random picks about 5:00
 - A bot taking 15% damage reaches about 7:50 and won 1 of 40 runs, so the end is reachable
 - Level about 18 at 5:00; boss fights 13-47 s
+- Fresh save dies around 5:00 and earns about 140 Data per run; finished save reaches about 7:40 and won 4 of 80 runs
 - Dot Matrix Printer reads weak here because the bot runs away and fires backwards; a human aims with movement
 
 Lessons kept in the data: wave lists are weighted (ranged enemies must stay rare, or they stack up), late waves need a smooth rise in spawned HP per second, and the opening needs a tiny quota because a surrounding ring kills fast without i-frames.
@@ -56,6 +62,8 @@ After waves and bosses: "flows well, fun to play".
 - **No real brand names or exact likenesses** (Commodore, Nokia, ... are trademarks; store takedown risk). Use generic or inspired names ("Brick Phone", "8-Bit Home Computer") and silhouettes that evoke rather than copy.
 - **Enemies:** computer threats — viruses, bugs, spam, pop-ups, ...
 - **Run length: 10 minutes** (mobile sessions must be short).
+- **Money model: free with rewarded ads** (revive once per run, double Data on the result screen) plus a one-time purchase that gives those rewards without ads. No power or Data for sale, no forced ads.
+- **Progress lives on the device**, no accounts or server.
 - **Contact damage:** per second while touching, stacking per touching enemy, **no invulnerability frames** (user's decision). Per-hit damage without i-frames would kill in one touch at 60 FPS, hence per second.
 - **Upgrade cards:** a pick counts only if the press starts and ends on the same card, and cards ignore taps for 0.4 s after appearing (the finger is usually on the joystick when a level-up hits). The restart button uses the same guard.
 - **Content:** the design doc defines the roster (the user asked for it to be designed, then built from directly).
@@ -80,7 +88,10 @@ Vampire Survivors' stage design, from https://vampire.survivors.wiki/w/Mad_Fores
 
 ## Next steps (in order)
 
-1. **Discuss the next direction with the user**: the open questions below.
+1. **Polish Menu, Museum, Workshop and the result screen** (user: not presentable as they are). Check fit in portrait and landscape as part of it.
+2. **Art with three.js**, then audio.
+3. **Mobile packaging**: Capacitor, real phone test, rewarded ads.
+4. **Closed test and release prep.**
 
 ## Open questions
 
@@ -89,7 +100,8 @@ Vampire Survivors' stage design, from https://vampire.survivors.wiki/w/Mad_Fores
 - Player character.
 - Art: the user wants Claude to make it with three.js, as the last step. Open: run it in the game, or pre-render it to sprites for Phaser? Pre-rendering avoids a second renderer on phones. three.js is a new dependency, so ask first.
 - Audio: when and how.
-- Permanent progression between runs (unlocks, currency, characters).
+- Different player characters.
+- Moving progress to a new phone.
 
 ## Code map
 
@@ -98,7 +110,9 @@ Vampire Survivors' stage design, from https://vampire.survivors.wiki/w/Mad_Fores
 | `src/main.ts` | Phaser config (`RESIZE`), scene list |
 | `src/scenes/GameScene.ts` | Wires everything; owns the per-frame order |
 | `src/scenes/UpgradeScene.ts` | Level-up overlay; rolls and applies choices, resumes `GameScene` |
-| `src/scenes/GameOverScene.ts` | Run end overlay (death or win); restart starts a fresh `GameScene` |
+| `src/scenes/MenuScene.ts` | Opening screen: Play, Museum, Workshop, daily tasks |
+| `src/scenes/MuseumScene.ts`, `WorkshopScene.ts` | Weapon unlocks and permanent upgrades |
+| `src/scenes/GameOverScene.ts` | Result overlay (death or win): stats, Data earned, restart or menu |
 | `src/input/VirtualJoystick.ts` | Floating joystick, unit `direction`, `reset()` before pausing |
 | `src/entities/Player.ts` | Movement, `radius`, mutable `stats` (copy of base) and `hp` |
 | `src/systems/SpatialHash.ts` | Allocation-free grid, rebuilt every frame |
@@ -109,11 +123,13 @@ Vampire Survivors' stage design, from https://vampire.survivors.wiki/w/Mad_Fores
 | `src/systems/Weapon.ts` | Cooldown, targeting and one attack per behavior; aura and orbit visuals; `evolve`; mutable `stats` |
 | `src/systems/Effects.ts` | Pooled explosion and line visuals (no gameplay effect) |
 | `src/systems/EnemyBullets.ts` | Pooled enemy projectiles, returns damage to the player per frame |
+| `src/systems/Progress.ts`, `SaveData.ts` | What outlives a run: Data, unlocks, Workshop, daily tasks; storage |
 | `src/systems/Upgrades.ts` | Taken levels, slot limits, rolls (evolutions first), applying effects |
 | `src/systems/GemManager.ts` | Gem pool, attraction, returns XP collected per frame |
 | `src/systems/Experience.ts` | Level/XP state, `add()` returns levels gained |
 | `src/ui/XpBar.ts`, `HpBar.ts`, `RunTimer.ts`, `BossBar.ts` | HUD |
-| `src/data/*.ts` | Player base stats, enemies, weapons, upgrades and evolutions, waves, bosses, level curve |
+| `src/ui/Button.ts` | Guarded menu button, grid layout, scene clearing |
+| `src/data/*.ts` | Player base stats, enemies, weapons, upgrades and evolutions, waves, bosses, level curve, return loop (`meta.ts`) |
 | `src/textures.ts` | Generated circle and rectangle textures |
 | `tools/balance-sim/` | Headless balance simulator (`npm run sim`), not part of the game build |
 

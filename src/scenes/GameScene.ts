@@ -10,6 +10,7 @@ import { EnemyManager } from '../systems/EnemyManager';
 import { Experience } from '../systems/Experience';
 import { GemManager } from '../systems/GemManager';
 import { ProjectileManager } from '../systems/ProjectileManager';
+import { progress } from '../systems/Progress';
 import { Spawner } from '../systems/Spawner';
 import { Upgrades } from '../systems/Upgrades';
 import { Weapon } from '../systems/Weapon';
@@ -63,6 +64,7 @@ export class GameScene extends Phaser.Scene {
       if (this.arena.onKill(def)) this.player.heal(BOSS_KILL_HEAL);
     });
     this.player = new Player(this, 0, 0);
+    this.player.applyBonus(progress.bonus);
     this.hpBar = new HpBar(this);
     // After the player, so the wall draws over anything brushing against it
     this.arena = new Arena(this, this.enemies, this.player, this.bullets);
@@ -72,7 +74,12 @@ export class GameScene extends Phaser.Scene {
     this.weapons = [];
     this.addWeapon('cursor');
     this.experience = new Experience();
-    this.upgrades = new Upgrades(this.player, this.weapons, (id) => this.addWeapon(id));
+    this.upgrades = new Upgrades(
+      this.player,
+      this.weapons,
+      (id) => this.addWeapon(id),
+      (id) => progress.isUnlocked(id),
+    );
     this.xpBar = new XpBar(this);
     this.runTimer = new RunTimer(this);
     this.bossBar = new BossBar(this);
@@ -134,7 +141,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private gainXp(amount: number) {
-    const levels = this.experience.add(amount);
+    const levels = this.experience.add(amount * this.player.stats.xpMult);
     this.xpBar.set(this.experience.level, this.experience.xp, this.experience.xpNeeded);
     if (levels > 0) this.openUpgradeChoice(levels);
   }
@@ -156,12 +163,18 @@ export class GameScene extends Phaser.Scene {
   private endRun(won: boolean) {
     this.joystick.reset();
     this.scene.pause();
-    const data: GameOverSceneData = {
+    const run = {
       won,
       time: this.spawner.time,
       level: this.experience.level,
       kills: this.enemies.kills,
     };
+    const reward = progress.settleRun({
+      ...run,
+      bossKills: this.arena.bossKills,
+      weapons: this.weapons.map((weapon) => weapon.def.id),
+    });
+    const data: GameOverSceneData = { ...run, reward };
     this.scene.launch('GameOverScene', data);
   }
 

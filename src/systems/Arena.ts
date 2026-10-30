@@ -21,6 +21,7 @@ const BOSS_INSET = 80;
 export class Arena {
   /** Set once a final boss dies; the scene ends the run. */
   won = false;
+  bossKills = 0;
   private readonly walls: Phaser.GameObjects.Image[] = [];
   private nextEvent = 0;
   private current: BossEventDef | null = null;
@@ -74,6 +75,7 @@ export class Arena {
   onKill(def: EnemyDef): boolean {
     // Bosses only exist during their own fight, so the def identifies the current boss
     if (!this.current || def !== this.current.boss) return false;
+    this.bossKills++;
     if (this.current.final) this.won = true;
     this.current = null;
     this.boss = null;
