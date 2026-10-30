@@ -1,44 +1,96 @@
-import Phaser from 'phaser';
-import { UPGRADES, type UpgradeDef } from '../data/upgrades';
+import {
+  EVOLUTIONS,
+  MAX_PASSIVES,
+  MAX_WEAPONS,
+  OWNED_CARD_WEIGHT,
+  REPAIR,
+  UPGRADES,
+  type EvolutionUpgrade,
+  type PassiveUpgrade,
+  type UpgradeDef,
+  type WeaponUpgrade,
+} from '../data/upgrades';
+import { WEAPONS, type WeaponId } from '../data/weapons';
 import type { Player } from '../entities/Player';
 import type { Weapon } from './Weapon';
 
-/** Tracks how many levels of each upgrade were taken and applies their stat changes. */
+/** Tracks how many levels of each upgrade were taken and applies their effects. */
 export class Upgrades {
   private readonly taken = new Map<UpgradeDef, number>();
+  private passiveCount = 0;
 
   constructor(
     private readonly player: Player,
-    private readonly weapons: readonly Weapon[],
-  ) {}
+    private readonly weapons: Weapon[],
+    private readonly addWeapon: (id: WeaponId) => Weapon,
+  ) {
+    // Starting weapons are already at level 1 of their upgrade
+    for (const def of UPGRADES) {
+      if (def.kind === 'weapon' && this.weaponFor(def)) this.taken.set(def, 1);
+    }
+  }
 
   levelOf(def: UpgradeDef): number {
     return this.taken.get(def) ?? 0;
   }
 
-  get anyLeft(): boolean {
-    return UPGRADES.some((def) => this.hasLevelsLeft(def));
-  }
-
-  /** Up to `count` distinct upgrades that still have levels left, in random order. */
+  /** Up to `count` distinct options: ready evolutions first, the rest in random order. */
   roll(count: number): UpgradeDef[] {
-    const open = UPGRADES.filter((def) => this.hasLevelsLeft(def));
-    return Phaser.Utils.Array.Shuffle(open).slice(0, count);
+    const evolutions = EVOLUTIONS.filter((def) => this.canEvolve(def));
+    const open = UPGRADES.filter((def) => this.isOpen(def))
+      .map((def) => ({ def, score: Math.random() * (this.levelOf(def) > 0 ? OWNED_CARD_WEIGHT : 1) }))
+      .sort((a, b) => b.score - a.score)
+      .map((entry) => entry.def);
+    const picks = [...evolutions, ...open].slice(0, count);
+    return picks.length > 0 ? picks : [REPAIR];
   }
 
   apply(def: UpgradeDef) {
     const level = this.levelOf(def);
-    if (def.kind === 'passive') {
-      addStats(this.player.stats, def.levels[level].stats);
-    } else {
-      // Every weapon upgrade targets a starting weapon until weapon unlocks exist
-      addStats(this.weapons.find((w) => w.def.id === def.weapon)!.stats, def.levels[level].stats);
+    switch (def.kind) {
+      case 'passive':
+        if (level === 0) this.passiveCount++;
+        this.applyPassive(def, level);
+        break;
+      case 'weapon': {
+        const weapon = this.weaponFor(def) ?? this.addWeapon(def.weapon);
+        addStats(weapon.stats, def.levels[level].stats);
+        break;
+      }
+      case 'evolution':
+        this.weaponFor(def.base)!.evolve(WEAPONS[def.into]);
+        break;
+      case 'repair':
+        this.player.heal(def.heal);
+        return;
     }
     this.taken.set(def, level + 1);
   }
 
-  private hasLevelsLeft(def: UpgradeDef): boolean {
-    return this.levelOf(def) < def.levels.length;
+  private applyPassive(def: PassiveUpgrade, level: number) {
+    const stats = def.levels[level].stats;
+    addStats(this.player.stats, stats);
+    // Extra max HP arrives filled, otherwise the pick looks like it did nothing
+    this.player.heal(stats.maxHp ?? 0);
+  }
+
+  private isOpen(def: WeaponUpgrade | PassiveUpgrade): boolean {
+    const level = this.levelOf(def);
+    if (level >= def.levels.length) return false;
+    if (level > 0) return true;
+    return def.kind === 'weapon' ? this.weapons.length < MAX_WEAPONS : this.passiveCount < MAX_PASSIVES;
+  }
+
+  private canEvolve(def: EvolutionUpgrade): boolean {
+    return (
+      this.levelOf(def) === 0 &&
+      this.levelOf(def.base) === def.base.levels.length &&
+      this.levelOf(def.passive) > 0
+    );
+  }
+
+  private weaponFor(def: WeaponUpgrade): Weapon | undefined {
+    return this.weapons.find((w) => w.def.id === def.weapon);
   }
 }
 

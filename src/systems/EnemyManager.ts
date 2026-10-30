@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
-import { ENEMIES, type EnemyDef } from '../data/enemies';
+import { ENEMIES, type ChargeDef, type EnemyDef, type RangedDef } from '../data/enemies';
 import type { Player } from '../entities/Player';
 import { createCircleTexture } from '../textures';
+import type { EnemyBullets } from './EnemyBullets';
 import { SpatialHash } from './SpatialHash';
 
 export const MAX_ENEMIES = 500;
@@ -9,11 +10,27 @@ export const MAX_ENEMIES = 500;
 const CELL_SIZE = 64;
 // Separation can nudge an enemy pressing on the player just out of overlap; this keeps it counted as touching
 const CONTACT_MARGIN = 2;
+/** A ranged enemy backs away once it is this much closer than its keep distance. */
+const BACK_OFF_MARGIN = 40;
+/** A ranged enemy holds fire beyond this much past its keep distance, so off-screen ones stay quiet. */
+const FIRE_MARGIN = 120;
+
+export type ChargePhase = 'approach' | 'aim' | 'dash' | 'rest';
 
 export interface Enemy {
   sprite: Phaser.GameObjects.Image;
   def: EnemyDef;
   hp: number;
+  /** Moves along (dirX, dirY) and ignores the player; turned off when recycled. */
+  crossing: boolean;
+  /** Crossing or dash direction, unit vector. */
+  dirX: number;
+  dirY: number;
+  phase: ChargePhase;
+  /** Seconds left in the current phase, or until the next shot for ranged enemies. */
+  timer: number;
+  /** Orbit blades can't hit again before this time on the weapon's clock. */
+  orbitReadyAt: number;
 }
 
 export class EnemyManager {
@@ -26,6 +43,7 @@ export class EnemyManager {
 
   constructor(
     scene: Phaser.Scene,
+    private readonly bullets: EnemyBullets,
     private readonly onKill: (x: number, y: number, def: EnemyDef) => void,
   ) {
     for (const def of Object.values(ENEMIES)) createCircleTexture(scene, textureKey(def), def.radius, def.color);
@@ -33,7 +51,17 @@ export class EnemyManager {
     // Images, not shapes: shapes are re-triangulated every frame, images batch into one draw call
     for (let i = 0; i < MAX_ENEMIES; i++) {
       const sprite = scene.add.image(0, 0, textureKey(ENEMIES.bug)).setVisible(false);
-      this.enemies.push({ sprite, def: ENEMIES.bug, hp: 0 });
+      this.enemies.push({
+        sprite,
+        def: ENEMIES.bug,
+        hp: 0,
+        crossing: false,
+        dirX: 0,
+        dirY: 0,
+        phase: 'approach',
+        timer: 0,
+        orbitReadyAt: 0,
+      });
     }
   }
 
@@ -54,8 +82,21 @@ export class EnemyManager {
     const enemy = this.enemies[this.aliveCount++];
     enemy.def = def;
     enemy.hp = hp;
+    enemy.crossing = false;
+    enemy.phase = 'approach';
+    enemy.timer = def.ranged?.fireInterval ?? 0;
+    enemy.orbitReadyAt = 0;
     enemy.sprite.setTexture(textureKey(def)).setPosition(x, y).setVisible(true);
     return enemy;
+  }
+
+  /** Spawns an enemy that walks a straight line instead of chasing. Skipped when the pool is full. */
+  spawnCrossing(def: EnemyDef, x: number, y: number, dirX: number, dirY: number) {
+    const enemy = this.spawn(def, x, y);
+    if (!enemy) return;
+    enemy.crossing = true;
+    enemy.dirX = dirX;
+    enemy.dirY = dirY;
   }
 
   isAlive(i: number): boolean {
@@ -85,6 +126,70 @@ export class EnemyManager {
     return best;
   }
 
+  /** Like `findNearest`, limited to `maxDist` and skipping the first `excludeCount` of `exclude`. */
+  findNearestExcept(x: number, y: number, maxDist: number, exclude: Enemy[], excludeCount: number): number {
+    let best = -1;
+    let bestDistSq = maxDist * maxDist;
+    for (let i = 0; i < this.aliveCount; i++) {
+      const enemy = this.enemies[i];
+      if (enemy.hp <= 0) continue;
+      const dx = enemy.sprite.x - x;
+      const dy = enemy.sprite.y - y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 >= bestDistSq) continue;
+      let excluded = false;
+      for (let k = 0; k < excludeCount && !excluded; k++) excluded = exclude[k] === enemy;
+      if (excluded) continue;
+      bestDistSq = d2;
+      best = i;
+    }
+    return best;
+  }
+
+  /** Index of a uniformly random living enemy within `radius`, or -1 if there is none. */
+  randomWithin(x: number, y: number, radius: number): number {
+    const r2 = radius * radius;
+    let picked = -1;
+    let seen = 0;
+    for (let i = 0; i < this.aliveCount; i++) {
+      const enemy = this.enemies[i];
+      if (enemy.hp <= 0) continue;
+      const dx = enemy.sprite.x - x;
+      const dy = enemy.sprite.y - y;
+      if (dx * dx + dy * dy > r2) continue;
+      seen++;
+      // Reservoir sampling: one pass, no list of candidates to allocate
+      if (Math.random() * seen < 1) picked = i;
+    }
+    return picked;
+  }
+
+  /** Scans every enemy: the hash only reaches one cell, and an attack like this runs a few times a second. */
+  damageInRadius(x: number, y: number, radius: number, amount: number) {
+    for (let i = 0; i < this.aliveCount; i++) {
+      const enemy = this.enemies[i];
+      if (enemy.hp <= 0) continue;
+      const reach = radius + enemy.def.radius;
+      const dx = enemy.sprite.x - x;
+      const dy = enemy.sprite.y - y;
+      if (dx * dx + dy * dy < reach * reach) enemy.hp -= amount;
+    }
+  }
+
+  /** (dirX, dirY) must be a unit vector. Scans every enemy, for the same reason as `damageInRadius`. */
+  damageAlongLine(x: number, y: number, dirX: number, dirY: number, length: number, halfWidth: number, amount: number) {
+    for (let i = 0; i < this.aliveCount; i++) {
+      const enemy = this.enemies[i];
+      if (enemy.hp <= 0) continue;
+      const dx = enemy.sprite.x - x;
+      const dy = enemy.sprite.y - y;
+      const along = dx * dirX + dy * dirY;
+      if (along < 0 || along > length) continue;
+      const across = Math.abs(dx * dirY - dy * dirX);
+      if (across < halfWidth + enemy.def.radius) enemy.hp -= amount;
+    }
+  }
+
   /** Enemy indices around (x, y) from this frame's hash; valid only after `update`. */
   queryNear(x: number, y: number, out: Int32Array): number {
     return this.hash.query(x, y, out);
@@ -92,7 +197,7 @@ export class EnemyManager {
 
   /** Returns the contact damage the player takes this frame. */
   update(delta: number, player: Player): number {
-    this.moveTowards(player, delta);
+    this.moveAll(player, delta);
     this.separate();
     return (this.pushOutOf(player) * delta) / 1000;
   }
@@ -107,8 +212,19 @@ export class EnemyManager {
         continue;
       }
       this.onKill(enemy.sprite.x, enemy.sprite.y, enemy.def);
+      this.spawnSplit(enemy);
       this.release(i);
       this.killCount++;
+    }
+  }
+
+  private spawnSplit(enemy: Enemy) {
+    const split = enemy.def.split;
+    if (!split) return;
+    const { x, y } = enemy.sprite;
+    const spacing = split.into.radius * 2;
+    for (let i = 0; i < split.count; i++) {
+      this.spawn(split.into, x + (i - (split.count - 1) / 2) * spacing, y);
     }
   }
 
@@ -137,21 +253,45 @@ export class EnemyManager {
     this.enemies[last] = enemy;
   }
 
-  private moveTowards(player: Player, delta: number) {
+  private moveAll(player: Player, delta: number) {
     const seconds = delta / 1000;
     const px = player.sprite.x;
     const py = player.sprite.y;
     for (let i = 0; i < this.aliveCount; i++) {
       const enemy = this.enemies[i];
-      const s = enemy.sprite;
-      const dx = px - s.x;
-      const dy = py - s.y;
+      const { def, sprite } = enemy;
+      if (enemy.crossing) {
+        step(sprite, enemy.dirX, enemy.dirY, def.speed, seconds);
+        continue;
+      }
+      const dx = px - sprite.x;
+      const dy = py - sprite.y;
       const d = Math.hypot(dx, dy);
       if (d === 0) continue;
-      const k = (enemy.def.speed * seconds) / d;
-      s.x += dx * k;
-      s.y += dy * k;
+      const ux = dx / d;
+      const uy = dy / d;
+      if (def.ranged) {
+        this.moveRanged(enemy, def.ranged, ux, uy, d, seconds);
+      } else if (def.charge) {
+        moveCharger(enemy, def.charge, ux, uy, d, seconds);
+      } else {
+        step(sprite, ux, uy, def.speed, seconds);
+      }
     }
+  }
+
+  /** (ux, uy) is the unit vector to the player and `d` the distance. */
+  private moveRanged(enemy: Enemy, ranged: RangedDef, ux: number, uy: number, d: number, seconds: number) {
+    const { sprite, def } = enemy;
+    if (d > ranged.keepDistance) {
+      step(sprite, ux, uy, def.speed, seconds);
+    } else if (d < ranged.keepDistance - BACK_OFF_MARGIN) {
+      step(sprite, -ux, -uy, def.speed, seconds);
+    }
+    enemy.timer -= seconds;
+    if (enemy.timer > 0 || d > ranged.keepDistance + FIRE_MARGIN) return;
+    enemy.timer = ranged.fireInterval;
+    this.bullets.fire(sprite.x, sprite.y, ux, uy, ranged.bulletSpeed, ranged.bulletDamage);
   }
 
   private separate() {
@@ -216,6 +356,43 @@ export class EnemyManager {
       s.y = py + dy * k;
     }
     return dps;
+  }
+}
+
+function step(sprite: Phaser.GameObjects.Image, dirX: number, dirY: number, speed: number, seconds: number) {
+  sprite.x += dirX * speed * seconds;
+  sprite.y += dirY * speed * seconds;
+}
+
+/** (ux, uy) is the unit vector to the player and `d` the distance. */
+function moveCharger(enemy: Enemy, charge: ChargeDef, ux: number, uy: number, d: number, seconds: number) {
+  const { sprite, def } = enemy;
+  enemy.timer -= seconds;
+  switch (enemy.phase) {
+    case 'approach':
+      step(sprite, ux, uy, def.speed, seconds);
+      if (d < charge.triggerRange) {
+        enemy.phase = 'aim';
+        enemy.timer = charge.aimTime;
+      }
+      break;
+    case 'aim':
+      if (enemy.timer > 0) break;
+      enemy.phase = 'dash';
+      enemy.timer = charge.dashTime;
+      enemy.dirX = ux;
+      enemy.dirY = uy;
+      break;
+    case 'dash':
+      step(sprite, enemy.dirX, enemy.dirY, charge.dashSpeed, seconds);
+      if (enemy.timer > 0) break;
+      enemy.phase = 'rest';
+      enemy.timer = charge.restTime;
+      break;
+    case 'rest':
+      step(sprite, ux, uy, def.speed, seconds);
+      if (enemy.timer <= 0) enemy.phase = 'approach';
+      break;
   }
 }
 

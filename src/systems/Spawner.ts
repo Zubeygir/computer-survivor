@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
-import type { EnemyDef } from '../data/enemies';
-import { WAVES } from '../data/waves';
+import { BOTNET_EVENTS, WAVES, type BotnetEventDef, type WaveDef } from '../data/waves';
 import type { Player } from '../entities/Player';
 import type { EnemyManager } from './EnemyManager';
 
@@ -10,10 +9,13 @@ const MAX_REFILL_PER_FRAME = 20;
 const SPAWN_MARGIN = 48;
 /** Enemies farther than this multiple of the spawn ring are moved back onto it. */
 const RECYCLE_FACTOR = 1.5;
+/** Pixels between enemies in a botnet line. */
+const BOTNET_SPACING = 30;
 
 export class Spawner {
   private elapsed = 0;
   private intervalLeft = 0;
+  private nextBotnet = 0;
   private readonly point = new Phaser.Math.Vector2();
 
   constructor(
@@ -31,7 +33,6 @@ export class Spawner {
     const seconds = delta / 1000;
     this.elapsed += seconds;
     const wave = WAVES[Math.min(Math.floor(this.elapsed / 60), WAVES.length - 1)];
-    const types = wave.enemies;
 
     // Half the screen diagonal reaches the corners in any orientation
     const ring = Math.hypot(this.camera.width, this.camera.height) / 2 + SPAWN_MARGIN;
@@ -40,20 +41,39 @@ export class Spawner {
     if (this.intervalLeft <= 0) {
       // Carrying the overshoot keeps short intervals accurate; the clamp stops a long frame from bursting
       this.intervalLeft = Math.max(this.intervalLeft + wave.interval, 0);
-      for (let i = 0; i < types.length; i++) this.spawnAt(types[i], ring);
+      this.spawnFrom(wave, ring);
     }
 
     for (let i = 0; i < MAX_REFILL_PER_FRAME && this.enemies.count < wave.minimum; i++) {
-      this.spawnAt(types[Math.floor(Math.random() * types.length)], ring);
+      this.spawnFrom(wave, ring);
+    }
+
+    if (this.nextBotnet < BOTNET_EVENTS.length && this.elapsed >= BOTNET_EVENTS[this.nextBotnet].time) {
+      this.spawnBotnet(BOTNET_EVENTS[this.nextBotnet++], ring);
     }
 
     this.recycle(ring);
   }
 
+  /** A line of enemies entering from one side, walking through the player's position to the other. */
+  private spawnBotnet(event: BotnetEventDef, ring: number) {
+    const angle = Math.random() * Math.PI * 2;
+    const dirX = -Math.cos(angle);
+    const dirY = -Math.sin(angle);
+    const startX = this.player.sprite.x - dirX * ring;
+    const startY = this.player.sprite.y - dirY * ring;
+    for (let i = 0; i < event.count; i++) {
+      const offset = (i - (event.count - 1) / 2) * BOTNET_SPACING;
+      // Perpendicular to the walking direction, so the line advances side by side
+      this.enemies.spawnCrossing(event.enemy, startX - dirY * offset, startY + dirX * offset, dirX, dirY);
+    }
+  }
+
   /** Silently skipped when the pool is full. */
-  private spawnAt(def: EnemyDef, ring: number) {
+  private spawnFrom(wave: WaveDef, ring: number) {
+    const def = wave.enemies[Math.floor(Math.random() * wave.enemies.length)];
     this.pickRingPoint(ring);
-    this.enemies.spawn(def, this.point.x, this.point.y);
+    this.enemies.spawn(def, this.point.x, this.point.y, def.hp * wave.hpMult);
   }
 
   /** Keeps pressure on a fleeing player: far-behind enemies reappear just off screen. */
@@ -62,12 +82,15 @@ export class Spawner {
     const px = this.player.sprite.x;
     const py = this.player.sprite.y;
     for (let i = 0; i < this.enemies.count; i++) {
-      const s = this.enemies.enemies[i].sprite;
+      const enemy = this.enemies.enemies[i];
+      const s = enemy.sprite;
       const dx = s.x - px;
       const dy = s.y - py;
       if (dx * dx + dy * dy <= maxDistSq) continue;
       this.pickRingPoint(ring);
       s.setPosition(this.point.x, this.point.y);
+      // A botnet enemy that made it across rejoins the crowd
+      enemy.crossing = false;
     }
   }
 

@@ -1,11 +1,29 @@
+/** Stands off and shoots; its bullets are aimed at the player. */
+export interface RangedDef {
+  /** Pixels; moves closer beyond this and backs off when much nearer. */
+  keepDistance: number;
+  fireInterval: number;
+  bulletSpeed: number;
+  bulletDamage: number;
+}
+
+/** Chases, then stops to aim and dashes at where the player was. */
+export interface ChargeDef {
+  /** Pixels; starts aiming inside this distance. */
+  triggerRange: number;
+  aimTime: number;
+  /** Pixels per second. */
+  dashSpeed: number;
+  dashTime: number;
+  /** Seconds of plain chasing after a dash. */
+  restTime: number;
+}
+
 export interface EnemyDef {
   id: string;
   /** Pixels per second. Keep below the player's move speed, or the enemy can't be outrun. */
   speed: number;
-  /**
-   * Keep two of the largest radii below the hash cell size (64) in `EnemyManager`, and the smallest
-   * above `projectileSpeed / 30 - projectileRadius` of every weapon, or fast shots step over it.
-   */
+  /** Keep two of the largest radii below the hash cell size (64) in `EnemyManager`. */
   radius: number;
   hp: number;
   /** Damage per second dealt to the player while touching; touching enemies stack. */
@@ -13,22 +31,71 @@ export interface EnemyDef {
   /** XP value of the gem dropped on death. */
   xp: number;
   color: number;
+  ranged?: RangedDef;
+  charge?: ChargeDef;
+  /** Spawned where this enemy dies. */
+  split?: { into: EnemyDef; count: number };
 }
+
+const miniAd: EnemyDef = { id: 'miniAd', speed: 120, radius: 10, hp: 8, contactDps: 4, xp: 1, color: 0xf48fb1 };
 
 export const ENEMIES = {
   /** Baseline. */
-  bug: { id: 'bug', speed: 80, radius: 14, hp: 10, contactDps: 10, xp: 1, color: 0xe53935 },
+  bug: { id: 'bug', speed: 80, radius: 14, hp: 10, contactDps: 6, xp: 1, color: 0xe53935 },
   /** Fast and fragile; comes in floods. */
-  spam: { id: 'spam', speed: 140, radius: 11, hp: 4, contactDps: 5, xp: 1, color: 0xffa726 },
+  spam: { id: 'spam', speed: 140, radius: 11, hp: 4, contactDps: 4, xp: 1, color: 0xffa726 },
   /** Slow and tanky; walls the player in. */
-  worm: { id: 'worm', speed: 55, radius: 18, hp: 40, contactDps: 15, xp: 3, color: 0xab47bc },
+  worm: { id: 'worm', speed: 55, radius: 18, hp: 40, contactDps: 10, xp: 3, color: 0xab47bc },
   /** Elite-like brute. */
-  trojan: { id: 'trojan', speed: 65, radius: 26, hp: 200, contactDps: 25, xp: 10, color: 0x8d6e63 },
+  trojan: { id: 'trojan', speed: 65, radius: 26, hp: 200, contactDps: 18, xp: 10, color: 0x8d6e63 },
+  /** Keeps its distance and shoots. */
+  popUp: {
+    id: 'popUp',
+    speed: 70,
+    radius: 15,
+    hp: 30,
+    contactDps: 6,
+    xp: 4,
+    color: 0x29b6f6,
+    ranged: { keepDistance: 240, fireInterval: 3, bulletSpeed: 180, bulletDamage: 8 },
+  },
+  /** Stops, aims and dashes. */
+  phisher: {
+    id: 'phisher',
+    speed: 60,
+    radius: 15,
+    hp: 35,
+    contactDps: 12,
+    xp: 4,
+    color: 0x9ccc65,
+    charge: { triggerRange: 220, aimTime: 1, dashSpeed: 320, dashTime: 0.6, restTime: 2 },
+  },
+  /** Splits into two Mini Ads when it dies. */
+  adware: {
+    id: 'adware',
+    speed: 70,
+    radius: 18,
+    hp: 50,
+    contactDps: 8,
+    xp: 3,
+    color: 0xec407a,
+    split: { into: miniAd, count: 2 },
+  },
+  miniAd,
 
   // Bosses only spawn through boss events and never coexist, so the radius limit is boss + largest
   // regular enemy; ransomware + trojan slightly exceeds it, which allows a few pixels of overlap.
   /** Mini boss; boss events scale its HP. */
-  rootkit: { id: 'rootkit', speed: 70, radius: 34, hp: 1500, contactDps: 30, xp: 30, color: 0x26a69a },
+  rootkit: {
+    id: 'rootkit',
+    speed: 70,
+    radius: 34,
+    hp: 900,
+    contactDps: 20,
+    xp: 30,
+    color: 0x26a69a,
+    charge: { triggerRange: 400, aimTime: 0.6, dashSpeed: 300, dashTime: 0.5, restTime: 2.9 },
+  },
   /** Final boss. */
-  ransomware: { id: 'ransomware', speed: 75, radius: 40, hp: 8000, contactDps: 40, xp: 0, color: 0xd81b60 },
+  ransomware: { id: 'ransomware', speed: 75, radius: 40, hp: 5000, contactDps: 30, xp: 0, color: 0xd81b60 },
 } satisfies Record<string, EnemyDef>;

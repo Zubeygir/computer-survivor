@@ -1,8 +1,11 @@
 import Phaser from 'phaser';
-import { WEAPONS } from '../data/weapons';
+import { BOSS_KILL_HEAL } from '../data/bosses';
+import { WEAPONS, type WeaponId } from '../data/weapons';
 import { Player } from '../entities/Player';
 import { VirtualJoystick } from '../input/VirtualJoystick';
 import { Arena } from '../systems/Arena';
+import { Effects } from '../systems/Effects';
+import { EnemyBullets } from '../systems/EnemyBullets';
 import { EnemyManager } from '../systems/EnemyManager';
 import { Experience } from '../systems/Experience';
 import { GemManager } from '../systems/GemManager';
@@ -28,7 +31,9 @@ export class GameScene extends Phaser.Scene {
   private enemies!: EnemyManager;
   private spawner!: Spawner;
   private projectiles!: ProjectileManager;
-  private weapon!: Weapon;
+  private bullets!: EnemyBullets;
+  private effects!: Effects;
+  private weapons!: Weapon[];
   private experience!: Experience;
   private upgrades!: Upgrades;
   private xpBar!: XpBar;
@@ -52,19 +57,22 @@ export class GameScene extends Phaser.Scene {
 
     // Draw order follows creation order: gems under enemies, enemies under the player
     this.gems = new GemManager(this);
-    this.enemies = new EnemyManager(this, (x, y, def) => {
+    this.bullets = new EnemyBullets(this);
+    this.enemies = new EnemyManager(this, this.bullets, (x, y, def) => {
       this.gems.spawn(x, y, def.xp);
-      this.arena.onKill(def);
+      if (this.arena.onKill(def)) this.player.heal(BOSS_KILL_HEAL);
     });
     this.player = new Player(this, 0, 0);
     this.hpBar = new HpBar(this);
     // After the player, so the wall draws over anything brushing against it
-    this.arena = new Arena(this, this.enemies, this.player);
+    this.arena = new Arena(this, this.enemies, this.player, this.bullets);
     this.spawner = new Spawner(this.cameras.main, this.player, this.enemies);
-    this.projectiles = new ProjectileManager(this, this.enemies);
-    this.weapon = new Weapon(WEAPONS.bolt, this.player, this.enemies, this.projectiles);
+    this.effects = new Effects(this);
+    this.projectiles = new ProjectileManager(this, this.enemies, this.player, this.effects);
+    this.weapons = [];
+    this.addWeapon('cursor');
     this.experience = new Experience();
-    this.upgrades = new Upgrades(this.player, [this.weapon]);
+    this.upgrades = new Upgrades(this.player, this.weapons, (id) => this.addWeapon(id));
     this.xpBar = new XpBar(this);
     this.runTimer = new RunTimer(this);
     this.bossBar = new BossBar(this);
@@ -83,7 +91,7 @@ export class GameScene extends Phaser.Scene {
       this.readKeyboard();
     }
     this.player.update(this.move, delta);
-    this.arena.update(this.spawner.time);
+    this.arena.update(this.spawner.time, delta);
     this.hpBar.follow(this.player.sprite.x, this.player.sprite.y + this.player.radius + 8);
     // Skipping the spawner during a boss fight stops both the waves and the run clock
     if (this.arena.active) {
@@ -94,19 +102,21 @@ export class GameScene extends Phaser.Scene {
       this.bossBar.hide();
     }
 
-    const contactDamage = this.enemies.update(delta, this.player);
-    if (contactDamage > 0) {
-      this.player.hp -= contactDamage;
-      this.hpBar.set(this.player.hp, this.player.stats.maxHp);
-      // Skipping the rest of the frame keeps a level-up from opening on top of the game over
-      if (this.player.hp <= 0) {
-        this.endRun(false);
-        return;
-      }
+    const stats = this.player.stats;
+    const contactDamage = this.enemies.update(delta, this.player) * stats.damageTakenMult;
+    const bulletDamage = this.bullets.update(delta, this.player);
+    this.player.heal((stats.regen * delta) / 1000);
+    this.player.hp -= contactDamage + bulletDamage;
+    this.hpBar.set(this.player.hp, stats.maxHp);
+    // Skipping the rest of the frame keeps a level-up from opening on top of the game over
+    if (this.player.hp <= 0) {
+      this.endRun(false);
+      return;
     }
 
-    this.weapon.update(delta);
+    for (let i = 0; i < this.weapons.length; i++) this.weapons[i].update(delta);
     this.projectiles.update(delta);
+    this.effects.update(delta);
     this.enemies.removeDead();
     if (this.arena.won) {
       this.endRun(true);
@@ -126,7 +136,13 @@ export class GameScene extends Phaser.Scene {
   private gainXp(amount: number) {
     const levels = this.experience.add(amount);
     this.xpBar.set(this.experience.level, this.experience.xp, this.experience.xpNeeded);
-    if (levels > 0 && this.upgrades.anyLeft) this.openUpgradeChoice(levels);
+    if (levels > 0) this.openUpgradeChoice(levels);
+  }
+
+  private addWeapon(id: WeaponId): Weapon {
+    const weapon = new Weapon(this, WEAPONS[id], this.player, this.enemies, this.projectiles, this.effects);
+    this.weapons.push(weapon);
+    return weapon;
   }
 
   private openUpgradeChoice(count: number) {

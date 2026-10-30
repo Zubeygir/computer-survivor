@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { UpgradeDef } from '../data/upgrades';
+import { EVOLUTIONS, type UpgradeDef } from '../data/upgrades';
 import type { Upgrades } from '../systems/Upgrades';
 
 export interface UpgradeSceneData {
@@ -56,10 +56,6 @@ export class UpgradeScene extends Phaser.Scene {
 
   private showNext() {
     this.choices = this.upgrades.roll(CHOICES);
-    if (this.choices.length === 0) {
-      this.close();
-      return;
-    }
     // Game loop time rather than this.time.now: the scene clock is not synced yet during create
     this.readyAt = this.game.loop.time + INPUT_LOCK_MS;
     this.layout();
@@ -111,12 +107,18 @@ export class UpgradeScene extends Phaser.Scene {
   private createCard(def: UpgradeDef, x: number, y: number, w: number, h: number): Phaser.GameObjects.Container {
     const level = this.upgrades.levelOf(def);
     const top = -h / 2;
-    const bg = this.add.rectangle(0, 0, w, h, 0x263238).setStrokeStyle(2, 0x90a4ae).setInteractive();
+    const evolution = def.kind === 'evolution';
+    const bg = this.add
+      .rectangle(0, 0, w, h, 0x263238)
+      .setStrokeStyle(evolution ? 4 : 2, evolution ? 0xffd54f : 0x90a4ae)
+      .setInteractive();
     const name = this.add
       .text(0, top + 12, def.name, { fontFamily: FONT, fontSize: '20px', color: '#ffeb3b' })
       .setOrigin(0.5, 0);
+    // Names don't wrap, and the longest ones overflow a narrow landscape card
+    if (name.width > w - 16) name.setScale((w - 16) / name.width);
     const levelText = this.add
-      .text(0, top + 38, `Lv ${level + 1}/${def.levels.length}`, { fontFamily: FONT, fontSize: '13px', color: '#90a4ae' })
+      .text(0, top + 38, tagFor(def, level), { fontFamily: FONT, fontSize: '13px', color: '#90a4ae' })
       .setOrigin(0.5, 0);
     const text = this.add
       .text(0, top + 60, def.levels[level].text, {
@@ -127,6 +129,20 @@ export class UpgradeScene extends Phaser.Scene {
         wordWrap: { width: w - 24 },
       })
       .setOrigin(0.5, 0);
+    const parts: Phaser.GameObjects.GameObject[] = [bg, name, levelText, text];
+
+    const evolves = EVOLUTIONS.find((evolution) => evolution.passive === def);
+    if (evolves) {
+      parts.push(
+        this.add
+          .text(0, text.y + text.height + 4, `Evolves ${evolves.base.name}`, {
+            fontFamily: FONT,
+            fontSize: '12px',
+            color: '#ffd54f',
+          })
+          .setOrigin(0.5, 0),
+      );
+    }
 
     bg.on('pointerdown', () => {
       if (this.game.loop.time >= this.readyAt) this.pressed = def;
@@ -134,6 +150,13 @@ export class UpgradeScene extends Phaser.Scene {
     bg.on('pointerup', () => {
       if (this.pressed === def) this.pick(def);
     });
-    return this.add.container(x, y, [bg, name, levelText, text]);
+    return this.add.container(x, y, parts);
   }
+}
+
+function tagFor(def: UpgradeDef, level: number): string {
+  if (def.kind === 'evolution') return 'EVOLUTION';
+  if (def.kind === 'repair') return '';
+  if (def.kind === 'weapon' && level === 0) return 'NEW WEAPON';
+  return `Lv ${level + 1}/${def.levels.length}`;
 }

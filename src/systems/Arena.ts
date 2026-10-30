@@ -3,6 +3,7 @@ import { ARENA_RADIUS, BOSS_EVENTS, type BossEventDef } from '../data/bosses';
 import type { EnemyDef } from '../data/enemies';
 import type { Player } from '../entities/Player';
 import { createCircleTexture } from '../textures';
+import type { EnemyBullets } from './EnemyBullets';
 import type { Enemy, EnemyManager } from './EnemyManager';
 
 const WALL_TEXTURE = 'arena-wall';
@@ -27,11 +28,14 @@ export class Arena {
   private bossMaxHp = 0;
   private cx = 0;
   private cy = 0;
+  private ringLeft = 0;
+  private summonLeft = 0;
 
   constructor(
     scene: Phaser.Scene,
     private readonly enemies: EnemyManager,
     private readonly player: Player,
+    private readonly bullets: EnemyBullets,
   ) {
     createCircleTexture(scene, WALL_TEXTURE, WALL_RADIUS, WALL_COLOR);
     const count = Math.round((2 * Math.PI * ARENA_RADIUS) / WALL_SPACING);
@@ -53,7 +57,7 @@ export class Arena {
   }
 
   /** Call right after the player moves: starts due boss fights and holds the player inside the wall. */
-  update(time: number) {
+  update(time: number, delta: number) {
     if (!this.current) {
       if (this.nextEvent < BOSS_EVENTS.length && time >= BOSS_EVENTS[this.nextEvent].time) {
         this.start(BOSS_EVENTS[this.nextEvent++]);
@@ -62,21 +66,51 @@ export class Arena {
     }
     // The pool can be full when the ring closes; retry until a dying enemy frees a slot
     if (!this.boss) this.spawnBoss(this.current);
+    if (this.boss) this.updateBossAttacks(this.boss, this.current, delta / 1000);
     this.constrainPlayer();
   }
 
-  /** Call from the enemy kill callback. */
-  onKill(def: EnemyDef) {
+  /** Call from the enemy kill callback. Returns true when the kill was the current boss. */
+  onKill(def: EnemyDef): boolean {
     // Bosses only exist during their own fight, so the def identifies the current boss
-    if (!this.current || def !== this.current.boss) return;
+    if (!this.current || def !== this.current.boss) return false;
     if (this.current.final) this.won = true;
     this.current = null;
     this.boss = null;
     for (const wall of this.walls) wall.setVisible(false);
+    return true;
+  }
+
+  private updateBossAttacks(boss: Enemy, event: BossEventDef, seconds: number) {
+    const { x, y } = boss.sprite;
+    if (event.ring) {
+      this.ringLeft -= seconds;
+      if (this.ringLeft <= 0) {
+        this.ringLeft = event.ring.interval;
+        this.bullets.fireRing(x, y, event.ring.count, event.ring.speed, event.ring.damage);
+      }
+    }
+    if (event.summon && this.bossHpRatio < event.summon.belowHp) {
+      this.summonLeft -= seconds;
+      if (this.summonLeft <= 0) {
+        this.summonLeft = event.summon.interval;
+        this.summon(event.summon.enemy, event.summon.count, x, y);
+      }
+    }
+  }
+
+  private summon(def: EnemyDef, count: number, x: number, y: number) {
+    const step = (Math.PI * 2) / count;
+    const dist = def.radius * 4;
+    for (let i = 0; i < count; i++) {
+      this.enemies.spawn(def, x + Math.cos(i * step) * dist, y + Math.sin(i * step) * dist);
+    }
   }
 
   private start(event: BossEventDef) {
     this.current = event;
+    this.ringLeft = event.ring?.interval ?? 0;
+    this.summonLeft = 0;
     this.cx = this.player.sprite.x;
     this.cy = this.player.sprite.y;
     this.enemies.removeOutside(this.cx, this.cy, ARENA_RADIUS);
