@@ -127,7 +127,7 @@ Vampire Survivors' stage design, from https://vampire.survivors.wiki/w/Mad_Fores
 | `src/systems/Upgrades.ts` | Taken levels, slot limits, rolls (evolutions first), applying effects |
 | `src/systems/GemManager.ts` | Gem pool, attraction, returns XP collected per frame |
 | `src/systems/Experience.ts` | Level/XP state, `add()` returns levels gained |
-| `src/ui/XpBar.ts`, `HpBar.ts`, `RunTimer.ts`, `BossBar.ts` | HUD |
+| `src/ui/XpBar.ts`, `HpBar.ts`, `RunTimer.ts`, `BossBar.ts`, `InventoryBar.ts` | HUD |
 | `src/ui/Button.ts` | Pixel text, panels, guarded button, grid layout, scene clearing, UI colors |
 | `src/data/*.ts` | Player base stats, enemies, weapons, upgrades and evolutions, waves, bosses, level curve, return loop (`meta.ts`) |
 | `src/art/` | Pixel sprites and font as text grids, palette; `loadArt` builds atlas, font and ground once, from `MenuScene` |

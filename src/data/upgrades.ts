@@ -23,6 +23,8 @@ export interface WeaponUpgrade {
 export interface PassiveUpgrade {
   kind: 'passive';
   name: string;
+  /** Atlas frame shown on cards and in the inventory. */
+  icon: string;
   levels: UpgradeLevel<PlayerStats>[];
 }
 
@@ -40,6 +42,7 @@ export interface EvolutionUpgrade {
 export interface RepairUpgrade {
   kind: 'repair';
   name: string;
+  icon: string;
   heal: number;
   levels: UpgradeLevel<Record<string, never>>[];
 }
@@ -59,8 +62,8 @@ function weapon(
   return { kind: 'weapon', name, weapon: id, levels: [{ text: gainText, stats: {} }, ...levels] };
 }
 
-function passive(name: string, count: number, text: string, stats: Partial<PlayerStats>): PassiveUpgrade {
-  return { kind: 'passive', name, levels: times(count, { text, stats }) };
+function passive(name: string, icon: string, count: number, text: string, stats: Partial<PlayerStats>): PassiveUpgrade {
+  return { kind: 'passive', name, icon, levels: times(count, { text, stats }) };
 }
 
 function evolution(
@@ -199,17 +202,17 @@ const satelliteDish = weapon('Satellite Dish', 'satelliteDish', 'Strikes a rando
   damage(6),
 ]);
 
-const overclock = passive('Overclock', 5, '-8% weapon cooldown', { cooldownMult: -0.08 });
-const powerSupply = passive('Power Supply', 5, '+10% damage', { damageMult: 0.1 });
-const ramUpgrade = passive('RAM Upgrade', 5, '+20 max HP', { maxHp: 20 });
-const magnet = passive('Magnet', 5, '+5% pickup range', { pickupRadius: 4 });
-const widescreen = passive('Widescreen', 5, '+10% area', { areaMult: 0.1 });
-const fiberCable = passive('Fiber Cable', 5, '+10% projectile speed', { projectileSpeedMult: 0.1 });
-const heatSink = passive('Heat Sink', 5, '-6% contact damage', { damageTakenMult: -0.06 });
-const multithreading = passive('Multithreading', 2, '+1 projectile', { bonusProjectiles: 1 });
-const longLifeBattery = passive('Long-Life Battery', 5, '+10% duration', { durationMult: 0.1 });
-const wifiRoaming = passive('Wi-Fi Roaming', 5, '+10% move speed', { moveSpeed: 20 });
-const antivirus = passive('Antivirus', 5, '+0.5 HP per second', { regen: 0.5 });
+const overclock = passive('Overclock', 'icon-overclock', 5, '-8% weapon cooldown', { cooldownMult: -0.08 });
+const powerSupply = passive('Power Supply', 'icon-power', 5, '+10% damage', { damageMult: 0.1 });
+const ramUpgrade = passive('RAM Upgrade', 'icon-ram', 5, '+20 max HP', { maxHp: 20 });
+const magnet = passive('Magnet', 'icon-magnet', 5, '+5% pickup range', { pickupRadius: 4 });
+const widescreen = passive('Widescreen', 'icon-widescreen', 5, '+10% area', { areaMult: 0.1 });
+const fiberCable = passive('Fiber Cable', 'icon-fiber', 5, '+10% projectile speed', { projectileSpeedMult: 0.1 });
+const heatSink = passive('Heat Sink', 'icon-heatsink', 5, '-6% contact damage', { damageTakenMult: -0.06 });
+const multithreading = passive('Multithreading', 'icon-threads', 2, '+1 projectile', { bonusProjectiles: 1 });
+const longLifeBattery = passive('Long-Life Battery', 'icon-battery', 5, '+10% duration', { durationMult: 0.1 });
+const wifiRoaming = passive('Wi-Fi Roaming', 'icon-wifi', 5, '+10% move speed', { moveSpeed: 20 });
+const antivirus = passive('Antivirus', 'icon-antivirus', 5, '+0.5 HP per second', { regen: 0.5 });
 
 export const UPGRADES: (WeaponUpgrade | PassiveUpgrade)[] = [
   cursor,
@@ -251,6 +254,7 @@ export const EVOLUTIONS: EvolutionUpgrade[] = [
 export const REPAIR: RepairUpgrade = {
   kind: 'repair',
   name: 'Repair',
+  icon: 'icon-repair',
   heal: 30,
   levels: [{ text: 'Restores 30 HP', stats: {} }],
 };

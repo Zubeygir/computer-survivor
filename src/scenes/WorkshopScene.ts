@@ -52,7 +52,8 @@ export class WorkshopScene extends Phaser.Scene {
     createButton(this, x, y, {
       width,
       height,
-      label: `${def.name}\n${def.text}\nLv ${level}/${max}  ${maxed ? 'Max' : `${price} Data`}`,
+      label: `${def.name}\n${def.text}\n${maxed ? 'Max' : `${price} Data`}`,
+      stars: { owned: level, total: max },
       color: maxed ? COLOR.gold : COLOR.text,
       disabled: !maxed && progress.data < price,
       onClick: () => {

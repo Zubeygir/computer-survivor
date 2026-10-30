@@ -4,6 +4,9 @@ import { ATLAS, GROUND, PIXEL_FONT, PIXEL_SCALE } from '../art/atlas';
 /** Bitmap font sizes keep whole pixels only at multiples of 6: 6, 12, 18, 24... */
 export const TEXT_SIZE = 12;
 export const TITLE_SIZE = 24;
+/** Star sprite width plus its gap, in sprite pixels. */
+const STAR_STEP = 8;
+const STARS_PER_ROW = 5;
 
 export const COLOR = {
   text: 0xffffff,
@@ -39,6 +42,18 @@ export function panel(scene: Phaser.Scene, width: number, height: number, border
   return { shadow, face };
 }
 
+/** One star per level, centered on `cx` in rows of five: gold owned, white for the level a card grants, dark the rest. */
+export function starRows(scene: Phaser.Scene, cx: number, y: number, owned: number, total: number, showNext = false) {
+  const step = STAR_STEP * PIXEL_SCALE;
+  return Array.from({ length: total }, (_, i) => {
+    const row = Math.floor(i / STARS_PER_ROW);
+    const inRow = Math.min(total - row * STARS_PER_ROW, STARS_PER_ROW);
+    const x = cx - (inRow * step) / 2 + (i % STARS_PER_ROW) * step;
+    const frame = i < owned ? 'star' : showNext && i === owned ? 'star-next' : 'star-empty';
+    return scene.add.image(x, y + row * step, ATLAS, frame).setOrigin(0, 0.5).setScale(PIXEL_SCALE);
+  });
+}
+
 export interface ButtonOptions {
   width: number;
   height: number;
@@ -48,6 +63,8 @@ export interface ButtonOptions {
   color?: number;
   /** Atlas frame drawn above the label. */
   icon?: string;
+  /** Level stars drawn under the label. */
+  stars?: { owned: number; total: number };
   /** Greyed out and ignores taps. */
   disabled?: boolean;
   /** Game loop time before which taps are ignored, for buttons appearing under a busy finger. */
@@ -56,12 +73,15 @@ export interface ButtonOptions {
 
 /** Fires on release, and only when the press started on the button too. */
 export function createButton(scene: Phaser.Scene, x: number, y: number, options: ButtonOptions) {
-  const { width, height, label, onClick, size = TEXT_SIZE, color = COLOR.accent, icon, disabled = false, readyAt = 0 } = options;
+  const { width, height, label, onClick, size = TEXT_SIZE, color = COLOR.accent, icon, stars, disabled = false, readyAt = 0 } = options;
   const { shadow, face } = panel(scene, width, height, color);
   const parts: Phaser.GameObjects.GameObject[] = [shadow, face];
-  const textY = icon ? 14 : 0;
+  const textY = icon ? 14 : stars ? -10 : 0;
   if (icon) parts.push(scene.add.image(0, -height / 2 + 22, ATLAS, icon).setScale(PIXEL_SCALE));
   parts.push(pixelText(scene, 0, textY, label, { size, color, maxWidth: width - 16 }).setOrigin(0.5));
+  if (stars) {
+    parts.push(...starRows(scene, 0, height / 2 - 14, stars.owned, stars.total));
+  }
   const button = scene.add.container(x, y, parts);
   if (disabled) return button.setAlpha(0.45);
 

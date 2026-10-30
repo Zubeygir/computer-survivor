@@ -19,6 +19,7 @@ import { Weapon } from '../systems/Weapon';
 import { BossBar } from '../ui/BossBar';
 import { pixelText } from '../ui/Button';
 import { HpBar } from '../ui/HpBar';
+import { InventoryBar } from '../ui/InventoryBar';
 import { RunTimer } from '../ui/RunTimer';
 import { XP_BAR_HEIGHT, XpBar } from '../ui/XpBar';
 import type { GameOverSceneData } from './GameOverScene';
@@ -39,6 +40,7 @@ export class GameScene extends Phaser.Scene {
   private experience!: Experience;
   private upgrades!: Upgrades;
   private xpBar!: XpBar;
+  private inventory!: InventoryBar;
   private runTimer!: RunTimer;
   private arena!: Arena;
   private bossBar!: BossBar;
@@ -84,6 +86,8 @@ export class GameScene extends Phaser.Scene {
       (id) => progress.isUnlocked(id),
     );
     this.xpBar = new XpBar(this);
+    this.inventory = new InventoryBar(this);
+    this.refreshInventory();
     this.runTimer = new RunTimer(this);
     this.bossBar = new BossBar(this);
     this.joystick = new VirtualJoystick(this);
@@ -91,7 +95,12 @@ export class GameScene extends Phaser.Scene {
     this.createDebugText();
 
     this.scale.on('resize', this.onResize, this);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.scale.off('resize', this.onResize, this));
+    // The upgrade overlay is the only thing that changes the inventory, and it ends with a resume
+    this.events.on(Phaser.Scenes.Events.RESUME, this.refreshInventory, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.scale.off('resize', this.onResize, this);
+      this.events.off(Phaser.Scenes.Events.RESUME, this.refreshInventory, this);
+    });
   }
 
   update(_time: number, delta: number) {
@@ -142,6 +151,11 @@ export class GameScene extends Phaser.Scene {
     cam.centerOn(this.player.sprite.x, this.player.sprite.y);
     this.ground.setTilePosition(cam.scrollX, cam.scrollY);
     this.scenery.update(cam);
+  }
+
+  private refreshInventory() {
+    const weapons = this.weapons.map((weapon) => weapon.def.sprite);
+    this.inventory.show(weapons, this.upgrades.passiveIcons);
   }
 
   private gainXp(amount: number) {

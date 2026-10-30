@@ -35,6 +35,15 @@ export class Upgrades {
     return this.taken.get(def) ?? 0;
   }
 
+  /** Icons of the owned passives, in the order they were picked. */
+  get passiveIcons(): string[] {
+    const icons: string[] = [];
+    for (const def of this.taken.keys()) {
+      if (def.kind === 'passive') icons.push(def.icon);
+    }
+    return icons;
+  }
+
   /** Up to `count` distinct options: ready evolutions first, the rest in random order. */
   roll(count: number): UpgradeDef[] {
     const evolutions = EVOLUTIONS.filter((def) => this.canEvolve(def));
