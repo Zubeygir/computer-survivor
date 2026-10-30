@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { createCircleTexture, createRectTexture } from '../textures';
+import { createPixelDisc, createRectTexture } from '../textures';
 
 const MAX_EFFECTS = 64;
 const DEPTH = 5;
@@ -9,7 +9,7 @@ const LINE_TEXTURE = 'fx-line';
 
 /** White circle other visuals can tint and scale. */
 export const FX_CIRCLE = 'fx-circle';
-export const FX_CIRCLE_RADIUS = 64;
+export const FX_CIRCLE_RADIUS = 24;
 
 interface Effect {
   sprite: Phaser.GameObjects.Image;
@@ -25,7 +25,7 @@ export class Effects {
   private aliveCount = 0;
 
   constructor(scene: Phaser.Scene) {
-    createCircleTexture(scene, FX_CIRCLE, FX_CIRCLE_RADIUS, 0xffffff);
+    createPixelDisc(scene, FX_CIRCLE, FX_CIRCLE_RADIUS);
     createRectTexture(scene, LINE_TEXTURE, 1, 1, 0xffffff);
     for (let i = 0; i < MAX_EFFECTS; i++) {
       const sprite = scene.add.image(0, 0, FX_CIRCLE).setVisible(false).setDepth(DEPTH);

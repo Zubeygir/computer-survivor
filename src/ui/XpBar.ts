@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { pixelText } from './Button';
 
 export const XP_BAR_HEIGHT = 8;
 const DEPTH = 1500;
@@ -6,7 +7,7 @@ const DEPTH = 1500;
 export class XpBar {
   private readonly bg: Phaser.GameObjects.Rectangle;
   private readonly fill: Phaser.GameObjects.Rectangle;
-  private readonly label: Phaser.GameObjects.Text;
+  private readonly label: Phaser.GameObjects.BitmapText;
   private shownLevel = 1;
 
   constructor(scene: Phaser.Scene) {
@@ -23,8 +24,7 @@ export class XpBar {
       .setScrollFactor(0)
       .setDepth(DEPTH + 1)
       .setScale(0, 1);
-    this.label = scene.add
-      .text(width - 8, XP_BAR_HEIGHT + 4, 'Lv 1', { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' })
+    this.label = pixelText(scene, width - 8, XP_BAR_HEIGHT + 4, 'Lv 1', { centered: false })
       .setOrigin(1, 0)
       .setScrollFactor(0)
       .setDepth(DEPTH);
@@ -35,7 +35,7 @@ export class XpBar {
     // setText re-rasterizes the text, so only do it when the number actually changes
     if (level !== this.shownLevel) {
       this.shownLevel = level;
-      this.label.setText(`Lv ${level}`);
+      this.label.setText(`LV ${level}`);
     }
   }
 

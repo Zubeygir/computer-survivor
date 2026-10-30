@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
+import { ATLAS, PIXEL_SCALE } from '../art/atlas';
 import { WEAPONS, type WeaponDef } from '../data/weapons';
 import type { Player } from '../entities/Player';
-import { createCircleTexture } from '../textures';
 import { FX_CIRCLE, FX_CIRCLE_RADIUS, type Effects } from './Effects';
 import { MAX_ENEMIES, type Enemy, type EnemyManager } from './EnemyManager';
 
@@ -11,6 +11,8 @@ const MAX_HIT_MEMORY = 16;
 // Longest move between hit tests, so no speed or frame rate lets a projectile step over an enemy
 const MAX_STEP = 12;
 const RETURN_CATCH_DIST = 24;
+/** Quarter turns per second for thrown sprites; free rotation would break the pixel grid. */
+const SPIN_STEPS_PER_SECOND = 10;
 
 /** One attack's values. Weapons reuse a single object, so filling it allocates nothing. */
 export interface Shot {
@@ -69,11 +71,8 @@ export class ProjectileManager {
     private readonly player: Player,
     private readonly effects: Effects,
   ) {
-    for (const def of Object.values(WEAPONS)) {
-      createCircleTexture(scene, projectileTexture(def), def.projectileRadius, def.color);
-    }
     for (let i = 0; i < MAX_PROJECTILES; i++) {
-      const sprite = scene.add.image(0, 0, projectileTexture(WEAPONS.cursor)).setVisible(false);
+      const sprite = scene.add.image(0, 0, ATLAS, WEAPONS.cursor.sprite).setScale(PIXEL_SCALE).setVisible(false);
       const shadow = scene.add.image(0, 0, FX_CIRCLE).setVisible(false).setTint(0x000000).setAlpha(0.35);
       this.projectiles.push({
         sprite,
@@ -120,7 +119,7 @@ export class ProjectileManager {
     p.returning = false;
     p.mine = shot.mine;
     p.hitCount = 0;
-    p.sprite.setTexture(projectileTexture(def)).setPosition(shot.x, shot.y).setVisible(true);
+    p.sprite.setFrame(def.sprite).setAngle(0).setPosition(shot.x, shot.y).setVisible(true);
     p.shadow
       .setScale(def.projectileRadius / FX_CIRCLE_RADIUS)
       .setPosition(shot.x, shot.y)
@@ -242,6 +241,7 @@ export class ProjectileManager {
     }
     const height = Math.sin(Math.PI * (1 - p.life / p.maxLife)) * p.arcHeight;
     p.sprite.setPosition(p.x, p.y - height);
+    p.sprite.setAngle(Math.floor(p.life * SPIN_STEPS_PER_SECOND) * 90);
     p.shadow.setPosition(p.x, p.y);
   }
 
@@ -254,8 +254,4 @@ export class ProjectileManager {
     this.projectiles[i] = this.projectiles[last];
     this.projectiles[last] = p;
   }
-}
-
-export function projectileTexture(def: WeaponDef): string {
-  return `projectile-${def.id}`;
 }

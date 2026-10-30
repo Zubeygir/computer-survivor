@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
+import { ATLAS, PIXEL_SCALE } from '../art/atlas';
 import { EVOLUTIONS, type UpgradeDef } from '../data/upgrades';
+import { WEAPONS } from '../data/weapons';
 import type { Upgrades } from '../systems/Upgrades';
+import { COLOR, panel, pixelText, TITLE_SIZE } from '../ui/Button';
 
 export interface UpgradeSceneData {
   upgrades: Upgrades;
@@ -12,12 +15,14 @@ const CHOICES = 3;
 // Ignores taps right after the cards appear: the player is usually mid-swipe on the joystick
 const INPUT_LOCK_MS = 400;
 const GAP = 16;
+const SMALL_TEXT_SIZE = 6;
 const TITLE_SPACE = 72;
 const MAX_CARD_W = 420;
-const MAX_CARD_H_PORTRAIT = 120;
+const MAX_CARD_H_PORTRAIT = 150;
+/** Cards narrower than this have no room for an icon beside the centered name. */
+const MIN_ICON_CARD_W = 260;
 const MAX_CARD_W_LANDSCAPE = 240;
 const MAX_CARD_H_LANDSCAPE = 200;
-const FONT = 'monospace';
 
 /** Overlay launched over the paused GameScene; resumes it once every choice is made. */
 export class UpgradeScene extends Phaser.Scene {
@@ -26,7 +31,7 @@ export class UpgradeScene extends Phaser.Scene {
   private choices: UpgradeDef[] = [];
   private readonly cards: Phaser.GameObjects.Container[] = [];
   private backdrop!: Phaser.GameObjects.Rectangle;
-  private title!: Phaser.GameObjects.Text;
+  private title!: Phaser.GameObjects.BitmapText;
   /** A pick only counts when the press started on the same card it ends on. */
   private pressed: UpgradeDef | null = null;
   private readyAt = 0;
@@ -42,9 +47,7 @@ export class UpgradeScene extends Phaser.Scene {
 
   create() {
     this.backdrop = this.add.rectangle(0, 0, 1, 1, 0x000000, 0.6).setOrigin(0);
-    this.title = this.add
-      .text(0, TITLE_SPACE / 2, 'LEVEL UP', { fontFamily: FONT, fontSize: '28px', color: '#ffeb3b' })
-      .setOrigin(0.5);
+    this.title = pixelText(this, 0, TITLE_SPACE / 2, 'Level up', { size: TITLE_SIZE, color: COLOR.gold }).setOrigin(0.5);
     // Game object 'pointerup' fires before this, so a pick is handled before the press is cleared
     this.input.on('pointerup', () => (this.pressed = null));
 
@@ -108,39 +111,27 @@ export class UpgradeScene extends Phaser.Scene {
     const level = this.upgrades.levelOf(def);
     const top = -h / 2;
     const evolution = def.kind === 'evolution';
-    const bg = this.add
-      .rectangle(0, 0, w, h, 0x263238)
-      .setStrokeStyle(evolution ? 4 : 2, evolution ? 0xffd54f : 0x90a4ae)
-      .setInteractive();
-    const name = this.add
-      .text(0, top + 12, def.name, { fontFamily: FONT, fontSize: '20px', color: '#ffeb3b' })
-      .setOrigin(0.5, 0);
+    const { shadow, face: bg } = panel(this, w, h, evolution ? COLOR.gold : COLOR.accent);
+    bg.setInteractive();
+    const name = pixelText(this, 0, top + 12, def.name, { color: COLOR.gold }).setOrigin(0.5, 0);
     // Names don't wrap, and the longest ones overflow a narrow landscape card
-    if (name.width > w - 16) name.setScale((w - 16) / name.width);
-    const levelText = this.add
-      .text(0, top + 38, tagFor(def, level), { fontFamily: FONT, fontSize: '13px', color: '#90a4ae' })
-      .setOrigin(0.5, 0);
-    const text = this.add
-      .text(0, top + 60, def.levels[level].text, {
-        fontFamily: FONT,
-        fontSize: '15px',
-        color: '#ffffff',
-        align: 'center',
-        wordWrap: { width: w - 24 },
-      })
-      .setOrigin(0.5, 0);
-    const parts: Phaser.GameObjects.GameObject[] = [bg, name, levelText, text];
+    if (name.width > w - 16) name.setFontSize(SMALL_TEXT_SIZE);
+    const levelText = pixelText(this, 0, top + 32, tagFor(def, level), { color: COLOR.muted }).setOrigin(0.5, 0);
+    const text = pixelText(this, 0, top + 54, def.levels[level].text, { maxWidth: w - 24 }).setOrigin(0.5, 0);
+    const parts: Phaser.GameObjects.GameObject[] = [shadow, bg, name, levelText, text];
 
-    const evolves = EVOLUTIONS.find((evolution) => evolution.passive === def);
+    const icon = iconFor(def);
+    if (icon && w >= MIN_ICON_CARD_W) {
+      parts.push(this.add.image(-w / 2 + 28, top + 28, ATLAS, icon).setScale(PIXEL_SCALE));
+    }
+
+    const evolves = EVOLUTIONS.find((candidate) => candidate.passive === def);
     if (evolves) {
       parts.push(
-        this.add
-          .text(0, text.y + text.height + 4, `Evolves ${evolves.base.name}`, {
-            fontFamily: FONT,
-            fontSize: '12px',
-            color: '#ffd54f',
-          })
-          .setOrigin(0.5, 0),
+        pixelText(this, 0, text.y + text.height + 6, `Evolves ${evolves.base.name}`, {
+          color: COLOR.gold,
+          maxWidth: w - 16,
+        }).setOrigin(0.5, 0),
       );
     }
 
@@ -159,4 +150,10 @@ function tagFor(def: UpgradeDef, level: number): string {
   if (def.kind === 'repair') return '';
   if (def.kind === 'weapon' && level === 0) return 'NEW WEAPON';
   return `Lv ${level + 1}/${def.levels.length}`;
+}
+
+function iconFor(def: UpgradeDef): string {
+  if (def.kind === 'weapon') return WEAPONS[def.weapon].sprite;
+  if (def.kind === 'evolution') return WEAPONS[def.into].sprite;
+  return 'chip';
 }

@@ -1,15 +1,13 @@
 import Phaser from 'phaser';
+import { ATLAS, PIXEL_SCALE } from '../art/atlas';
 import { ARENA_RADIUS, BOSS_EVENTS, type BossEventDef } from '../data/bosses';
 import type { EnemyDef } from '../data/enemies';
 import type { Player } from '../entities/Player';
-import { createCircleTexture } from '../textures';
 import type { EnemyBullets } from './EnemyBullets';
 import type { Enemy, EnemyManager } from './EnemyManager';
 
-const WALL_TEXTURE = 'arena-wall';
 const WALL_RADIUS = 10;
 const WALL_SPACING = 24;
-const WALL_COLOR = 0xff7043;
 // Keeps the boss from appearing on top of the wall
 const BOSS_INSET = 80;
 
@@ -38,9 +36,10 @@ export class Arena {
     private readonly player: Player,
     private readonly bullets: EnemyBullets,
   ) {
-    createCircleTexture(scene, WALL_TEXTURE, WALL_RADIUS, WALL_COLOR);
     const count = Math.round((2 * Math.PI * ARENA_RADIUS) / WALL_SPACING);
-    for (let i = 0; i < count; i++) this.walls.push(scene.add.image(0, 0, WALL_TEXTURE).setVisible(false));
+    for (let i = 0; i < count; i++) {
+      this.walls.push(scene.add.image(0, 0, ATLAS, 'firewall').setScale(PIXEL_SCALE).setVisible(false));
+    }
   }
 
   get active(): boolean {

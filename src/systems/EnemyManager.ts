@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
+import { ATLAS, PIXEL_SCALE } from '../art/atlas';
 import { ENEMIES, type ChargeDef, type EnemyDef, type RangedDef } from '../data/enemies';
 import type { Player } from '../entities/Player';
-import { createCircleTexture } from '../textures';
 import type { EnemyBullets } from './EnemyBullets';
 import { SpatialHash } from './SpatialHash';
 
@@ -14,6 +14,8 @@ const CONTACT_MARGIN = 2;
 const BACK_OFF_MARGIN = 40;
 /** A ranged enemy holds fire beyond this much past its keep distance, so off-screen ones stay quiet. */
 const FIRE_MARGIN = 120;
+/** All enemies step in sync; one shared clock is much cheaper than one per enemy. */
+const ANIMATION_FRAME_MS = 220;
 
 export type ChargePhase = 'approach' | 'aim' | 'dash' | 'rest';
 
@@ -38,6 +40,8 @@ export class EnemyManager {
   readonly enemies: Enemy[] = [];
   private aliveCount = 0;
   private killCount = 0;
+  private animationTime = 0;
+  private animationStep = 0;
   private readonly hash = new SpatialHash(CELL_SIZE, MAX_ENEMIES);
   private readonly neighbors = new Int32Array(MAX_ENEMIES);
 
@@ -46,11 +50,9 @@ export class EnemyManager {
     private readonly bullets: EnemyBullets,
     private readonly onKill: (x: number, y: number, def: EnemyDef) => void,
   ) {
-    for (const def of Object.values(ENEMIES)) createCircleTexture(scene, textureKey(def), def.radius, def.color);
-
     // Images, not shapes: shapes are re-triangulated every frame, images batch into one draw call
     for (let i = 0; i < MAX_ENEMIES; i++) {
-      const sprite = scene.add.image(0, 0, textureKey(ENEMIES.bug)).setVisible(false);
+      const sprite = scene.add.image(0, 0, ATLAS, ENEMIES.bug.frames[0]).setScale(PIXEL_SCALE).setVisible(false);
       this.enemies.push({
         sprite,
         def: ENEMIES.bug,
@@ -86,7 +88,7 @@ export class EnemyManager {
     enemy.phase = 'approach';
     enemy.timer = def.ranged?.fireInterval ?? 0;
     enemy.orbitReadyAt = 0;
-    enemy.sprite.setTexture(textureKey(def)).setPosition(x, y).setVisible(true);
+    enemy.sprite.setFrame(def.frames[this.animationStep % def.frames.length]).setPosition(x, y).setVisible(true);
     return enemy;
   }
 
@@ -197,6 +199,7 @@ export class EnemyManager {
 
   /** Returns the contact damage the player takes this frame. */
   update(delta: number, player: Player): number {
+    this.animate(delta);
     this.moveAll(player, delta);
     this.separate();
     return (this.pushOutOf(player) * delta) / 1000;
@@ -253,6 +256,17 @@ export class EnemyManager {
     this.enemies[last] = enemy;
   }
 
+  private animate(delta: number) {
+    this.animationTime += delta;
+    if (this.animationTime < ANIMATION_FRAME_MS) return;
+    this.animationTime -= ANIMATION_FRAME_MS;
+    this.animationStep++;
+    for (let i = 0; i < this.aliveCount; i++) {
+      const { def, sprite } = this.enemies[i];
+      sprite.setFrame(def.frames[this.animationStep % def.frames.length]);
+    }
+  }
+
   private moveAll(player: Player, delta: number) {
     const seconds = delta / 1000;
     const px = player.sprite.x;
@@ -270,6 +284,7 @@ export class EnemyManager {
       if (d === 0) continue;
       const ux = dx / d;
       const uy = dy / d;
+      sprite.flipX = ux < 0;
       if (def.ranged) {
         this.moveRanged(enemy, def.ranged, ux, uy, d, seconds);
       } else if (def.charge) {
@@ -396,6 +411,3 @@ function moveCharger(enemy: Enemy, charge: ChargeDef, ux: number, uy: number, d:
   }
 }
 
-function textureKey(def: EnemyDef): string {
-  return `enemy-${def.id}`;
-}

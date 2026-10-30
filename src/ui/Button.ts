@@ -1,15 +1,53 @@
 import Phaser from 'phaser';
+import { ATLAS, GROUND, PIXEL_FONT, PIXEL_SCALE } from '../art/atlas';
 
-export const FONT = 'monospace';
+/** Bitmap font sizes keep whole pixels only at multiples of 6: 6, 12, 18, 24... */
+export const TEXT_SIZE = 12;
+export const TITLE_SIZE = 24;
+
+export const COLOR = {
+  text: 0xffffff,
+  muted: 0xb0b6c0,
+  gold: 0xffd54f,
+  accent: 0xe8b33a,
+  data: 0x7fe0ff,
+  danger: 0xe04f4f,
+  good: 0x66bb6a,
+  panel: 0x2a2f3a,
+  panelShadow: 0x161920,
+};
+
+export interface TextOptions {
+  size?: number;
+  color?: number;
+  maxWidth?: number;
+  centered?: boolean;
+}
+
+export function pixelText(scene: Phaser.Scene, x: number, y: number, text: string, options: TextOptions = {}) {
+  const { size = TEXT_SIZE, color = COLOR.text, maxWidth = 0, centered = true } = options;
+  const label = scene.add.bitmapText(x, y, PIXEL_FONT, text.toUpperCase(), size).setTint(color).setLineSpacing(4);
+  if (maxWidth > 0) label.setMaxWidth(maxWidth);
+  if (centered) label.setCenterAlign();
+  return label;
+}
+
+/** A flat panel with a hard shadow under it, the base of every card and button. */
+export function panel(scene: Phaser.Scene, width: number, height: number, border: number) {
+  const shadow = scene.add.rectangle(0, 4, width, height, COLOR.panelShadow);
+  const face = scene.add.rectangle(0, 0, width, height, COLOR.panel).setStrokeStyle(2, border);
+  return { shadow, face };
+}
 
 export interface ButtonOptions {
   width: number;
   height: number;
   label: string;
   onClick: () => void;
-  fontSize?: number;
-  /** Border and text color. */
-  color?: string;
+  size?: number;
+  color?: number;
+  /** Atlas frame drawn above the label. */
+  icon?: string;
   /** Greyed out and ignores taps. */
   disabled?: boolean;
   /** Game loop time before which taps are ignored, for buttons appearing under a busy finger. */
@@ -18,30 +56,24 @@ export interface ButtonOptions {
 
 /** Fires on release, and only when the press started on the button too. */
 export function createButton(scene: Phaser.Scene, x: number, y: number, options: ButtonOptions) {
-  const { width, height, label, onClick, fontSize = 18, color = '#ffeb3b', disabled = false, readyAt = 0 } = options;
-  const border = Phaser.Display.Color.HexStringToColor(color).color;
-  const bg = scene.add.rectangle(0, 0, width, height, 0x263238).setStrokeStyle(2, border);
-  const text = scene.add
-    .text(0, 0, label, {
-      fontFamily: FONT,
-      fontSize: `${fontSize}px`,
-      color,
-      align: 'center',
-      wordWrap: { width: width - 16 },
-    })
-    .setOrigin(0.5);
-  const button = scene.add.container(x, y, [bg, text]);
+  const { width, height, label, onClick, size = TEXT_SIZE, color = COLOR.accent, icon, disabled = false, readyAt = 0 } = options;
+  const { shadow, face } = panel(scene, width, height, color);
+  const parts: Phaser.GameObjects.GameObject[] = [shadow, face];
+  const textY = icon ? 14 : 0;
+  if (icon) parts.push(scene.add.image(0, -height / 2 + 22, ATLAS, icon).setScale(PIXEL_SCALE));
+  parts.push(pixelText(scene, 0, textY, label, { size, color, maxWidth: width - 16 }).setOrigin(0.5));
+  const button = scene.add.container(x, y, parts);
   if (disabled) return button.setAlpha(0.45);
 
   let pressed = false;
-  bg.setInteractive();
-  bg.on('pointerdown', () => {
+  face.setInteractive();
+  face.on('pointerdown', () => {
     pressed = scene.game.loop.time >= readyAt;
   });
-  bg.on('pointerout', () => {
+  face.on('pointerout', () => {
     pressed = false;
   });
-  bg.on('pointerup', () => {
+  face.on('pointerup', () => {
     if (pressed) onClick();
     pressed = false;
   });
@@ -63,4 +95,10 @@ export function gridCells(count: number, columns: number, area: { x: number; y: 
     y: area.y + Math.floor(i / columns) * (height + gap) + height / 2,
   }));
   return { width, height, centers };
+}
+
+/** Sand backdrop shared by the menu screens. */
+export function addBackdrop(scene: Phaser.Scene) {
+  const { width, height } = scene.scale;
+  scene.add.tileSprite(0, 0, width, height, GROUND).setOrigin(0);
 }

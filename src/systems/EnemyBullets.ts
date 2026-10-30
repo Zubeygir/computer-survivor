@@ -1,12 +1,10 @@
 import Phaser from 'phaser';
 import type { Player } from '../entities/Player';
-import { createCircleTexture } from '../textures';
+import { ATLAS, PIXEL_SCALE } from '../art/atlas';
 
 const MAX_BULLETS = 150;
 const RADIUS = 6;
 const LIFETIME = 6;
-const COLOR = 0xff1744;
-const TEXTURE = 'enemy-bullet';
 // Above the enemies, so a bullet is never hidden inside a crowd
 const DEPTH = 10;
 
@@ -24,9 +22,8 @@ export class EnemyBullets {
   private aliveCount = 0;
 
   constructor(scene: Phaser.Scene) {
-    createCircleTexture(scene, TEXTURE, RADIUS, COLOR);
     for (let i = 0; i < MAX_BULLETS; i++) {
-      const sprite = scene.add.image(0, 0, TEXTURE).setVisible(false).setDepth(DEPTH);
+      const sprite = scene.add.image(0, 0, ATLAS, 'enemy-bullet').setScale(PIXEL_SCALE).setVisible(false).setDepth(DEPTH);
       this.bullets.push({ sprite, vx: 0, vy: 0, life: 0, damage: 0 });
     }
   }

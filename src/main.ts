@@ -10,6 +10,7 @@ new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'game',
   backgroundColor: '#1a1a1a',
+  pixelArt: true,
   scale: {
     // RESIZE fills any aspect ratio; taller phones simply see more of the world
     mode: Phaser.Scale.RESIZE,

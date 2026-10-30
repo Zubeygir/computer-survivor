@@ -4,7 +4,7 @@ Last updated: 2026-10-25. Read `CLAUDE.md` first for the stack and architecture 
 
 ## Where we are
 
-Phase: **full content pass and return loop committed; menu screens are functional drafts that must be polished before anyone else sees them**. Placeholder shapes only, no art/audio.
+Phase: **all game content, return loop and pixel art are in; the pixel rollout has not been seen on a display yet**. Pixel art everywhere, no audio yet.
 
 The game design doc is the source of truth for content: https://claude.ai/artifact/8yApVH6VuMDwYmPwAqVosy (Turkish, a Claude Doc outside the repo; read it with the docs tools). It holds the 10 weapons, 11 passives, 10 evolutions, enemies, bosses and the wave table. Numbers live in `src/data/*.ts`; when they change for good, update the doc too.
 
@@ -61,6 +61,7 @@ After waves and bosses: "flows well, fun to play".
 - **Name: Computer Survivor.** Weapons are iconic devices from computer/phone history (e.g. an 8-bit home computer, a brick phone thrown as a projectile).
 - **No real brand names or exact likenesses** (Commodore, Nokia, ... are trademarks; store takedown risk). Use generic or inspired names ("Brick Phone", "8-Bit Home Computer") and silhouettes that evoke rather than copy.
 - **Enemies:** computer threats — viruses, bugs, spam, pop-ups, ...
+- **Art direction: pixel art, all of it.** A wide junkyard of old electronics; the player is a Technician who fights with devices found there. Three.js, the retro desktop and the terminal ideas were rejected by the user. Sprites are authored as text grids in `src/art/sprites.ts`, packed into one atlas by `src/art/atlas.ts`; no new dependency. Text uses a hand-made 5x7 bitmap font; sizes must be multiples of 6 to keep whole pixels.
 - **Run length: 10 minutes** (mobile sessions must be short).
 - **Money model: free with rewarded ads** (revive once per run, double Data on the result screen) plus a one-time purchase that gives those rewards without ads. No power or Data for sale, no forced ads.
 - **Progress lives on the device**, no accounts or server.
@@ -88,8 +89,8 @@ Vampire Survivors' stage design, from https://vampire.survivors.wiki/w/Mad_Fores
 
 ## Next steps (in order)
 
-1. **Polish Menu, Museum, Workshop and the result screen** (user: not presentable as they are). Check fit in portrait and landscape as part of it.
-2. **Art with three.js**, then audio.
+1. **Review the pixel rollout with the user** and fix what looks wrong: sprites, card fit, menus in portrait and landscape. The rollout passed `npx tsc`, the build and the simulator, but nobody has seen it run.
+2. **Audio.**
 3. **Mobile packaging**: Capacitor, real phone test, rewarded ads.
 4. **Closed test and release prep.**
 
@@ -98,7 +99,6 @@ Vampire Survivors' stage design, from https://vampire.survivors.wiki/w/Mad_Fores
 - How many levels a run really reaches; 50 is an estimate and the slot and level limits depend on it.
 - FPS on a real phone with 500 enemies and the new effects.
 - Player character.
-- Art: the user wants Claude to make it with three.js, as the last step. Open: run it in the game, or pre-render it to sprites for Phaser? Pre-rendering avoids a second renderer on phones. three.js is a new dependency, so ask first.
 - Audio: when and how.
 - Different player characters.
 - Moving progress to a new phone.
@@ -128,9 +128,11 @@ Vampire Survivors' stage design, from https://vampire.survivors.wiki/w/Mad_Fores
 | `src/systems/GemManager.ts` | Gem pool, attraction, returns XP collected per frame |
 | `src/systems/Experience.ts` | Level/XP state, `add()` returns levels gained |
 | `src/ui/XpBar.ts`, `HpBar.ts`, `RunTimer.ts`, `BossBar.ts` | HUD |
-| `src/ui/Button.ts` | Guarded menu button, grid layout, scene clearing |
+| `src/ui/Button.ts` | Pixel text, panels, guarded button, grid layout, scene clearing, UI colors |
 | `src/data/*.ts` | Player base stats, enemies, weapons, upgrades and evolutions, waves, bosses, level curve, return loop (`meta.ts`) |
-| `src/textures.ts` | Generated circle and rectangle textures |
+| `src/art/` | Pixel sprites and font as text grids, palette; `loadArt` builds atlas, font and ground once, from `MenuScene` |
+| `src/systems/Scenery.ts` | Junk scattered per chunk from a hash; purely visual |
+| `src/textures.ts` | Generated effect disc and line textures |
 | `tools/balance-sim/` | Headless balance simulator (`npm run sim`), not part of the game build |
 
 Frame order in `GameScene.update` matters: input → player → arena (starts fights, holds the player inside) → spawner/timer (skipped during a fight) or boss bar → enemies (builds hash, returns contact damage) → enemy bullets → regen, HP, death check (early return) → weapons → projectiles (uses hash) → effects → `removeDead` (drops gems, may end a fight) → win check (early return) → gems → XP/level-up → camera/ground. Enemy indices are only stable until `removeDead`.

@@ -30,24 +30,25 @@ export interface EnemyDef {
   contactDps: number;
   /** XP value of the gem dropped on death. */
   xp: number;
-  color: number;
+  /** Atlas frames, stepped through by the shared animation clock. Art faces right. */
+  frames: string[];
   ranged?: RangedDef;
   charge?: ChargeDef;
   /** Spawned where this enemy dies. */
   split?: { into: EnemyDef; count: number };
 }
 
-const miniAd: EnemyDef = { id: 'miniAd', speed: 120, radius: 10, hp: 8, contactDps: 4, xp: 1, color: 0xf48fb1 };
+const miniAd: EnemyDef = { id: 'miniAd', speed: 120, radius: 10, hp: 8, contactDps: 4, xp: 1, frames: ['mini-ad'] };
 
 export const ENEMIES = {
   /** Baseline. */
-  bug: { id: 'bug', speed: 80, radius: 14, hp: 10, contactDps: 6, xp: 1, color: 0xe53935 },
+  bug: { id: 'bug', speed: 80, radius: 14, hp: 10, contactDps: 6, xp: 1, frames: ['bug-0', 'bug-1'] },
   /** Fast and fragile; comes in floods. */
-  spam: { id: 'spam', speed: 140, radius: 11, hp: 4, contactDps: 4, xp: 1, color: 0xffa726 },
+  spam: { id: 'spam', speed: 140, radius: 11, hp: 4, contactDps: 4, xp: 1, frames: ['spam-0', 'spam-1'] },
   /** Slow and tanky; walls the player in. */
-  worm: { id: 'worm', speed: 55, radius: 18, hp: 40, contactDps: 10, xp: 3, color: 0xab47bc },
+  worm: { id: 'worm', speed: 55, radius: 18, hp: 40, contactDps: 10, xp: 3, frames: ['worm-0', 'worm-1'] },
   /** Elite-like brute. */
-  trojan: { id: 'trojan', speed: 65, radius: 26, hp: 200, contactDps: 18, xp: 10, color: 0x8d6e63 },
+  trojan: { id: 'trojan', speed: 65, radius: 26, hp: 200, contactDps: 18, xp: 10, frames: ['trojan-0', 'trojan-1'] },
   /** Keeps its distance and shoots. */
   popUp: {
     id: 'popUp',
@@ -56,7 +57,7 @@ export const ENEMIES = {
     hp: 30,
     contactDps: 6,
     xp: 4,
-    color: 0x29b6f6,
+    frames: ['popup'],
     ranged: { keepDistance: 240, fireInterval: 3, bulletSpeed: 180, bulletDamage: 8 },
   },
   /** Stops, aims and dashes. */
@@ -67,7 +68,7 @@ export const ENEMIES = {
     hp: 35,
     contactDps: 12,
     xp: 4,
-    color: 0x9ccc65,
+    frames: ['phisher-0', 'phisher-1'],
     charge: { triggerRange: 220, aimTime: 1, dashSpeed: 320, dashTime: 0.6, restTime: 2 },
   },
   /** Splits into two Mini Ads when it dies. */
@@ -78,7 +79,7 @@ export const ENEMIES = {
     hp: 50,
     contactDps: 8,
     xp: 3,
-    color: 0xec407a,
+    frames: ['adware'],
     split: { into: miniAd, count: 2 },
   },
   miniAd,
@@ -93,9 +94,9 @@ export const ENEMIES = {
     hp: 900,
     contactDps: 20,
     xp: 30,
-    color: 0x26a69a,
+    frames: ['rootkit'],
     charge: { triggerRange: 400, aimTime: 0.6, dashSpeed: 300, dashTime: 0.5, restTime: 2.9 },
   },
   /** Final boss. */
-  ransomware: { id: 'ransomware', speed: 75, radius: 40, hp: 5000, contactDps: 30, xp: 0, color: 0xd81b60 },
+  ransomware: { id: 'ransomware', speed: 75, radius: 40, hp: 5000, contactDps: 30, xp: 0, frames: ['ransomware'] },
 } satisfies Record<string, EnemyDef>;

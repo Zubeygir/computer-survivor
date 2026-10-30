@@ -1,13 +1,17 @@
 import Phaser from 'phaser';
+import { ATLAS, loadArt } from '../art/atlas';
+import { PLAYER_FRAMES } from '../art/sprites';
 import { progress } from '../systems/Progress';
-import { clearScene, createButton, FONT } from '../ui/Button';
+import { addBackdrop, clearScene, COLOR, createButton, panel, pixelText } from '../ui/Button';
 
 const TITLE = 'COMPUTER SURVIVOR';
-const MAX_TITLE_SIZE = 36;
+const CHAR_UNIT = 6;
+const MAX_TITLE_SIZE = 30;
 const SIDE_MARGIN = 16;
-const BUTTON_H = 64;
 const BUTTON_GAP = 12;
 const MAX_BUTTON_W = 300;
+const HERO_SCALE = 5;
+const JUNK_SCALE = 3;
 
 export class MenuScene extends Phaser.Scene {
   constructor() {
@@ -15,6 +19,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   create() {
+    loadArt(this);
     this.layout();
     this.scale.on('resize', this.layout, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.scale.off('resize', this.layout, this));
@@ -23,47 +28,59 @@ export class MenuScene extends Phaser.Scene {
   /** Rebuilds the screen; only runs on entry and on resize. */
   private layout() {
     clearScene(this);
+    addBackdrop(this);
     const { width, height } = this.scale;
     const portrait = height > width;
     const columnW = portrait ? width : width / 2;
     const cx = columnW / 2;
+
+    const room = Math.floor((columnW - SIDE_MARGIN * 2) / TITLE.length / CHAR_UNIT) * CHAR_UNIT;
+    const titleSize = Math.max(CHAR_UNIT, Math.min(MAX_TITLE_SIZE, room));
+    pixelText(this, cx, 28, TITLE, { size: titleSize, color: COLOR.panelShadow }).setOrigin(0.5);
+    const dataY = 28 + titleSize + 8;
+    pixelText(this, cx, dataY, `Data ${progress.data}`, { color: COLOR.panelShadow }).setOrigin(0.5);
+
+    const buttonH = portrait ? 52 : 44;
     const buttonW = Math.min(columnW - SIDE_MARGIN * 2, MAX_BUTTON_W);
+    const heroHeight = portrait ? 130 : 0;
+    if (portrait) this.addHero(cx, dataY + 16 + heroHeight / 2);
 
-    const titleSize = Math.min(MAX_TITLE_SIZE, Math.floor((columnW - SIDE_MARGIN * 2) / (TITLE.length * 0.62)));
-    this.add
-      .text(cx, height * 0.1, TITLE, { fontFamily: FONT, fontSize: `${titleSize}px`, color: '#ffeb3b' })
-      .setOrigin(0.5);
-    this.add
-      .text(cx, height * 0.1 + titleSize + 8, `Data ${progress.data}`, { fontFamily: FONT, fontSize: '18px', color: '#26c6da' })
-      .setOrigin(0.5);
+    const firstY = dataY + 24 + heroHeight + buttonH / 2;
+    const step = buttonH + BUTTON_GAP;
+    this.addMenuButton(cx, firstY, buttonW, buttonH, 'Play', 'GameScene');
+    this.addMenuButton(cx, firstY + step, buttonW, buttonH, 'Museum', 'MuseumScene');
+    this.addMenuButton(cx, firstY + step * 2, buttonW, buttonH, 'Workshop', 'WorkshopScene');
 
-    const firstY = height * 0.1 + titleSize + 44 + BUTTON_H / 2;
-    const step = BUTTON_H + BUTTON_GAP;
-    this.addMenuButton(cx, firstY, buttonW, 'PLAY', 'GameScene');
-    this.addMenuButton(cx, firstY + step, buttonW, 'MUSEUM', 'MuseumScene');
-    this.addMenuButton(cx, firstY + step * 2, buttonW, 'WORKSHOP', 'WorkshopScene');
-
-    const tasksX = portrait ? cx : width * 0.75;
-    const tasksY = portrait ? firstY + step * 2 + BUTTON_H / 2 + 24 : height / 2;
-    this.addDailyTasks(tasksX, tasksY, columnW - SIDE_MARGIN * 2, portrait ? 0 : 0.5);
+    if (portrait) {
+      this.addDailyTasks(cx, firstY + step * 2 + buttonH / 2 + 20, width - SIDE_MARGIN * 2);
+    } else {
+      this.addHero(width * 0.75, height * 0.28);
+      this.addDailyTasks(width * 0.75, height * 0.52, columnW - SIDE_MARGIN * 2);
+    }
   }
 
-  private addMenuButton(x: number, y: number, width: number, label: string, scene: string) {
-    createButton(this, x, y, { width, height: BUTTON_H, label, onClick: () => this.scene.start(scene) });
+  private addHero(x: number, y: number) {
+    this.add.image(x - 90, y + 26, ATLAS, 'junk-pile').setScale(JUNK_SCALE);
+    this.add.image(x + 96, y + 34, ATLAS, 'junk-crt').setScale(JUNK_SCALE);
+    this.add.image(x, y, ATLAS, PLAYER_FRAMES.stand).setScale(HERO_SCALE);
   }
 
-  private addDailyTasks(x: number, y: number, width: number, originY: number) {
+  private addMenuButton(x: number, y: number, width: number, height: number, label: string, scene: string) {
+    createButton(this, x, y, { width, height, label, onClick: () => this.scene.start(scene) });
+  }
+
+  /** `top` is the panel's top edge. */
+  private addDailyTasks(x: number, top: number, width: number) {
     const lines = progress
       .dailyTasks()
-      .map((task) => (task.done ? `[x] ${task.text}` : `[ ] ${task.text} (${task.progress}/${task.goal})`));
-    this.add
-      .text(x, y, ['DAILY TASKS', ...lines].join('\n'), {
-        fontFamily: FONT,
-        fontSize: '14px',
-        color: '#ffffff',
-        lineSpacing: 8,
-        wordWrap: { width },
-      })
-      .setOrigin(0.5, originY);
+      .map((task) => (task.done ? `[x] ${task.text}` : `[ ] ${task.text} ${task.progress}/${task.goal}`));
+    const text = pixelText(this, 0, 0, ['Daily tasks', ...lines].join('\n'), {
+      maxWidth: width - 24,
+      centered: false,
+    }).setOrigin(0.5, 0);
+    const height = text.height + 24;
+    const { shadow, face } = panel(this, width, height, COLOR.accent);
+    text.setPosition(0, -height / 2 + 12);
+    this.add.container(x, top + height / 2, [shadow, face, text]);
   }
 }

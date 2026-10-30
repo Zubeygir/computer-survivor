@@ -1,11 +1,14 @@
 import Phaser from 'phaser';
+import { ATLAS, PIXEL_SCALE } from '../art/atlas';
 import type { WeaponDef, WeaponStats } from '../data/weapons';
 import type { Player } from '../entities/Player';
 import { FX_CIRCLE, FX_CIRCLE_RADIUS, type Effects } from './Effects';
 import { MAX_ENEMIES, type Enemy, type EnemyManager } from './EnemyManager';
-import { projectileTexture, type ProjectileManager, type Shot } from './ProjectileManager';
+import type { ProjectileManager, Shot } from './ProjectileManager';
 
 const ORBIT_SPEED = 3; // radians per second
+/** Quarter turns per second for blades; free rotation would break the pixel grid. */
+const SPIN_STEPS_PER_SECOND = 12;
 const AURA_ALPHA = 0.14;
 const CHAIN_START_RANGE = 320;
 const CHAIN_LINE_WIDTH = 3;
@@ -65,8 +68,7 @@ export class Weapon {
     this.stats = statsOf(def);
     this.pulseLeft = def.pulseInterval;
     this.cooldownLeft = 0;
-    const texture = projectileTexture(def);
-    for (const blade of this.blades) blade.setTexture(texture);
+    for (const blade of this.blades) blade.setFrame(def.sprite);
   }
 
   update(delta: number) {
@@ -299,7 +301,7 @@ export class Weapon {
   private updateOrbit(seconds: number) {
     const count = this.stats.count;
     while (this.blades.length < count) {
-      this.blades.push(this.scene.add.image(0, 0, projectileTexture(this.def)));
+      this.blades.push(this.scene.add.image(0, 0, ATLAS, this.def.sprite).setScale(PIXEL_SCALE));
     }
     this.orbitAngle += ORBIT_SPEED * seconds;
 
@@ -310,7 +312,7 @@ export class Weapon {
       const angle = this.orbitAngle + i * step;
       const bladeX = x + Math.cos(angle) * radius;
       const bladeY = y + Math.sin(angle) * radius;
-      this.blades[i].setPosition(bladeX, bladeY);
+      this.blades[i].setPosition(bladeX, bladeY).setAngle(Math.floor(this.clock * SPIN_STEPS_PER_SECOND) * 90);
       this.hitWithBlade(bladeX, bladeY);
     }
   }

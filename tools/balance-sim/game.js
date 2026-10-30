@@ -34,7 +34,7 @@ function fakeImage() {
     image.y = y;
     return image;
   };
-  for (const method of ['setVisible', 'setDepth', 'setTexture', 'setOrigin', 'setRotation', 'setScale', 'setTint', 'setAlpha']) {
+  for (const method of ['setVisible', 'setDepth', 'setTexture', 'setOrigin', 'setRotation', 'setScale', 'setTint', 'setAlpha', 'setFrame', 'setFlipX', 'setAngle']) {
     image[method] = () => image;
   }
   return image;

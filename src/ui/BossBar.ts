@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { pixelText } from './Button';
 import { XP_BAR_HEIGHT } from './XpBar';
 
 // Below the run timer
@@ -12,7 +13,7 @@ const DEPTH = 1500;
 export class BossBar {
   private readonly bg: Phaser.GameObjects.Rectangle;
   private readonly fill: Phaser.GameObjects.Rectangle;
-  private readonly label: Phaser.GameObjects.Text;
+  private readonly label: Phaser.GameObjects.BitmapText;
   private shownName = '';
   private visible = false;
 
@@ -28,8 +29,7 @@ export class BossBar {
       .setOrigin(0, 0.5)
       .setScrollFactor(0)
       .setDepth(DEPTH + 1);
-    this.label = scene.add
-      .text(0, LABEL_Y, '', { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' })
+    this.label = pixelText(scene, 0, LABEL_Y, '')
       .setOrigin(0.5, 0)
       .setScrollFactor(0)
       .setDepth(DEPTH);

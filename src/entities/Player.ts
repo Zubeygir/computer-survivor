@@ -1,8 +1,12 @@
 import Phaser from 'phaser';
+import { ATLAS, PIXEL_SCALE } from '../art/atlas';
+import { PLAYER_FRAMES } from '../art/sprites';
 import { BASE_PLAYER_STATS, type PlayerStats } from '../data/player';
 
+const WALK_FRAME_MS = 120;
+
 export class Player {
-  readonly sprite: Phaser.GameObjects.Arc;
+  readonly sprite: Phaser.GameObjects.Image;
   readonly radius = 16;
   /** A copy, since upgrades mutate it during the run. */
   readonly stats: PlayerStats = { ...BASE_PLAYER_STATS };
@@ -10,9 +14,11 @@ export class Player {
   /** Unit vector of the last move; weapons that fire ahead aim along it. */
   facingX = 1;
   facingY = 0;
+  private walkTime = 0;
+  private shownFrame: string = PLAYER_FRAMES.stand;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    this.sprite = scene.add.circle(x, y, this.radius, 0x4caf50);
+    this.sprite = scene.add.image(x, y, ATLAS, PLAYER_FRAMES.stand).setScale(PIXEL_SCALE);
   }
 
   /** Adds permanent upgrades on top of the base stats. Call once, before the run starts. */
@@ -28,13 +34,25 @@ export class Player {
     const step = (this.stats.moveSpeed * delta) / 1000;
     this.sprite.x += direction.x * step;
     this.sprite.y += direction.y * step;
-    if (direction.x !== 0 || direction.y !== 0) {
+    const moving = direction.x !== 0 || direction.y !== 0;
+    if (moving) {
       this.facingX = direction.x;
       this.facingY = direction.y;
+      if (direction.x !== 0) this.sprite.setFlipX(direction.x < 0);
     }
+    this.animate(moving, delta);
   }
 
   heal(amount: number) {
     this.hp = Math.min(this.stats.maxHp, this.hp + amount);
+  }
+
+  private animate(moving: boolean, delta: number) {
+    this.walkTime = moving ? this.walkTime + delta : 0;
+    const walk = PLAYER_FRAMES.walk;
+    const frame = moving ? walk[Math.floor(this.walkTime / WALK_FRAME_MS) % walk.length] : PLAYER_FRAMES.stand;
+    if (frame === this.shownFrame) return;
+    this.shownFrame = frame;
+    this.sprite.setFrame(frame);
   }
 }

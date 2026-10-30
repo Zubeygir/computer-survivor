@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GROUND } from '../art/atlas';
 import { BOSS_KILL_HEAL } from '../data/bosses';
 import { WEAPONS, type WeaponId } from '../data/weapons';
 import { Player } from '../entities/Player';
@@ -11,17 +12,17 @@ import { Experience } from '../systems/Experience';
 import { GemManager } from '../systems/GemManager';
 import { ProjectileManager } from '../systems/ProjectileManager';
 import { progress } from '../systems/Progress';
+import { Scenery } from '../systems/Scenery';
 import { Spawner } from '../systems/Spawner';
 import { Upgrades } from '../systems/Upgrades';
 import { Weapon } from '../systems/Weapon';
 import { BossBar } from '../ui/BossBar';
+import { pixelText } from '../ui/Button';
 import { HpBar } from '../ui/HpBar';
 import { RunTimer } from '../ui/RunTimer';
 import { XP_BAR_HEIGHT, XpBar } from '../ui/XpBar';
 import type { GameOverSceneData } from './GameOverScene';
 import type { UpgradeSceneData } from './UpgradeScene';
-
-const GRID_SIZE = 64;
 
 type MoveKeys = Record<'W' | 'A' | 'S' | 'D' | 'UP' | 'LEFT' | 'DOWN' | 'RIGHT', Phaser.Input.Keyboard.Key>;
 
@@ -43,6 +44,7 @@ export class GameScene extends Phaser.Scene {
   private bossBar!: BossBar;
   private joystick!: VirtualJoystick;
   private ground!: Phaser.GameObjects.TileSprite;
+  private scenery!: Scenery;
   private keys!: MoveKeys;
   private readonly move = new Phaser.Math.Vector2();
 
@@ -51,12 +53,13 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
-    this.createGroundTexture();
     const { width, height } = this.scale;
     // Screen-sized and pinned to the camera; scrolling the tile offset fakes an infinite world
-    this.ground = this.add.tileSprite(0, 0, width, height, 'ground').setOrigin(0).setScrollFactor(0);
+    this.ground = this.add.tileSprite(0, 0, width, height, GROUND).setOrigin(0).setScrollFactor(0);
 
-    // Draw order follows creation order: gems under enemies, enemies under the player
+    this.scenery = new Scenery(this);
+
+    // Draw order follows creation order: scenery under gems, gems under enemies, enemies under the player
     this.gems = new GemManager(this);
     this.bullets = new EnemyBullets(this);
     this.enemies = new EnemyManager(this, this.bullets, (x, y, def) => {
@@ -138,6 +141,7 @@ export class GameScene extends Phaser.Scene {
     const cam = this.cameras.main;
     cam.centerOn(this.player.sprite.x, this.player.sprite.y);
     this.ground.setTilePosition(cam.scrollX, cam.scrollY);
+    this.scenery.update(cam);
   }
 
   private gainXp(amount: number) {
@@ -185,28 +189,14 @@ export class GameScene extends Phaser.Scene {
     this.move.set(x, y).normalize();
   }
 
-  private createGroundTexture() {
-    if (this.textures.exists('ground')) return;
-    const g = this.make.graphics({}, false);
-    g.fillStyle(0x1a1a1a).fillRect(0, 0, GRID_SIZE, GRID_SIZE);
-    g.fillStyle(0x2a2a2a).fillRect(0, 0, GRID_SIZE, 1).fillRect(0, 0, 1, GRID_SIZE);
-    g.generateTexture('ground', GRID_SIZE, GRID_SIZE);
-    g.destroy();
-  }
-
   private createDebugText() {
-    const text = this.add
-      .text(8, XP_BAR_HEIGHT + 4, '', { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' })
-      .setScrollFactor(0)
-      .setDepth(2000);
+    const text = pixelText(this, 8, XP_BAR_HEIGHT + 4, '', { size: 6, centered: false }).setScrollFactor(0).setDepth(2000);
     // Twice a second rather than every frame: each setText re-rasterizes the text texture
     this.time.addEvent({
       delay: 500,
       loop: true,
       callback: () =>
-        text.setText(
-          `FPS ${Math.round(this.game.loop.actualFps)}  Enemies ${this.enemies.count}  Kills ${this.enemies.kills}`,
-        ),
+        text.setText(`FPS ${Math.round(this.game.loop.actualFps)} ENEMIES ${this.enemies.count} KILLS ${this.enemies.kills}`),
     });
   }
 

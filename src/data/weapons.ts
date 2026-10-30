@@ -37,7 +37,10 @@ export interface WeaponDef {
   /** Aura only: seconds between extra explosions, 0 for none. */
   pulseInterval: number;
   pulseDamage: number;
+  /** Used for explosions, auras, beams and chains. */
   color: number;
+  /** Atlas frame of the projectile or blade, and the weapon's icon on cards. */
+  sprite: string;
 }
 
 /** The part of a weapon that upgrades change during a run. */
@@ -69,6 +72,7 @@ export const WEAPONS = {
     projectileRadius: 5,
     projectileLifetime: 1.5,
     color: 0xffeb3b,
+    sprite: 'cursor',
   },
   autoClicker: {
     ...DEFAULTS,
@@ -82,6 +86,7 @@ export const WEAPONS = {
     projectileRadius: 5,
     projectileLifetime: 1.2,
     color: 0xfff59d,
+    sprite: 'cursor-gold',
   },
   brickPhone: {
     ...DEFAULTS,
@@ -96,6 +101,7 @@ export const WEAPONS = {
     projectileLifetime: 1.1,
     arcHeight: 70,
     color: 0x90a4ae,
+    sprite: 'phone',
   },
   indestructibleBrick: {
     ...DEFAULTS,
@@ -111,6 +117,7 @@ export const WEAPONS = {
     projectileLifetime: 1.1,
     arcHeight: 110,
     color: 0xcfd8dc,
+    sprite: 'phone-gold',
   },
   computer8bit: {
     ...DEFAULTS,
@@ -123,6 +130,7 @@ export const WEAPONS = {
     projectileRadius: 4,
     projectileLifetime: 1,
     color: 0x66bb6a,
+    sprite: 'pixel-8',
   },
   upgrade16bit: {
     ...DEFAULTS,
@@ -136,6 +144,7 @@ export const WEAPONS = {
     projectileRadius: 5,
     projectileLifetime: 1,
     color: 0xa5d6a7,
+    sprite: 'pixel-16',
   },
   floppyDisk: {
     ...DEFAULTS,
@@ -149,6 +158,7 @@ export const WEAPONS = {
     projectileRadius: 9,
     projectileLifetime: 2,
     color: 0x42a5f5,
+    sprite: 'floppy',
   },
   diskArray: {
     ...DEFAULTS,
@@ -163,6 +173,7 @@ export const WEAPONS = {
     projectileRadius: 10,
     projectileLifetime: 2,
     color: 0x90caf9,
+    sprite: 'floppy-array',
   },
   crtMonitor: {
     ...DEFAULTS,
@@ -172,6 +183,7 @@ export const WEAPONS = {
     cooldown: 0.8,
     radius: 70,
     color: 0x26c6da,
+    sprite: 'crt-icon',
   },
   degausser: {
     ...DEFAULTS,
@@ -183,6 +195,7 @@ export const WEAPONS = {
     pulseInterval: 3,
     pulseDamage: 40,
     color: 0x80deea,
+    sprite: 'degausser-icon',
   },
   dialUpModem: {
     ...DEFAULTS,
@@ -193,6 +206,7 @@ export const WEAPONS = {
     count: 2,
     radius: 120,
     color: 0xab47bc,
+    sprite: 'modem',
   },
   broadband: {
     ...DEFAULTS,
@@ -203,6 +217,7 @@ export const WEAPONS = {
     count: 9,
     radius: 160,
     color: 0xce93d8,
+    sprite: 'broadband',
   },
   coolingFan: {
     ...DEFAULTS,
@@ -214,6 +229,7 @@ export const WEAPONS = {
     radius: 70,
     projectileRadius: 13,
     color: 0xb0bec5,
+    sprite: 'fan',
   },
   turbine: {
     ...DEFAULTS,
@@ -225,6 +241,7 @@ export const WEAPONS = {
     radius: 110,
     projectileRadius: 15,
     color: 0xeceff1,
+    sprite: 'turbine',
   },
   dotMatrixPrinter: {
     ...DEFAULTS,
@@ -237,6 +254,7 @@ export const WEAPONS = {
     projectileRadius: 4,
     projectileLifetime: 1,
     color: 0xfafafa,
+    sprite: 'paper',
   },
   laserPrinter: {
     ...DEFAULTS,
@@ -247,6 +265,7 @@ export const WEAPONS = {
     radius: 16,
     range: 520,
     color: 0xef5350,
+    sprite: 'laser-printer',
   },
   usbStick: {
     ...DEFAULTS,
@@ -260,6 +279,7 @@ export const WEAPONS = {
     projectileRadius: 8,
     projectileLifetime: 8,
     color: 0xff7043,
+    sprite: 'usb',
   },
   logicBomb: {
     ...DEFAULTS,
@@ -273,6 +293,7 @@ export const WEAPONS = {
     projectileRadius: 10,
     projectileLifetime: 10,
     color: 0xffab91,
+    sprite: 'bomb',
   },
   satelliteDish: {
     ...DEFAULTS,
@@ -286,6 +307,7 @@ export const WEAPONS = {
     projectileRadius: 12,
     projectileLifetime: 0.5,
     color: 0xffca28,
+    sprite: 'target',
   },
   orbitalUplink: {
     ...DEFAULTS,
@@ -300,6 +322,7 @@ export const WEAPONS = {
     projectileRadius: 14,
     projectileLifetime: 0.5,
     color: 0xffe082,
+    sprite: 'target-gold',
   },
 } satisfies Record<string, WeaponDef>;
 

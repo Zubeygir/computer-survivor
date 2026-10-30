@@ -1,11 +1,8 @@
 import Phaser from 'phaser';
 import type { Player } from '../entities/Player';
-import { createCircleTexture } from '../textures';
+import { ATLAS, PIXEL_SCALE } from '../art/atlas';
 
 const MAX_GEMS = 500;
-const GEM_RADIUS = 5;
-const GEM_COLOR = 0x26c6da;
-const TEXTURE_KEY = 'gem';
 // Starts below the player's speed but overtakes it within a fraction of a second
 const ATTRACT_START_SPEED = 100;
 const ATTRACT_ACCEL = 1200;
@@ -22,9 +19,8 @@ export class GemManager {
   private aliveCount = 0;
 
   constructor(scene: Phaser.Scene) {
-    createCircleTexture(scene, TEXTURE_KEY, GEM_RADIUS, GEM_COLOR);
     for (let i = 0; i < MAX_GEMS; i++) {
-      const sprite = scene.add.image(0, 0, TEXTURE_KEY).setVisible(false);
+      const sprite = scene.add.image(0, 0, ATLAS, 'chip').setScale(PIXEL_SCALE).setVisible(false);
       this.gems.push({ sprite, value: 0, attracted: false, speed: 0 });
     }
   }
