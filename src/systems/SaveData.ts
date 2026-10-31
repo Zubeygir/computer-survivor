@@ -20,6 +20,8 @@ export interface SaveState {
   /** Evolved weapon ids reached at least once. */
   evolutions: string[];
   daily: { date: string; tasks: DailyTaskState[] };
+  /** The first-run tutorial has played to the end. */
+  tutorialDone: boolean;
 }
 
 function defaultSave(): SaveState {
@@ -30,6 +32,7 @@ function defaultSave(): SaveState {
     workshop: {},
     evolutions: [],
     daily: { date: '', tasks: [] },
+    tutorialDone: false,
   };
 }
 

@@ -32,6 +32,20 @@ export function createVignette(scene: Phaser.Scene, key: string, size: number) {
   texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
 }
 
+/** Grey screen cover with a round hole; rebuilt for each use, because the hole moves. */
+export function createSpotlight(scene: Phaser.Scene, key: string, width: number, height: number, x: number, y: number, radius: number) {
+  if (scene.textures.exists(key)) scene.textures.remove(key);
+  const texture = scene.textures.createCanvas(key, width, height)!;
+  const context = texture.getContext();
+  context.fillStyle = 'rgba(96, 96, 96, 0.85)';
+  context.fillRect(0, 0, width, height);
+  context.globalCompositeOperation = 'destination-out';
+  context.beginPath();
+  context.arc(x, y, radius, 0, Math.PI * 2);
+  context.fill();
+  texture.refresh();
+}
+
 export function createRectTexture(scene: Phaser.Scene, key: string, width: number, height: number, color: number) {
   if (scene.textures.exists(key)) return;
   const g = scene.make.graphics({}, false);

@@ -75,6 +75,15 @@ class Progress {
     return workshopBonus(this.state.workshop);
   }
 
+  get tutorialDone(): boolean {
+    return this.state.tutorialDone;
+  }
+
+  markTutorialDone() {
+    this.state.tutorialDone = true;
+    writeSave(this.state);
+  }
+
   /** Returns false when it can't be paid for. */
   buyWeapon(id: WeaponId): boolean {
     const price = WEAPON_PRICES[id];

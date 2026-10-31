@@ -3,6 +3,7 @@ import { GameOverScene } from './scenes/GameOverScene';
 import { GameScene } from './scenes/GameScene';
 import { MenuScene } from './scenes/MenuScene';
 import { MuseumScene } from './scenes/MuseumScene';
+import { SpotlightScene } from './scenes/SpotlightScene';
 import { UpgradeScene } from './scenes/UpgradeScene';
 import { WorkshopScene } from './scenes/WorkshopScene';
 
@@ -18,5 +19,5 @@ new Phaser.Game({
     height: '100%',
   },
   // Only the first scene starts automatically; the rest are started from it and from GameScene
-  scene: [MenuScene, GameScene, UpgradeScene, GameOverScene, MuseumScene, WorkshopScene],
+  scene: [MenuScene, GameScene, UpgradeScene, SpotlightScene, GameOverScene, MuseumScene, WorkshopScene],
 });

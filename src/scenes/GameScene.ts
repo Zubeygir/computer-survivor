@@ -14,6 +14,7 @@ import { ProjectileManager } from '../systems/ProjectileManager';
 import { progress } from '../systems/Progress';
 import { Scenery } from '../systems/Scenery';
 import { Spawner } from '../systems/Spawner';
+import { Tutorial } from '../systems/Tutorial';
 import { Upgrades } from '../systems/Upgrades';
 import { Weapon } from '../systems/Weapon';
 import { BossBar } from '../ui/BossBar';
@@ -24,6 +25,7 @@ import { InventoryBar } from '../ui/InventoryBar';
 import { RunTimer } from '../ui/RunTimer';
 import { XP_BAR_HEIGHT, XpBar } from '../ui/XpBar';
 import type { GameOverSceneData } from './GameOverScene';
+import type { SpotlightSceneData } from './SpotlightScene';
 import type { UpgradeSceneData } from './UpgradeScene';
 
 type MoveKeys = Record<'W' | 'A' | 'S' | 'D' | 'UP' | 'LEFT' | 'DOWN' | 'RIGHT', Phaser.Input.Keyboard.Key>;
@@ -46,6 +48,7 @@ export class GameScene extends Phaser.Scene {
   private runTimer!: RunTimer;
   private arena!: Arena;
   private bossBar!: BossBar;
+  private tutorial: Tutorial | null = null;
   private joystick!: VirtualJoystick;
   private ground!: Phaser.GameObjects.TileSprite;
   private scenery!: Scenery;
@@ -69,6 +72,7 @@ export class GameScene extends Phaser.Scene {
     this.enemies = new EnemyManager(this, this.bullets, (x, y, def) => {
       this.gems.spawn(x, y, def.xp);
       if (this.arena.onKill(def)) this.player.heal(BOSS_KILL_HEAL);
+      this.tutorial?.onKill(x, y);
     });
     this.player = new Player(this, 0, 0);
     this.player.applyBonus(progress.bonus);
@@ -93,6 +97,9 @@ export class GameScene extends Phaser.Scene {
     this.refreshInventory();
     this.runTimer = new RunTimer(this);
     this.bossBar = new BossBar(this);
+    this.tutorial = progress.tutorialDone
+      ? null
+      : new Tutorial(this, this.player, this.enemies, (x, y, text) => this.openSpotlight(x, y, text));
     this.joystick = new VirtualJoystick(this);
     this.keys = this.input.keyboard!.addKeys('W,A,S,D,UP,LEFT,DOWN,RIGHT') as MoveKeys;
     this.createDebugText();
@@ -112,13 +119,18 @@ export class GameScene extends Phaser.Scene {
     } else {
       this.readKeyboard();
     }
+    if (this.tutorial?.holdsPlayer) this.move.reset();
     this.player.update(this.move, delta);
+    if (this.tutorial?.update(this.move.x !== 0 || this.move.y !== 0, delta)) {
+      this.tutorial = null;
+      progress.markTutorialDone();
+    }
     this.arena.update(this.spawner.time, delta);
     this.hpBar.follow(this.player.sprite.x, this.player.sprite.y + this.player.radius + 8);
-    // Skipping the spawner during a boss fight stops both the waves and the run clock
+    // Skipping the spawner during a boss fight or the tutorial stops both the waves and the run clock
     if (this.arena.active) {
       this.bossBar.show(this.arena.bossName, this.arena.bossHpRatio);
-    } else {
+    } else if (!this.tutorial) {
       this.spawner.update(delta);
       this.runTimer.set(this.spawner.time);
       this.bossBar.hide();
@@ -179,8 +191,18 @@ export class GameScene extends Phaser.Scene {
     this.joystick.reset();
     // Pausing stops update, tweens and timers together; the overlay resumes us when done
     this.scene.pause();
-    const data: UpgradeSceneData = { upgrades: this.upgrades, count };
+    const data: UpgradeSceneData = { upgrades: this.upgrades, count, guided: this.tutorial !== null };
+    this.tutorial?.onLevelUp();
     this.scene.launch('UpgradeScene', data);
+  }
+
+  /** (x, y) is a world position; the overlay works in screen pixels. */
+  private openSpotlight(x: number, y: number, text: string) {
+    this.joystick.reset();
+    this.scene.pause();
+    const cam = this.cameras.main;
+    const data: SpotlightSceneData = { x: x - cam.scrollX, y: y - cam.scrollY, text };
+    this.scene.launch('SpotlightScene', data);
   }
 
   private endRun(won: boolean) {
@@ -225,5 +247,6 @@ export class GameScene extends Phaser.Scene {
     this.xpBar.resize(gameSize.width);
     this.runTimer.resize(gameSize.width);
     this.bossBar.resize(gameSize.width);
+    this.tutorial?.resize(gameSize.width);
   }
 }

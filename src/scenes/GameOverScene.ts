@@ -60,13 +60,22 @@ export class GameOverScene extends Phaser.Scene {
     const buttons = { width: BUTTON_W, height: BUTTON_H, readyAt: this.readyAt };
     // Starting another scene from here also stops this one
     createButton(this, cx - offset, y, { ...buttons, label: 'Restart', onClick: () => this.scene.start('GameScene') });
-    createButton(this, cx + offset, y, {
+    createButton(this, cx + offset, y, { ...buttons, label: 'Menu', onClick: () => this.leaveTo('MenuScene') });
+    const workshopY = y - BUTTON_H - BUTTON_GAP;
+    createButton(this, cx, workshopY, {
       ...buttons,
-      label: 'Menu',
-      onClick: () => {
-        this.scene.stop('GameScene');
-        this.scene.start('MenuScene');
-      },
+      width: BUTTON_W * 2 + BUTTON_GAP,
+      label: 'Workshop',
+      onClick: () => this.leaveTo('WorkshopScene'),
     });
+    pixelText(this, cx, workshopY - BUTTON_H / 2 - 10, 'Spend Data in the Workshop and Museum', {
+      color: COLOR.muted,
+      maxWidth: width - SIDE_MARGIN * 2,
+    }).setOrigin(0.5, 1);
+  }
+
+  private leaveTo(scene: string) {
+    this.scene.stop('GameScene');
+    this.scene.start(scene);
   }
 }

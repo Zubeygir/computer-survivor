@@ -4,11 +4,14 @@ import { EVOLUTIONS, type UpgradeDef } from '../data/upgrades';
 import { WEAPONS } from '../data/weapons';
 import type { Upgrades } from '../systems/Upgrades';
 import { COLOR, panel, pixelText, starRows, TEXT_SIZE, TITLE_SIZE } from '../ui/Button';
+import { createHand } from '../ui/Hand';
 
 export interface UpgradeSceneData {
   upgrades: Upgrades;
   /** Levels gained at once; one choice is shown per level. */
   count: number;
+  /** Tutorial: a hand taps the middle card, though any card can still be picked. */
+  guided: boolean;
 }
 
 const CHOICES = 3;
@@ -25,11 +28,18 @@ const MAX_CARD_H = 250;
 const TEXT_PADDING = 8;
 const SMALL_TEXT_SIZE = 6;
 const ICON_SCALE = 3;
+/** Where the guide hand's finger rests, as a fraction of the card height below its center. */
+const HAND_CARD_Y = 0.1;
+const HAND_TAP_DISTANCE = 12;
+const HAND_TAP_MS = 350;
 
 /** Overlay launched over the paused GameScene; resumes it once every choice is made. */
 export class UpgradeScene extends Phaser.Scene {
   private upgrades!: Upgrades;
   private remaining = 0;
+  private guided = false;
+  /** Layout moves this; the tap motion plays inside it. */
+  private handSpot: Phaser.GameObjects.Container | null = null;
   private choices: UpgradeDef[] = [];
   private readonly cards: Phaser.GameObjects.Container[] = [];
   private backdrop!: Phaser.GameObjects.Rectangle;
@@ -45,11 +55,15 @@ export class UpgradeScene extends Phaser.Scene {
   init(data: UpgradeSceneData) {
     this.upgrades = data.upgrades;
     this.remaining = data.count;
+    this.guided = data.guided;
   }
 
   create() {
     this.backdrop = this.add.rectangle(0, 0, 1, 1, 0x000000, 0.6).setOrigin(0);
-    this.title = pixelText(this, 0, 0, 'Level up', { size: TITLE_SIZE, color: COLOR.gold }).setOrigin(0.5);
+    const title = this.guided ? 'Pick a card' : 'Level up';
+    this.title = pixelText(this, 0, 0, title, { size: TITLE_SIZE, color: COLOR.gold }).setOrigin(0.5);
+    // The scene object outlives its runs, so this must be cleared when not guided
+    this.handSpot = this.guided ? this.createGuideHand() : null;
     // Game object 'pointerup' fires before this, so a pick is handled before the press is cleared
     this.input.on('pointerup', () => (this.pressed = null));
 
@@ -103,6 +117,21 @@ export class UpgradeScene extends Phaser.Scene {
     for (let i = 0; i < n; i++) {
       this.cards.push(this.createCard(this.choices[i], firstX + i * (cardW + GAP), y, cardW, cardH));
     }
+    this.handSpot?.setPosition(firstX + Math.floor(n / 2) * (cardW + GAP), y + cardH * HAND_CARD_Y);
+  }
+
+  private createGuideHand(): Phaser.GameObjects.Container {
+    const hand = createHand(this);
+    this.tweens.add({
+      targets: hand,
+      y: HAND_TAP_DISTANCE,
+      duration: HAND_TAP_MS,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+    // Over the cards, which layout recreates
+    return this.add.container(0, 0, [hand]).setDepth(1);
   }
 
   private createCard(def: UpgradeDef, x: number, y: number, w: number, h: number): Phaser.GameObjects.Container {
