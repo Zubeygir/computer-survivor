@@ -19,6 +19,7 @@ import { Weapon } from '../systems/Weapon';
 import { BossBar } from '../ui/BossBar';
 import { pixelText } from '../ui/Button';
 import { HpBar } from '../ui/HpBar';
+import { HurtFlash } from '../ui/HurtFlash';
 import { InventoryBar } from '../ui/InventoryBar';
 import { RunTimer } from '../ui/RunTimer';
 import { XP_BAR_HEIGHT, XpBar } from '../ui/XpBar';
@@ -30,6 +31,7 @@ type MoveKeys = Record<'W' | 'A' | 'S' | 'D' | 'UP' | 'LEFT' | 'DOWN' | 'RIGHT',
 export class GameScene extends Phaser.Scene {
   private player!: Player;
   private hpBar!: HpBar;
+  private hurtFlash!: HurtFlash;
   private gems!: GemManager;
   private enemies!: EnemyManager;
   private spawner!: Spawner;
@@ -71,6 +73,7 @@ export class GameScene extends Phaser.Scene {
     this.player = new Player(this, 0, 0);
     this.player.applyBonus(progress.bonus);
     this.hpBar = new HpBar(this);
+    this.hurtFlash = new HurtFlash(this, this.player.sprite);
     // After the player, so the wall draws over anything brushing against it
     this.arena = new Arena(this, this.enemies, this.player, this.bullets);
     this.spawner = new Spawner(this.cameras.main, this.player, this.enemies);
@@ -124,9 +127,11 @@ export class GameScene extends Phaser.Scene {
     const stats = this.player.stats;
     const contactDamage = this.enemies.update(delta, this.player) * stats.damageTakenMult;
     const bulletDamage = this.bullets.update(delta, this.player);
+    const damage = contactDamage + bulletDamage;
     this.player.heal((stats.regen * delta) / 1000);
-    this.player.hp -= contactDamage + bulletDamage;
+    this.player.hp -= damage;
     this.hpBar.set(this.player.hp, stats.maxHp);
+    this.hurtFlash.update(damage, delta);
     // Skipping the rest of the frame keeps a level-up from opening on top of the game over
     if (this.player.hp <= 0) {
       this.endRun(false);
@@ -216,6 +221,7 @@ export class GameScene extends Phaser.Scene {
 
   private onResize(gameSize: Phaser.Structs.Size) {
     this.ground.setSize(gameSize.width, gameSize.height);
+    this.hurtFlash.resize(gameSize.width, gameSize.height);
     this.xpBar.resize(gameSize.width);
     this.runTimer.resize(gameSize.width);
     this.bossBar.resize(gameSize.width);

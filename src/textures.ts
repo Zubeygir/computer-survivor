@@ -16,6 +16,22 @@ export function createPixelDisc(scene: Phaser.Scene, key: string, radius: number
   texture.refresh();
 }
 
+/** White screen-edge glow to tint and stretch; clear out to half way, so the middle of the fight stays readable. */
+export function createVignette(scene: Phaser.Scene, key: string, size: number) {
+  if (scene.textures.exists(key)) return;
+  const texture = scene.textures.createCanvas(key, size, size)!;
+  const context = texture.getContext();
+  const center = size / 2;
+  const gradient = context.createRadialGradient(center, center, center / 2, center, center, center);
+  gradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
+  gradient.addColorStop(1, 'rgba(255, 255, 255, 1)');
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, size, size);
+  texture.refresh();
+  // Unlike the art this must stay smooth when stretched to the screen
+  texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
+}
+
 export function createRectTexture(scene: Phaser.Scene, key: string, width: number, height: number, color: number) {
   if (scene.textures.exists(key)) return;
   const g = scene.make.graphics({}, false);

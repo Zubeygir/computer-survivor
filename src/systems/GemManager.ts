@@ -26,12 +26,9 @@ export class GemManager {
   }
 
   spawn(x: number, y: number, value: number) {
-    if (this.aliveCount === MAX_GEMS) {
-      // Pool full: fold the XP into an existing gem so nothing is lost
-      this.gems[Math.floor(Math.random() * MAX_GEMS)].value += value;
-      return;
-    }
-    const gem = this.gems[this.aliveCount++];
+    // Pool full: the gem left farthest behind burns, so a kill always drops XP where it happened.
+    // Its XP is deliberately not carried over: that would hand back everything the player walked away from.
+    const gem = this.aliveCount === MAX_GEMS ? this.farthestFrom(x, y) : this.gems[this.aliveCount++];
     gem.value = value;
     gem.attracted = false;
     gem.speed = 0;
@@ -77,6 +74,23 @@ export class GemManager {
       i++;
     }
     return collected;
+  }
+
+  /** Scans every gem; only runs on kills that overflow the pool, not per frame. */
+  private farthestFrom(x: number, y: number): Gem {
+    let farthest = this.gems[0];
+    let bestDistSq = -1;
+    for (let i = 0; i < this.aliveCount; i++) {
+      const s = this.gems[i].sprite;
+      const dx = s.x - x;
+      const dy = s.y - y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 > bestDistSq) {
+        bestDistSq = d2;
+        farthest = this.gems[i];
+      }
+    }
+    return farthest;
   }
 
   /** Swaps with the last live gem, so the caller must not advance its index. */

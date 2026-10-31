@@ -31,6 +31,7 @@ export class Weapon {
   /** Seconds this weapon has existed; orbit hit cooldowns are stored against it. */
   private clock = 0;
   private orbitAngle = 0;
+  private fanSide = 1;
   private readonly blades: Phaser.GameObjects.Image[] = [];
   private aura: Phaser.GameObjects.Image | null = null;
   private readonly chained: Enemy[] = [];
@@ -143,11 +144,16 @@ export class Weapon {
     return shot;
   }
 
-  /** Fires the fan of shots centered on `aim`; an odd count always has one going straight at it. */
+  /**
+   * One shot flies straight along `aim` and the rest alternate sides, so an even count never
+   * straddles the target. The first side flips every volley, or the fan would lean one way.
+   */
   private fireFan(shot: Shot, aim: number) {
     const count = this.projectileCount;
+    this.fanSide = -this.fanSide;
     for (let i = 0; i < count; i++) {
-      const angle = aim + (i - (count - 1) / 2) * this.def.spread;
+      const side = i % 2 === 1 ? this.fanSide : -this.fanSide;
+      const angle = aim + Math.ceil(i / 2) * side * this.def.spread;
       shot.dirX = Math.cos(angle);
       shot.dirY = Math.sin(angle);
       this.projectiles.fire(this.def, shot);
