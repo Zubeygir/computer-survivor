@@ -25,14 +25,15 @@ export class GemManager {
     }
   }
 
-  spawn(x: number, y: number, value: number) {
+  /** `frame` is the atlas frame of the gem's color. */
+  spawn(x: number, y: number, value: number, frame: string) {
     // Pool full: the gem left farthest behind burns, so a kill always drops XP where it happened.
     // Its XP is deliberately not carried over: that would hand back everything the player walked away from.
     const gem = this.aliveCount === MAX_GEMS ? this.farthestFrom(x, y) : this.gems[this.aliveCount++];
     gem.value = value;
     gem.attracted = false;
     gem.speed = 0;
-    gem.sprite.setPosition(x, y).setVisible(true);
+    gem.sprite.setFrame(frame).setPosition(x, y).setVisible(true);
   }
 
   /** Sends every gem on the map after the player. */

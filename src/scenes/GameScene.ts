@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GROUND } from '../art/atlas';
 import { BOSS_KILL_HEAL } from '../data/bosses';
+import { rollGem } from '../data/gems';
 import { WEAPONS, type WeaponId } from '../data/weapons';
 import { Player } from '../entities/Player';
 import { VirtualJoystick } from '../input/VirtualJoystick';
@@ -82,7 +83,8 @@ export class GameScene extends Phaser.Scene {
         this.breakables.onBroken(x, y);
         return;
       }
-      this.gems.spawn(x, y, def.xp);
+      const gem = rollGem(def, this.spawner.time);
+      this.gems.spawn(x, y, def.xp * gem.xpMult, gem.sprite);
       if (this.arena.onKill(def)) this.player.heal(BOSS_KILL_HEAL);
       this.tutorial?.onKill(x, y);
     });
@@ -153,7 +155,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     const stats = this.player.stats;
-    const contactDamage = this.enemies.update(delta, this.player) * stats.damageTakenMult;
+    const contactDamage = this.enemies.update(delta, this.player) * stats.damageTakenMult * this.spawner.damageMult;
     const bulletDamage = this.bullets.update(delta, this.player);
     const damage = contactDamage + bulletDamage + arenaDamage;
     this.player.heal((stats.regen * delta) / 1000);
@@ -162,7 +164,7 @@ export class GameScene extends Phaser.Scene {
     this.hurtFlash.update(damage, delta);
     // Skipping the rest of the frame keeps a level-up from opening on top of the game over
     if (this.player.hp <= 0) {
-      this.endRun(false);
+      this.endRun();
       return;
     }
 
@@ -170,10 +172,6 @@ export class GameScene extends Phaser.Scene {
     this.projectiles.update(delta);
     this.effects.update(delta);
     this.enemies.removeDead();
-    if (this.arena.won) {
-      this.endRun(true);
-      return;
-    }
 
     this.pickups.update();
     // Held back during the tutorial, or the first shots would go to a computer instead of its bug
@@ -225,11 +223,10 @@ export class GameScene extends Phaser.Scene {
     this.scene.launch('SpotlightScene', data);
   }
 
-  private endRun(won: boolean) {
+  private endRun() {
     this.joystick.reset();
     this.scene.pause();
     const run = {
-      won,
       time: this.spawner.time,
       level: this.experience.level,
       kills: this.enemies.kills,
@@ -237,6 +234,7 @@ export class GameScene extends Phaser.Scene {
     const reward = progress.settleRun({
       ...run,
       bossKills: this.arena.bossKills,
+      milestoneKills: this.arena.milestoneKills,
       weapons: this.weapons.map((weapon) => weapon.def.id),
       dataFound: this.pickups.dataFound,
     });

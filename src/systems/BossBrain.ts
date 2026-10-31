@@ -40,6 +40,7 @@ export class BossBrain {
   private event!: BossEventDef;
   private cx = 0;
   private cy = 0;
+  private damageMult = 1;
   private hpRatio = 1;
   private state: State = 'pause';
   /** Seconds left in the current state. */
@@ -67,12 +68,13 @@ export class BossBrain {
       .setVisible(false);
   }
 
-  /** (cx, cy) is the arena center. */
-  begin(boss: Enemy, event: BossEventDef, cx: number, cy: number) {
+  /** (cx, cy) is the arena center; `damageMult` scales everything this boss's attacks deal. */
+  begin(boss: Enemy, event: BossEventDef, cx: number, cy: number, damageMult: number) {
     this.boss = boss;
     this.event = event;
     this.cx = cx;
     this.cy = cy;
+    this.damageMult = damageMult;
     this.hpRatio = 1;
     this.attackIndex = -1;
     boss.scripted = true;
@@ -202,7 +204,7 @@ export class BossBrain {
         this.spiralAngle = Math.random() * Math.PI * 2;
         return;
       case 'ring':
-        this.bullets.fireRing(x, y, attack.count, attack.speed, attack.damage);
+        this.bullets.fireRing(x, y, attack.count, attack.speed, attack.damage * this.damageMult);
         break;
       case 'fan':
         this.fireFan(attack);
@@ -231,7 +233,7 @@ export class BossBrain {
     const dy = s.y - player.sprite.y;
     if (!this.dashLanded && dx * dx + dy * dy < reach * reach) {
       this.dashLanded = true;
-      damage = attack.damage;
+      damage = attack.damage * this.damageMult;
     }
 
     if (this.timer > 0) return damage;
@@ -250,10 +252,11 @@ export class BossBrain {
     this.volleyLeft -= seconds;
     if (this.volleyLeft <= 0) {
       this.volleyLeft += attack.interval;
+      const damage = attack.damage * this.damageMult;
       const step = (Math.PI * 2) / attack.arms;
       for (let i = 0; i < attack.arms; i++) {
         const angle = this.spiralAngle + i * step;
-        this.bullets.fire(x, y, Math.cos(angle), Math.sin(angle), attack.speed, attack.damage);
+        this.bullets.fire(x, y, Math.cos(angle), Math.sin(angle), attack.speed, damage);
       }
       this.spiralAngle += attack.turn;
     }
@@ -263,20 +266,22 @@ export class BossBrain {
   private fireFan(attack: FanAttack) {
     const { x, y } = this.boss.sprite;
     const aim = Math.atan2(this.player.sprite.y - y, this.player.sprite.x - x);
+    const damage = attack.damage * this.damageMult;
     for (let i = 0; i < attack.count; i++) {
       const angle = aim + (i - (attack.count - 1) / 2) * attack.spread;
-      this.bullets.fire(x, y, Math.cos(angle), Math.sin(angle), attack.speed, attack.damage);
+      this.bullets.fire(x, y, Math.cos(angle), Math.sin(angle), attack.speed, damage);
     }
   }
 
   /** The first mark lands on the player, so standing still is never safe. */
   private dropZones(attack: ZonesAttack) {
     const { x, y } = this.player.sprite;
-    this.zones.spawn(x, y, attack.radius, attack.fuse, attack.damage);
+    const damage = attack.damage * this.damageMult;
+    this.zones.spawn(x, y, attack.radius, attack.fuse, damage);
     for (let i = 1; i < attack.count; i++) {
       const angle = Math.random() * Math.PI * 2;
       const dist = Math.random() * ZONE_SCATTER;
-      this.zones.spawn(x + Math.cos(angle) * dist, y + Math.sin(angle) * dist, attack.radius, attack.fuse, attack.damage);
+      this.zones.spawn(x + Math.cos(angle) * dist, y + Math.sin(angle) * dist, attack.radius, attack.fuse, damage);
     }
   }
 

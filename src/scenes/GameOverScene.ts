@@ -4,8 +4,6 @@ import { clearScene, COLOR, createButton, pixelText, TITLE_SIZE } from '../ui/Bu
 import { formatTime } from '../ui/RunTimer';
 
 export interface GameOverSceneData {
-  /** True when the final boss was killed, false when the player died. */
-  won: boolean;
   /** Seconds survived. */
   time: number;
   level: number;
@@ -20,7 +18,7 @@ const BUTTON_H = 52;
 const BUTTON_GAP = 16;
 const SIDE_MARGIN = 16;
 
-/** Run end overlay (death or win) over the paused GameScene: results, Data earned, what next. */
+/** Run end overlay over the paused GameScene: results, Data earned, what next. */
 export class GameOverScene extends Phaser.Scene {
   private run!: GameOverSceneData;
   private readyAt = 0;
@@ -41,15 +39,13 @@ export class GameOverScene extends Phaser.Scene {
   /** Rebuilds the screen; only runs on entry and on resize. */
   private layout() {
     clearScene(this);
-    const { won, time, level, kills, reward } = this.run;
+    const { time, level, kills, reward } = this.run;
     const { width, height } = this.scale;
     const cx = width / 2;
     this.add.rectangle(0, 0, width, height, 0x000000, 0.75).setOrigin(0);
-    pixelText(this, cx, height * 0.12, won ? 'System clean' : 'Game over', {
-      size: TITLE_SIZE,
-      color: won ? COLOR.good : COLOR.danger,
-    }).setOrigin(0.5);
-    pixelText(this, cx, height * 0.26, `Time ${formatTime(time)}\nLevel ${level}  Kills ${kills}`).setOrigin(0.5);
+    pixelText(this, cx, height * 0.12, 'Game over', { size: TITLE_SIZE, color: COLOR.danger }).setOrigin(0.5);
+    const record = reward.newRecord ? 'New record' : `Best ${formatTime(progress.bestTime)}`;
+    pixelText(this, cx, height * 0.26, `Time ${formatTime(time)}\n${record}\nLevel ${level}  Kills ${kills}`).setOrigin(0.5);
     pixelText(this, cx, height * 0.38, [`+${reward.total} Data`, `Total ${progress.data}`, ...reward.lines].join('\n'), {
       color: COLOR.data,
       maxWidth: width - SIDE_MARGIN * 2,

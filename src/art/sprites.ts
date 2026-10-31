@@ -267,6 +267,16 @@ const MODEM = [
   '.K.......K..',
 ];
 
+const CHIP = [
+  '..KKK..',
+  '.KUUUK.',
+  'KUUXUUK',
+  'KUXUUUK',
+  'KUUUUUK',
+  '.KUUUK.',
+  '..KKK..',
+];
+
 export const SPRITES: Record<string, string[]> = {
   'tech-stand': [...TECH_BODY, ...STAND_LEGS],
   'tech-step-a': [...TECH_BODY, ...STEP_A_LEGS],
@@ -664,15 +674,9 @@ export const SPRITES: Record<string, string[]> = {
     '.KK.......',
   ],
 
-  chip: [
-    '..KKK..',
-    '.KUUUK.',
-    'KUUXUUK',
-    'KUXUUUK',
-    'KUUUUUK',
-    '.KUUUK.',
-    '..KKK..',
-  ],
+  chip: CHIP,
+  'chip-green': recolor(CHIP, 'U', 'F'),
+  'chip-purple': recolor(CHIP, 'U', 'V'),
   'drop-heal': [
     '.KKK...KKK.',
     'KRRRK.KRRRK',

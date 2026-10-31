@@ -5,8 +5,8 @@ import type { WeaponId } from './weapons';
 export const RUN_REWARDS = {
   killsPerData: 10,
   perMinute: 5,
-  miniBoss: 30,
-  finalBoss: 100,
+  boss: 30,
+  milestoneBoss: 100,
   /** Once per evolution, ever. */
   firstEvolution: 100,
 };

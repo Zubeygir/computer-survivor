@@ -22,12 +22,10 @@ function fightTime(results, boss) {
 function scenario(label, config) {
   const results = Array.from({ length: runs }, () => run(config));
   const ends = results.map((r) => r.clock).sort((a, b) => a - b);
-  const wins = results.filter((r) => r.outcome === 'won').length;
   const evolved = results.filter((r) => r.evolvedAt !== null);
   const atFive = results.filter((r) => r.levelAtMinute[5] !== undefined);
   const columns = [
     label.padEnd(18),
-    `win ${wins}/${runs}`.padEnd(9),
     `median ${clock(ends[Math.floor(runs / 2)])}`,
     `low ${clock(ends[0])}`,
     `high ${clock(ends[runs - 1])}`,

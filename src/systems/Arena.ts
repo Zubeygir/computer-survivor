@@ -1,6 +1,14 @@
 import Phaser from 'phaser';
 import { ATLAS, PIXEL_SCALE } from '../art/atlas';
-import { ARENA_RADIUS, ARENA_WALL_DPS, BOSS_EVENTS, type BossEventDef } from '../data/bosses';
+import {
+  ARENA_RADIUS,
+  ARENA_WALL_DPS,
+  BOSS_EVENTS,
+  BOSS_FIRST_HP,
+  BOSS_HP_GROWTH,
+  BOSS_LOOP_DAMAGE_MULT,
+  type BossEventDef,
+} from '../data/bosses';
 import type { EnemyDef } from '../data/enemies';
 import type { Player } from '../entities/Player';
 import { BossBrain } from './BossBrain';
@@ -21,12 +29,16 @@ const BOSS_INSET = 80;
  * but it holds the player inside and burns on touch.
  */
 export class Arena {
-  /** Set once a final boss dies; the scene ends the run. */
-  won = false;
   bossKills = 0;
+  /** Bosses that pay the big reward; also counted in `bossKills`. */
+  milestoneKills = 0;
   private readonly walls: Phaser.GameObjects.Image[] = [];
   private readonly brain: BossBrain;
-  private nextEvent = 0;
+  private bossesStarted = 0;
+  /** How many bosses came before this one in the run. */
+  private fightOrder = 0;
+  /** How many times the boss list had started over when the current fight began. */
+  private fightRound = 0;
   private current: BossEventDef | null = null;
   private boss: Enemy | null = null;
   private bossMaxHp = 0;
@@ -75,9 +87,10 @@ export class Arena {
    */
   update(time: number, delta: number): number {
     if (!this.current) {
-      if (this.nextEvent < BOSS_EVENTS.length && time >= BOSS_EVENTS[this.nextEvent].time) {
-        this.start(BOSS_EVENTS[this.nextEvent++]);
-      }
+      const event = BOSS_EVENTS[this.bossesStarted % BOSS_EVENTS.length];
+      // Each round of the list takes as long as the list itself, measured to its last boss
+      const roundLength = BOSS_EVENTS[BOSS_EVENTS.length - 1].time;
+      if (time >= event.time + this.round * roundLength) this.start(event);
       return 0;
     }
     // The pool can be full when the ring closes; retry until a dying enemy frees a slot
@@ -92,7 +105,7 @@ export class Arena {
     // Bosses only exist during their own fight, so the def identifies the current boss
     if (!this.current || def !== this.current.boss) return false;
     this.bossKills++;
-    if (this.current.final) this.won = true;
+    if (this.current.milestone) this.milestoneKills++;
     this.brain.stop();
     this.zones.clear();
     this.current = null;
@@ -101,8 +114,15 @@ export class Arena {
     return true;
   }
 
+  private get round(): number {
+    return Math.floor(this.bossesStarted / BOSS_EVENTS.length);
+  }
+
   private start(event: BossEventDef) {
     this.current = event;
+    this.fightOrder = this.bossesStarted;
+    this.fightRound = this.round;
+    this.bossesStarted++;
     this.cx = this.player.sprite.x;
     this.cy = this.player.sprite.y;
     this.enemies.removeOutside(this.cx, this.cy, ARENA_RADIUS);
@@ -120,14 +140,14 @@ export class Arena {
   private spawnBoss(event: BossEventDef) {
     const angle = Math.random() * Math.PI * 2;
     const dist = ARENA_RADIUS - BOSS_INSET;
-    this.bossMaxHp = event.boss.hp * event.hpMult;
+    this.bossMaxHp = BOSS_FIRST_HP * BOSS_HP_GROWTH ** this.fightOrder * event.hpMult;
     this.boss = this.enemies.spawn(
       event.boss,
       this.cx + Math.cos(angle) * dist,
       this.cy + Math.sin(angle) * dist,
       this.bossMaxHp,
     );
-    if (this.boss) this.brain.begin(this.boss, event, this.cx, this.cy);
+    if (this.boss) this.brain.begin(this.boss, event, this.cx, this.cy, BOSS_LOOP_DAMAGE_MULT ** this.fightRound);
   }
 
   /** Returns the damage from touching the wall this frame. */

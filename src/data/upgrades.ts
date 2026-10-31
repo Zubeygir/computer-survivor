@@ -255,6 +255,6 @@ export const REPAIR: RepairUpgrade = {
   kind: 'repair',
   name: 'Repair',
   icon: 'icon-repair',
-  heal: 30,
-  levels: [{ text: 'Restores 30 HP', stats: {} }],
+  heal: 10,
+  levels: [{ text: 'Restores 10 HP', stats: {} }],
 };

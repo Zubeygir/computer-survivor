@@ -1,4 +1,5 @@
 import { ARENA_RADIUS, BOSS_KILL_HEAL } from '../../src/data/bosses';
+import { rollGem } from '../../src/data/gems';
 import { RUN_REWARDS, STARTING_WEAPONS, WORKSHOP, workshopBonus } from '../../src/data/meta';
 import { EVOLUTIONS, UPGRADES } from '../../src/data/upgrades';
 import { WEAPONS } from '../../src/data/weapons';
@@ -18,7 +19,7 @@ import { Upgrades } from '../../src/systems/Upgrades';
 import { Weapon } from '../../src/systems/Weapon';
 
 const DELTA = 1000 / 30;
-const MAX_SECONDS = 900;
+const MAX_SECONDS = 2400;
 /** The bots don't try to dodge bullets, dashes or ground marks; a human sidesteps most of them. */
 const DODGEABLE_DAMAGE_TAKEN = 0.4;
 /** How far the bot looks for enemies and for gems, in pixels. */
@@ -67,7 +68,8 @@ export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, 
       breakables.onBroken(x, y);
       return;
     }
-    gems.spawn(x, y, def.xp);
+    const gem = rollGem(def, spawner.time);
+    gems.spawn(x, y, def.xp * gem.xpMult, gem.sprite);
     if (arena.onKill(def)) {
       player.heal(BOSS_KILL_HEAL);
       bossesKilled++;
@@ -103,7 +105,7 @@ export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, 
       level: experience.level,
       kills: enemies.kills,
       bossesKilled,
-      data: dataEarned(outcome === 'won', spawner.time, enemies.kills, bossesKilled) + pickups.dataFound,
+      data: dataEarned(spawner.time, enemies.kills, bossesKilled, arena.milestoneKills) + pickups.dataFound,
       fights,
       evolvedAt,
       levelAtMinute,
@@ -124,7 +126,7 @@ export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, 
     if (!arena.active) spawner.update(DELTA);
 
     const stats = player.stats;
-    const contactDamage = enemies.update(DELTA, player) * stats.damageTakenMult;
+    const contactDamage = enemies.update(DELTA, player) * stats.damageTakenMult * spawner.damageMult;
     const dodgeable = (bullets.update(DELTA, player) + arenaDamage) * (bot === 'strafe' ? DODGEABLE_DAMAGE_TAKEN : 1);
     player.heal((stats.regen * DELTA) / 1000);
     player.hp -= (contactDamage + dodgeable) * damageTaken;
@@ -134,7 +136,6 @@ export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, 
     projectiles.update(DELTA);
     effects.update(DELTA);
     enemies.removeDead();
-    if (arena.won) return result('won');
     pickups.update();
     breakables.update(DELTA);
 
@@ -155,13 +156,12 @@ export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, 
   return result('timeout');
 }
 
-function dataEarned(won, time, kills, bosses) {
-  const miniBosses = bosses - (won ? 1 : 0);
+function dataEarned(time, kills, bosses, milestones) {
   return (
     Math.floor(kills / RUN_REWARDS.killsPerData) +
     Math.floor(time / 60) * RUN_REWARDS.perMinute +
-    miniBosses * RUN_REWARDS.miniBoss +
-    (won ? RUN_REWARDS.finalBoss : 0)
+    (bosses - milestones) * RUN_REWARDS.boss +
+    milestones * RUN_REWARDS.milestoneBoss
   );
 }
 

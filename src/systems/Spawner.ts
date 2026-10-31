@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { BOTNET_EVENTS, WAVES, type BotnetEventDef, type WaveDef } from '../data/waves';
+import { BOTNET_EVENTS, EASY_START, OVERTIME, WAVES, type BotnetEventDef, type WaveDef } from '../data/waves';
 import type { Player } from '../entities/Player';
 import type { EnemyManager } from './EnemyManager';
 
@@ -29,6 +29,16 @@ export class Spawner {
     return this.elapsed;
   }
 
+  /** Multiplies the contact damage of enemies. */
+  get damageMult(): number {
+    return 1 + this.overtime * OVERTIME.damage;
+  }
+
+  /** Full minutes past the last wave. */
+  private get overtime(): number {
+    return Math.max(0, Math.floor(this.elapsed / 60) - (WAVES.length - 1));
+  }
+
   update(delta: number) {
     const seconds = delta / 1000;
     this.elapsed += seconds;
@@ -44,7 +54,8 @@ export class Spawner {
       this.spawnFrom(wave, ring);
     }
 
-    for (let i = 0; i < MAX_REFILL_PER_FRAME && this.enemies.hostileCount < wave.minimum; i++) {
+    const minimum = Math.min(wave.minimum + this.overtime * OVERTIME.extraEnemies, OVERTIME.maxEnemies);
+    for (let i = 0; i < MAX_REFILL_PER_FRAME && this.enemies.hostileCount < minimum; i++) {
       this.spawnFrom(wave, ring);
     }
 
@@ -73,7 +84,8 @@ export class Spawner {
   private spawnFrom(wave: WaveDef, ring: number) {
     const def = wave.enemies[Math.floor(Math.random() * wave.enemies.length)];
     this.pickRingPoint(ring);
-    this.enemies.spawn(def, this.point.x, this.point.y, def.hp * wave.hpMult);
+    const hp = this.elapsed < EASY_START.seconds ? EASY_START.hp : def.hp * wave.hpMult * (1 + this.overtime * OVERTIME.hp);
+    this.enemies.spawn(def, this.point.x, this.point.y, hp);
   }
 
   /** Keeps pressure on a fleeing player: far-behind enemies reappear just off screen. */

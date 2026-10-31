@@ -15,12 +15,13 @@ import type { WeaponId } from '../data/weapons';
 import { loadSave, writeSave, type DailyTaskState } from './SaveData';
 
 export interface RunSummary {
-  won: boolean;
   /** Run clock seconds. */
   time: number;
   level: number;
   kills: number;
   bossKills: number;
+  /** Bosses that pay the big reward; also counted in `bossKills`. */
+  milestoneKills: number;
   /** Ids of the weapons held at the end, evolved forms included. */
   weapons: string[];
   /** Picked up during the run. */
@@ -31,6 +32,7 @@ export interface RunReward {
   total: number;
   /** One line per earned bonus, for the result screen. */
   lines: string[];
+  newRecord: boolean;
 }
 
 export interface DailyTaskView {
@@ -77,6 +79,10 @@ class Progress {
     return workshopBonus(this.state.workshop);
   }
 
+  get bestTime(): number {
+    return this.state.bestTime;
+  }
+
   get tutorialDone(): boolean {
     return this.state.tutorialDone;
   }
@@ -120,13 +126,13 @@ class Progress {
 
   /** Pays out a finished run and saves. */
   settleRun(run: RunSummary): RunReward {
-    const miniBosses = run.bossKills - (run.won ? 1 : 0);
+    const normalBosses = run.bossKills - run.milestoneKills;
     const lines: string[] = [];
     let total =
       Math.floor(run.kills / RUN_REWARDS.killsPerData) +
       Math.floor(run.time / 60) * RUN_REWARDS.perMinute +
-      miniBosses * RUN_REWARDS.miniBoss;
-    if (run.won) total += RUN_REWARDS.finalBoss;
+      normalBosses * RUN_REWARDS.boss +
+      run.milestoneKills * RUN_REWARDS.milestoneBoss;
     total += run.dataFound;
     if (run.dataFound > 0) lines.push(`Picked up ${run.dataFound} Data`);
 
@@ -139,8 +145,10 @@ class Progress {
 
     total += this.advanceDaily(run, lines);
     this.state.data += total;
+    const newRecord = run.time > this.state.bestTime;
+    if (newRecord) this.state.bestTime = run.time;
     writeSave(this.state);
-    return { total, lines };
+    return { total, lines, newRecord };
   }
 
   private pay(price: number): boolean {

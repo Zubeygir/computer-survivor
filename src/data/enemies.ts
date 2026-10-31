@@ -28,8 +28,12 @@ export interface EnemyDef {
   hp: number;
   /** Damage per second dealt to the player while touching; touching enemies stack. */
   contactDps: number;
-  /** XP value of the gem dropped on death. */
+  /** XP value of the gem dropped on death, before the gem's color multiplies it. */
   xp: number;
+  /** Chance from 0 to 1 that the gem is green instead of blue. */
+  greenChance?: number;
+  /** Chance from 0 to 1 that the gem is purple instead, late in the run. */
+  purpleChance?: number;
   /** Atlas frames, stepped through by the shared animation clock. Art faces right. */
   frames: string[];
   ranged?: RangedDef;
@@ -51,9 +55,19 @@ export const ENEMIES = {
   /** Fast and fragile; comes in floods. */
   spam: { id: 'spam', speed: 140, radius: 11, hp: 4, contactDps: 4, xp: 1, frames: ['spam-0', 'spam-1'] },
   /** Slow and tanky; walls the player in. */
-  worm: { id: 'worm', speed: 55, radius: 18, hp: 40, contactDps: 10, xp: 3, frames: ['worm-0', 'worm-1'] },
+  worm: { id: 'worm', speed: 55, radius: 18, hp: 40, contactDps: 10, xp: 3, greenChance: 0.3, frames: ['worm-0', 'worm-1'] },
   /** Elite-like brute. */
-  trojan: { id: 'trojan', speed: 65, radius: 26, hp: 200, contactDps: 18, xp: 10, frames: ['trojan-0', 'trojan-1'] },
+  trojan: {
+    id: 'trojan',
+    speed: 65,
+    radius: 26,
+    hp: 200,
+    contactDps: 18,
+    xp: 10,
+    greenChance: 0.5,
+    purpleChance: 0.3,
+    frames: ['trojan-0', 'trojan-1'],
+  },
   /** Keeps its distance and shoots. */
   popUp: {
     id: 'popUp',
@@ -62,6 +76,7 @@ export const ENEMIES = {
     hp: 30,
     contactDps: 6,
     xp: 4,
+    greenChance: 0.4,
     frames: ['popup'],
     ranged: { keepDistance: 240, fireInterval: 3, bulletSpeed: 180, bulletDamage: 8 },
   },
@@ -73,6 +88,8 @@ export const ENEMIES = {
     hp: 35,
     contactDps: 12,
     xp: 4,
+    greenChance: 0.4,
+    purpleChance: 0.1,
     frames: ['phisher-0', 'phisher-1'],
     charge: { triggerRange: 220, aimTime: 1, dashSpeed: 320, dashTime: 0.6, restTime: 2 },
   },
@@ -84,6 +101,7 @@ export const ENEMIES = {
     hp: 50,
     contactDps: 8,
     xp: 3,
+    greenChance: 0.3,
     frames: ['adware'],
     split: { into: miniAd, count: 2 },
   },
@@ -93,9 +111,9 @@ export const ENEMIES = {
 
   // Bosses only spawn through boss events and never coexist, so the radius limit is boss + largest
   // regular enemy; ransomware + trojan slightly exceeds it, which allows a few pixels of overlap.
-  // What bosses do lives in their boss events; these are only their bodies.
-  rootkit: { id: 'rootkit', speed: 70, radius: 34, hp: 1200, contactDps: 20, xp: 30, frames: ['rootkit'] },
-  spyware: { id: 'spyware', speed: 85, radius: 30, hp: 2800, contactDps: 14, xp: 30, frames: ['spyware'] },
-  forkBomb: { id: 'forkBomb', speed: 60, radius: 32, hp: 5000, contactDps: 16, xp: 30, frames: ['fork-bomb'] },
-  ransomware: { id: 'ransomware', speed: 75, radius: 40, hp: 24000, contactDps: 30, xp: 0, frames: ['ransomware'] },
+  // What bosses do and how much HP they have lives in their boss events; these are only their bodies.
+  rootkit: { id: 'rootkit', speed: 70, radius: 34, hp: 1, contactDps: 20, xp: 30, frames: ['rootkit'] },
+  spyware: { id: 'spyware', speed: 85, radius: 30, hp: 1, contactDps: 14, xp: 30, frames: ['spyware'] },
+  forkBomb: { id: 'forkBomb', speed: 60, radius: 32, hp: 1, contactDps: 16, xp: 30, frames: ['fork-bomb'] },
+  ransomware: { id: 'ransomware', speed: 75, radius: 40, hp: 1, contactDps: 30, xp: 0, frames: ['ransomware'] },
 } satisfies Record<string, EnemyDef>;

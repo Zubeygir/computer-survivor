@@ -83,7 +83,7 @@ export class Tutorial {
         // First frame after the cards close: the scene does not update while they are up
         this.step = 'goal';
         this.secondsLeft = GOAL_SECONDS;
-        this.hint.show('Survive 10 minutes and beat the final boss');
+        this.hint.show('Survive as long as you can');
         return false;
       case 'goal':
         this.secondsLeft -= seconds;

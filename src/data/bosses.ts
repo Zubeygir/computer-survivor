@@ -80,9 +80,10 @@ export interface BossEventDef {
   time: number;
   name: string;
   boss: EnemyDef;
+  /** Multiplies the HP this boss's place in the order gives it. */
   hpMult: number;
-  /** Killing a final boss wins the run. */
-  final: boolean;
+  /** Pays the big Data reward instead of the normal boss one. */
+  milestone: boolean;
   /** Pixels the boss stays away from the player; 0 chases. */
   keepDistance: number;
   /** From `belowHp: 1` downwards. */
@@ -96,6 +97,12 @@ export const ARENA_WALL_DPS = 25;
 /** HP the player recovers when any boss dies. */
 export const BOSS_KILL_HEAL = 50;
 
+/** HP of the first boss of a run; every later boss has this much more than the one before. */
+export const BOSS_FIRST_HP = 3000;
+export const BOSS_HP_GROWTH = 1.7;
+/** The list starts over after its last boss, its attacks multiplied by this once per time round. */
+export const BOSS_LOOP_DAMAGE_MULT = 1.5;
+
 /** Sorted by time. */
 export const BOSS_EVENTS: BossEventDef[] = [
   {
@@ -103,7 +110,7 @@ export const BOSS_EVENTS: BossEventDef[] = [
     name: 'ROOTKIT',
     boss: ENEMIES.rootkit,
     hpMult: 1,
-    final: false,
+    milestone: false,
     keepDistance: 0,
     phases: [
       {
@@ -122,8 +129,8 @@ export const BOSS_EVENTS: BossEventDef[] = [
     time: 300,
     name: 'SPYWARE',
     boss: ENEMIES.spyware,
-    hpMult: 1,
-    final: false,
+    hpMult: 1.2,
+    milestone: false,
     keepDistance: 180,
     phases: [
       {
@@ -149,7 +156,7 @@ export const BOSS_EVENTS: BossEventDef[] = [
     name: 'FORK BOMB',
     boss: ENEMIES.forkBomb,
     hpMult: 1,
-    final: false,
+    milestone: false,
     keepDistance: 0,
     phases: [
       {
@@ -174,8 +181,8 @@ export const BOSS_EVENTS: BossEventDef[] = [
     time: 600,
     name: 'RANSOMWARE',
     boss: ENEMIES.ransomware,
-    hpMult: 1,
-    final: true,
+    hpMult: 2,
+    milestone: true,
     keepDistance: 0,
     phases: [
       {

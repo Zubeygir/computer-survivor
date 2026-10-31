@@ -22,6 +22,8 @@ export interface SaveState {
   daily: { date: string; tasks: DailyTaskState[] };
   /** The first-run tutorial has played to the end. */
   tutorialDone: boolean;
+  /** Longest run, in run clock seconds. */
+  bestTime: number;
 }
 
 function defaultSave(): SaveState {
@@ -33,6 +35,7 @@ function defaultSave(): SaveState {
     evolutions: [],
     daily: { date: '', tasks: [] },
     tutorialDone: false,
+    bestTime: 0,
   };
 }
 

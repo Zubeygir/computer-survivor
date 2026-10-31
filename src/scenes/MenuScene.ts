@@ -3,6 +3,7 @@ import { ATLAS, loadArt } from '../art/atlas';
 import { PLAYER_FRAMES } from '../art/sprites';
 import { progress } from '../systems/Progress';
 import { addBackdrop, clearScene, COLOR, createButton, panel, pixelText } from '../ui/Button';
+import { formatTime } from '../ui/RunTimer';
 
 const TITLE = 'COMPUTER SURVIVOR';
 const CHAR_UNIT = 6;
@@ -38,7 +39,8 @@ export class MenuScene extends Phaser.Scene {
     const titleSize = Math.max(CHAR_UNIT, Math.min(MAX_TITLE_SIZE, room));
     pixelText(this, cx, 28, TITLE, { size: titleSize, color: COLOR.panelShadow }).setOrigin(0.5);
     const dataY = 28 + titleSize + 8;
-    pixelText(this, cx, dataY, `Data ${progress.data}`, { color: COLOR.panelShadow }).setOrigin(0.5);
+    const best = progress.bestTime > 0 ? `  Best ${formatTime(progress.bestTime)}` : '';
+    pixelText(this, cx, dataY, `Data ${progress.data}${best}`, { color: COLOR.panelShadow }).setOrigin(0.5);
 
     const buttonH = portrait ? 52 : 44;
     const buttonW = Math.min(columnW - SIDE_MARGIN * 2, MAX_BUTTON_W);
