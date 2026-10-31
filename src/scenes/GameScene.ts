@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
 import { GROUND } from '../art/atlas';
 import { BOSS_KILL_HEAL } from '../data/bosses';
+import { BOSS_DROP, MINI_BOSS_DROP } from '../data/drops';
 import { rollGem } from '../data/gems';
+import type { SlotOdds } from '../data/slots';
 import { WEAPONS, type WeaponId } from '../data/weapons';
 import { Player } from '../entities/Player';
 import { VirtualJoystick } from '../input/VirtualJoystick';
@@ -29,6 +31,7 @@ import { InventoryBar } from '../ui/InventoryBar';
 import { RunTimer } from '../ui/RunTimer';
 import { XP_BAR_HEIGHT, XpBar } from '../ui/XpBar';
 import type { GameOverSceneData } from './GameOverScene';
+import type { SlotSceneData } from './SlotScene';
 import type { SpotlightSceneData } from './SpotlightScene';
 import type { UpgradeSceneData } from './UpgradeScene';
 
@@ -85,7 +88,11 @@ export class GameScene extends Phaser.Scene {
       }
       const gem = rollGem(def, this.spawner.time);
       this.gems.spawn(x, y, def.xp * gem.xpMult, gem.sprite);
-      if (this.arena.onKill(def)) this.player.heal(BOSS_KILL_HEAL);
+      if (def.miniBoss) this.pickups.spawn(x, y, MINI_BOSS_DROP);
+      if (this.arena.onKill(def)) {
+        this.player.heal(BOSS_KILL_HEAL);
+        this.pickups.spawn(x, y, BOSS_DROP);
+      }
       this.tutorial?.onKill(x, y);
     });
     this.player = new Player(this, 0, 0);
@@ -96,7 +103,7 @@ export class GameScene extends Phaser.Scene {
     this.arena = new Arena(this, this.enemies, this.player, this.bullets, this.zones);
     this.spawner = new Spawner(this.cameras.main, this.player, this.enemies);
     this.effects = new Effects(this);
-    this.pickups = new Pickups(this, this.cameras.main, this.player, this.gems, this.enemies);
+    this.pickups = new Pickups(this, this.cameras.main, this.player, this.gems, this.enemies, (odds) => this.openSlot(odds));
     this.breakables = new Breakables(this.cameras.main, this.player, this.enemies, this.pickups, this.effects, (x, y) =>
       this.arena.contains(x, y),
     );
@@ -212,6 +219,13 @@ export class GameScene extends Phaser.Scene {
     const data: UpgradeSceneData = { upgrades: this.upgrades, count, guided: this.tutorial !== null };
     this.tutorial?.onLevelUp();
     this.scene.launch('UpgradeScene', data);
+  }
+
+  private openSlot(odds: SlotOdds) {
+    this.joystick.reset();
+    this.scene.pause();
+    const data: SlotSceneData = { upgrades: this.upgrades, odds };
+    this.scene.launch('SlotScene', data);
   }
 
   /** (x, y) is a world position; the overlay works in screen pixels. */

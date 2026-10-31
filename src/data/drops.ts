@@ -1,10 +1,14 @@
+import { BOSS_ODDS, MINI_BOSS_ODDS, type SlotOdds } from './slots';
+
 export type DropEffect =
   | { kind: 'heal'; amount: number }
   | { kind: 'data'; amount: number }
   /** Pulls every gem on the map to the player. */
   | { kind: 'magnet' }
   /** Kills every enemy on screen except bosses. */
-  | { kind: 'nuke' };
+  | { kind: 'nuke' }
+  /** Opens the slot machine. */
+  | { kind: 'slot'; odds: SlotOdds };
 
 export interface DropDef {
   /** Atlas frame. */
@@ -25,6 +29,9 @@ export const COMPUTER_DROPS: DropDef[] = [
   { sprite: 'icon-magnet', weight: 7, effect: { kind: 'magnet' } },
   { sprite: 'drop-nuke', weight: 4, effect: { kind: 'nuke' } },
 ];
+
+export const MINI_BOSS_DROP: DropDef = { sprite: 'slot-machine', weight: 1, effect: { kind: 'slot', odds: MINI_BOSS_ODDS } };
+export const BOSS_DROP: DropDef = { sprite: 'slot-machine', weight: 1, effect: { kind: 'slot', odds: BOSS_ODDS } };
 
 export function rollDrop(table: DropDef[]): DropDef {
   let total = 0;

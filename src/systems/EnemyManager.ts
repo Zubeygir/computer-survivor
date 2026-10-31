@@ -99,7 +99,11 @@ export class EnemyManager {
     enemy.phase = 'approach';
     enemy.timer = def.ranged?.fireInterval ?? 0;
     enemy.orbitReadyAt = 0;
-    enemy.sprite.setFrame(def.frames[this.animationStep % def.frames.length]).setPosition(x, y).setVisible(true);
+    enemy.sprite
+      .setFrame(def.frames[this.animationStep % def.frames.length])
+      .setScale(PIXEL_SCALE * (def.scale ?? 1))
+      .setPosition(x, y)
+      .setVisible(true);
     return enemy;
   }
 

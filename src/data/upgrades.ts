@@ -258,3 +258,10 @@ export const REPAIR: RepairUpgrade = {
   heal: 10,
   levels: [{ text: 'Restores 10 HP', stats: {} }],
 };
+
+/** What a slot machine gives once nothing owned has a level left. */
+export const SLOT_REPAIR: RepairUpgrade = {
+  ...REPAIR,
+  heal: 30,
+  levels: [{ text: 'Restores 30 HP', stats: {} }],
+};

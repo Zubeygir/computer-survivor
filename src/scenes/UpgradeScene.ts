@@ -188,7 +188,7 @@ export class UpgradeScene extends Phaser.Scene {
   }
 }
 
-function iconFor(def: UpgradeDef): string {
+export function iconFor(def: UpgradeDef): string {
   switch (def.kind) {
     case 'weapon':
       return WEAPONS[def.weapon].sprite;

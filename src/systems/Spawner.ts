@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { miniBossFor, miniBossHp, nextMiniBossTime } from '../data/miniBosses';
 import { BOTNET_EVENTS, EASY_START, OVERTIME, WAVES, type BotnetEventDef, type WaveDef } from '../data/waves';
 import type { Player } from '../entities/Player';
 import type { EnemyManager } from './EnemyManager';
@@ -16,6 +17,7 @@ export class Spawner {
   private elapsed = 0;
   private intervalLeft = 0;
   private nextBotnet = 0;
+  private nextMiniBoss = nextMiniBossTime(0);
   private readonly point = new Phaser.Math.Vector2();
 
   constructor(
@@ -63,7 +65,18 @@ export class Spawner {
       this.spawnBotnet(BOTNET_EVENTS[this.nextBotnet++], ring);
     }
 
+    if (this.elapsed >= this.nextMiniBoss) this.spawnMiniBoss(ring);
+
     this.recycle(ring);
+  }
+
+  /** A full pool leaves the time as it is, so the mini boss comes as soon as a slot frees up. */
+  private spawnMiniBoss(ring: number) {
+    const time = this.nextMiniBoss;
+    this.pickRingPoint(ring);
+    if (this.enemies.spawn(miniBossFor(time), this.point.x, this.point.y, miniBossHp(time))) {
+      this.nextMiniBoss = nextMiniBossTime(time);
+    }
   }
 
   /** A line of enemies entering from one side, walking through the player's position to the other. */

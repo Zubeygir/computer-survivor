@@ -1,5 +1,7 @@
 import { ARENA_RADIUS, BOSS_KILL_HEAL } from '../../src/data/bosses';
+import { BOSS_DROP, MINI_BOSS_DROP } from '../../src/data/drops';
 import { rollGem } from '../../src/data/gems';
+import { rollHits } from '../../src/data/slots';
 import { RUN_REWARDS, STARTING_WEAPONS, WORKSHOP, workshopBonus } from '../../src/data/meta';
 import { EVOLUTIONS, UPGRADES } from '../../src/data/upgrades';
 import { WEAPONS } from '../../src/data/weapons';
@@ -70,15 +72,18 @@ export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, 
     }
     const gem = rollGem(def, spawner.time);
     gems.spawn(x, y, def.xp * gem.xpMult, gem.sprite);
+    if (def.miniBoss) pickups.spawn(x, y, MINI_BOSS_DROP);
     if (arena.onKill(def)) {
       player.heal(BOSS_KILL_HEAL);
+      pickups.spawn(x, y, BOSS_DROP);
       bossesKilled++;
     }
   });
   arena = new Arena(scene, enemies, player, bullets, new DangerZones(scene));
   const spawner = new Spawner(camera, player, enemies);
   const effects = new Effects(scene);
-  const pickups = new Pickups(scene, camera, player, gems, enemies);
+  // The bot pulls the lever straight away; the upgrades land the same way as in the real overlay
+  const pickups = new Pickups(scene, camera, player, gems, enemies, (odds) => upgrades.spin(rollHits(odds)));
   breakables = new Breakables(camera, player, enemies, pickups, effects, (x, y) => arena.contains(x, y));
   const projectiles = new ProjectileManager(scene, enemies, player, effects);
   const weapons = [];

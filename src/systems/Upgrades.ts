@@ -1,9 +1,11 @@
+import { SLOT_WEAPON_CHANCE } from '../data/slots';
 import {
   EVOLUTIONS,
   MAX_PASSIVES,
   MAX_WEAPONS,
   OWNED_CARD_WEIGHT,
   REPAIR,
+  SLOT_REPAIR,
   UPGRADES,
   type EvolutionUpgrade,
   type PassiveUpgrade,
@@ -13,6 +15,12 @@ import {
 import { WEAPONS, type WeaponId } from '../data/weapons';
 import type { Player } from '../entities/Player';
 import type { Weapon } from './Weapon';
+
+export interface SlotPick {
+  def: UpgradeDef;
+  /** The level it reached, 0 for a Repair. */
+  level: number;
+}
 
 /** Tracks how many levels of each upgrade were taken and applies their effects. */
 export class Upgrades {
@@ -53,6 +61,29 @@ export class Upgrades {
       .map((entry) => entry.def);
     const picks = [...evolutions, ...open].slice(0, count);
     return picks.length > 0 ? picks : [REPAIR];
+  }
+
+  /** A slot machine pull: applies `hits` upgrades of things already owned and returns them. */
+  spin(hits: number): SlotPick[] {
+    const picks: SlotPick[] = [];
+    for (let i = 0; i < hits; i++) {
+      const def = this.rollOwned();
+      this.apply(def);
+      picks.push({ def, level: this.levelOf(def) });
+    }
+    return picks;
+  }
+
+  /** Never hands out anything new: a random passive could fill a slot the player's build needs. */
+  private rollOwned(): UpgradeDef {
+    const owned = UPGRADES.filter((def) => this.levelOf(def) > 0 && this.levelOf(def) < def.levels.length);
+    const weapons = owned.filter((def) => def.kind === 'weapon');
+    const passives = owned.filter((def) => def.kind === 'passive');
+    const wanted = Math.random() < SLOT_WEAPON_CHANCE ? weapons : passives;
+    // With no passives at all the pull heals instead of falling back on a weapon,
+    // or skipping passives to pile everything into one weapon would pay off
+    const pool = wanted.length > 0 || this.passiveCount === 0 ? wanted : owned;
+    return pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : SLOT_REPAIR;
   }
 
   apply(def: UpgradeDef) {

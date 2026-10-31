@@ -45,6 +45,10 @@ export interface EnemyDef {
    * through it, and it never counts as a kill. No single hit takes more than half its HP.
    */
   prop?: boolean;
+  /** Multiplies the sprite size. Keep the result a whole number of pixels. */
+  scale?: number;
+  /** Drops a slot machine when it dies. */
+  miniBoss?: boolean;
 }
 
 const miniAd: EnemyDef = { id: 'miniAd', speed: 120, radius: 10, hp: 8, contactDps: 4, xp: 1, frames: ['mini-ad'] };

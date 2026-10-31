@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { ATLAS, PIXEL_SCALE } from '../art/atlas';
 import { COMPUTER_DROPS, type DropDef, type DropEffect } from '../data/drops';
+import type { SlotOdds } from '../data/slots';
 import type { Player } from '../entities/Player';
 import type { EnemyManager } from './EnemyManager';
 import type { GemManager } from './GemManager';
@@ -30,6 +31,7 @@ export class Pickups {
     private readonly player: Player,
     private readonly gems: GemManager,
     private readonly enemies: EnemyManager,
+    private readonly openSlot: (odds: SlotOdds) => void,
   ) {
     for (let i = 0; i < MAX_PICKUPS; i++) {
       const sprite = scene.add.image(0, 0, ATLAS, COMPUTER_DROPS[0].sprite).setScale(PIXEL_SCALE).setDepth(DEPTH).setVisible(false);
@@ -56,8 +58,11 @@ export class Pickups {
         i++;
         continue;
       }
-      this.apply(pickup.drop.effect);
+      const { effect } = pickup.drop;
       this.release(i);
+      this.apply(effect);
+      // One slot machine at a time: whatever else is in reach waits for the game to resume
+      if (effect.kind === 'slot') return;
     }
   }
 
@@ -76,6 +81,9 @@ export class Pickups {
       case 'nuke':
         this.enemies.killInView(x, y, this.camera.width / 2, this.camera.height / 2);
         this.camera.flash(NUKE_FLASH_MS, 255, 255, 255);
+        break;
+      case 'slot':
+        this.openSlot(effect.odds);
         break;
     }
   }

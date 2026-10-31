@@ -42,6 +42,7 @@ export const PALETTE: Record<string, string> = {
   X: '#f5f5f5',
   J: '#ff7043', // flame
   U: '#7fe0ff', // bright cyan
+  p: '#c44dff', // mini boss outline
 };
 
 /** Same pixels with one color swapped. */
@@ -739,6 +740,36 @@ export const SPRITES: Record<string, string[]> = {
     '..KKYYY',
     '....KKK',
   ]),
+  'slot-machine': [
+    '..KKKKKKKK....KK',
+    '.KRRRRRRRRK...KY',
+    'KRRYYYYYYRRK..KK',
+    'KRRRRRRRRRRK...g',
+    'KRKKKKKKKKRK...g',
+    'KRXXKXXKXXRK...g',
+    'KRXRKXYKXURK...g',
+    'KRXXKXXKXXRK...g',
+    'KRKKKKKKKKRKgggg',
+    'KRRRRRRRRRRK....',
+    'KRRGGGGGGRRK....',
+    'KRRGKKKKGRRK....',
+    'KRRGGGGGGRRK....',
+    'KRRRRRRRRRRK....',
+    'KrrrrrrrrrrK....',
+    'KKKKKKKKKKKK....',
+  ],
+  'slot-miss': [
+    'RR......RR',
+    'RRR....RRR',
+    '.RRR..RRR.',
+    '..RRRRRR..',
+    '...RRRR...',
+    '...RRRR...',
+    '..RRRRRR..',
+    '.RRR..RRR.',
+    'RRR....RRR',
+    'RR......RR',
+  ],
   hand: [
     '...KK......',
     '..KSSK.....',
@@ -829,6 +860,23 @@ export const SPRITES: Record<string, string[]> = {
 };
 
 export const PLAYER_FRAMES = { stand: 'tech-stand', walk: ['tech-step-a', 'tech-stand', 'tech-step-b', 'tech-stand'] };
+
+/** A copy with a one pixel ring in `color` around everything that isn't transparent. */
+function outlined(rows: string[], color: string): string[] {
+  const width = Math.max(...rows.map((row) => row.length)) + 2;
+  const filled = (x: number, y: number) => (rows[y - 1]?.[x - 1] ?? '.') !== '.';
+  return Array.from({ length: rows.length + 2 }, (_, y) =>
+    Array.from({ length: width }, (_, x) => {
+      if (filled(x, y)) return rows[y - 1][x - 1];
+      return filled(x - 1, y) || filled(x + 1, y) || filled(x, y - 1) || filled(x, y + 1) ? color : '.';
+    }).join(''),
+  );
+}
+
+// Mini bosses; generated here so they land in the atlas with everything else
+for (const frame of ['bug-0', 'bug-1', 'worm-0', 'worm-1', 'phisher-0', 'phisher-1', 'trojan-0', 'trojan-1']) {
+  SPRITES[`${frame}-elite`] = outlined(SPRITES[frame], 'p');
+}
 
 export const SCENERY_FRAMES = ['junk-tire', 'junk-pile', 'junk-rock', 'junk-rock', 'junk-cable'];
 
