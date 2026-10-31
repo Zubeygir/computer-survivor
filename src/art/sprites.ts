@@ -1,3 +1,5 @@
+import { SLOT_SPRITES } from './slotMachine';
+
 /** Sprite pixels by letter; a dot is transparent. */
 export const PALETTE: Record<string, string> = {
   K: '#1b1f2a', // outline
@@ -43,6 +45,12 @@ export const PALETTE: Record<string, string> = {
   J: '#ff7043', // flame
   U: '#7fe0ff', // bright cyan
   p: '#c44dff', // mini boss outline
+  a: '#7a1f2b', // slot machine
+  b: '#f47a7a',
+  h: '#ffe9a8',
+  i: '#a8782a',
+  j: '#c7ccd3',
+  k: '#2a1840',
 };
 
 /** Same pixels with one color swapped. */
@@ -740,6 +748,7 @@ export const SPRITES: Record<string, string[]> = {
     '..KKYYY',
     '....KKK',
   ]),
+  ...SLOT_SPRITES,
   'slot-machine': [
     '..KKKKKKKK....KK',
     '.KRRRRRRRRK...KY',

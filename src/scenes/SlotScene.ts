@@ -1,9 +1,11 @@
 import Phaser from 'phaser';
 import { ATLAS } from '../art/atlas';
+import { SLOT_BULBS, SLOT_FACE, SLOT_LEVER, SLOT_SIGN, SLOT_WINDOW } from '../art/slotMachine';
 import { rollHits, type SlotOdds } from '../data/slots';
 import { UPGRADES } from '../data/upgrades';
 import type { SlotPick, Upgrades } from '../systems/Upgrades';
 import { clearScene, COLOR, panel, pixelText, starRows, TEXT_SIZE } from '../ui/Button';
+import { createHand } from '../ui/Hand';
 import { iconFor } from './UpgradeScene';
 
 export interface SlotSceneData {
@@ -11,53 +13,67 @@ export interface SlotSceneData {
   odds: SlotOdds;
 }
 
-// Palette of the 'slot-machine' sprite, so this reads as the same machine the player walked into
-const BODY_COLOR = 0xe04f4f;
-const BODY_SHADE = 0xa93434;
-const TRIM_COLOR = 0xe8b33a;
-const METAL_COLOR = 0x8a8f96;
-const INK_COLOR = 0x1b1f2a;
-const REEL_COLOR = 0xf5f5f5;
+interface Reel {
+  /** Three symbols scrolling behind the machine's window. */
+  symbols: Phaser.GameObjects.Image[];
+  /** Sprite pixels from the left of the machine to the middle of this reel. */
+  x: number;
+}
 
 const REELS = 3;
-const REEL_SIZE = 72;
-const REEL_GAP = 8;
-const ICON_SCALE = 3;
-const BODY_WIDTH = 272;
-const BODY_HEIGHT = 236;
-const BODY_OUTLINE = 4;
-const SIGN_Y = -90;
-const SIGN_HEIGHT = 44;
-const REELS_Y = -16;
-const TRAY_Y = 62;
-const TRAY_HEIGHT = 44;
-const LEVER_X = BODY_WIDTH / 2 + 30;
-const LEVER_BASE_Y = 30;
-const LEVER_LENGTH = 92;
-const LEVER_PULLED_SCALE = 0.2;
-const LEVER_HIT_WIDTH = 72;
+const WINDOW_MIDDLE = SLOT_WINDOW.top + SLOT_WINDOW.height / 2;
+/** One symbol per window height, so the neighbours of a stopped symbol are hidden. */
+const SYMBOL_PITCH = SLOT_WINDOW.height;
+const SYMBOL_SIZE = 22;
+/** Sprite pixels per second. */
+const SPIN_SPEED = 300;
+const STOP_DROP = 12;
+const STOP_MS = 240;
+
+/** Sprite pixels the lever sticks out past the machine's right edge. */
+const LEVER_OVERHANG = 13;
+const LEVER_ROD_WIDTH = 3;
+const LEVER_PULLED_SCALE = 0.15;
 const LEVER_PULL_MS = 180;
-/** Widest points of the machine, lever included, measured from the middle of its body. */
-const LEFT_EDGE = BODY_WIDTH / 2 + BODY_OUTLINE;
-const RIGHT_EDGE = LEVER_X + LEVER_HIT_WIDTH / 2;
+const LEVER_HIT_WIDTH = 30;
 
 const SIDE_MARGIN = 16;
-const HEADLINE_SPACE = 56;
-/** The machine gives up at most this share of the screen height, leaving room for the results. */
-const MAX_MACHINE_SHARE = 0.5;
-const FOOTER_SPACE = 44;
+/** Screen pixels kept between the lever and the screen edge. */
+const LEVER_MARGIN = 2;
+const HEADLINE_SPACE = 52;
+const FOOTER_SPACE = 40;
+/** Share of a tall screen the machine may take, leaving room for the results under it. */
+const TALL_MACHINE_SHARE = 0.52;
+const ENTER_MS = 320;
+const ENTER_DROP = 48;
+
 const ROW_MAX_WIDTH = 340;
 const ROW_HEIGHT = 48;
 const ROW_GAP = 8;
 const ROW_ICON_SPACE = 48;
 const ROW_STARS_SPACE = 104;
 const ROW_ICON_SCALE = 2;
+const ROW_SLIDE = 16;
+const ROW_SLIDE_MS = 200;
+const ROW_DELAY_MS = 110;
 const STAR_ROW_OFFSET = 8;
 const SMALL_TEXT_SIZE = 6;
 
-const SYMBOL_MS = 70;
+const BULB_IDLE_MS = 170;
+const BULB_SPIN_MS = 60;
+const BULB_CHASE_LENGTH = 3;
+
+const COINS_PER_HIT = 8;
+const COINS_JACKPOT = 36;
+const COIN_SPREAD = 150;
+const COIN_RISE = 90;
+const COIN_MS = 650;
+const JACKPOT_FLASH_MS = 300;
+
 const FIRST_STOP_MS = 800;
 const STOP_GAP_MS = 450;
+const HAND_TAP_DISTANCE = 12;
+const HAND_TAP_MS = 350;
 // Ignores taps right after it opens or stops: the player is usually mid-swipe on the joystick
 const INPUT_LOCK_MS = 400;
 const MISS_FRAME = 'slot-miss';
@@ -69,14 +85,23 @@ export class SlotScene extends Phaser.Scene {
   private upgrades!: Upgrades;
   private odds!: SlotOdds;
   private state: State = 'ready';
-  private symbols: string[] = [];
+  private symbolFrames: string[] = [];
   private results: SlotPick[] = [];
+  /** What each reel shows, so a resize can redraw it. */
   private reelFrames: string[] = [];
-  private reelIcons: Phaser.GameObjects.Image[] = [];
+  private reels: Reel[] = [];
+  private bulbs: Phaser.GameObjects.Image[] = [];
+  private headline!: Phaser.GameObjects.BitmapText;
+  private hand: Phaser.GameObjects.Image | null = null;
+  private machineX = 0;
+  private machineY = 0;
+  private pixel = 1;
   private stopped = 0;
   private spinMs = 0;
-  private symbolMs = 0;
+  private bulbMs = 0;
+  private bulbStep = 0;
   private readyAt = 0;
+  private entered = false;
 
   constructor() {
     super('SlotScene');
@@ -88,8 +113,9 @@ export class SlotScene extends Phaser.Scene {
     this.state = 'ready';
     this.results = [];
     this.stopped = 0;
-    this.symbols = UPGRADES.map(iconFor);
-    this.reelFrames = Array.from({ length: REELS }, () => this.randomSymbol());
+    this.entered = false;
+    this.symbolFrames = UPGRADES.map(iconFor);
+    this.reelFrames = Array.from({ length: REELS }, () => this.randomFrame());
     // Game loop time rather than this.time.now: the scene clock is not synced yet during create
     this.readyAt = this.game.loop.time + INPUT_LOCK_MS;
     this.input.on('pointerup', () => {
@@ -102,42 +128,101 @@ export class SlotScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number) {
+    this.updateBulbs(delta);
     if (this.state !== 'spinning') return;
     this.spinMs += delta;
-    this.symbolMs += delta;
-    if (this.symbolMs >= SYMBOL_MS) {
-      this.symbolMs = 0;
-      for (let i = this.stopped; i < REELS; i++) this.setReel(i, this.randomSymbol());
+    const step = (SPIN_SPEED * delta) / 1000;
+    for (let i = this.stopped; i < REELS; i++) this.scroll(this.reels[i], step);
+    if (this.spinMs >= FIRST_STOP_MS + this.stopped * STOP_GAP_MS) this.stopReel();
+  }
+
+  private randomFrame(): string {
+    return this.symbolFrames[Math.floor(Math.random() * this.symbolFrames.length)];
+  }
+
+  /** Icons come in several sizes; this keeps them on whole pixels and inside the window. */
+  private setSymbol(symbol: Phaser.GameObjects.Image, frame: string) {
+    symbol.setFrame(frame);
+    const size = Math.max(symbol.frame.width, symbol.frame.height);
+    symbol.setScale(Math.max(1, Math.floor(SYMBOL_SIZE / size)));
+  }
+
+  private scroll(reel: Reel, step: number) {
+    for (const symbol of reel.symbols) {
+      symbol.y += step;
+      if (symbol.y <= WINDOW_MIDDLE + SYMBOL_PITCH * 1.5) continue;
+      symbol.y -= SYMBOL_PITCH * 3;
+      this.setSymbol(symbol, this.randomFrame());
     }
-    if (this.spinMs < FIRST_STOP_MS + this.stopped * STOP_GAP_MS) return;
-    const result = this.results[this.stopped];
-    this.setReel(this.stopped, result ? iconFor(result.def) : MISS_FRAME);
-    this.stopped++;
-    if (this.stopped < REELS) return;
+  }
+
+  private stopReel() {
+    const i = this.stopped++;
+    const reel = this.reels[i];
+    const pick = this.results[i];
+    const frame = pick ? iconFor(pick.def) : MISS_FRAME;
+    this.reelFrames[i] = frame;
+    reel.symbols.forEach((symbol, k) => {
+      symbol.y = WINDOW_MIDDLE + (k - 1) * SYMBOL_PITCH - STOP_DROP;
+      if (k === 1) this.setSymbol(symbol, frame);
+    });
+    this.tweens.add({ targets: reel.symbols, y: `+=${STOP_DROP}`, duration: STOP_MS, ease: 'Back.easeOut' });
+    if (pick) this.burstCoins(reel.x, COINS_PER_HIT);
+    if (this.stopped === REELS) this.finish();
+  }
+
+  private finish() {
     this.state = 'done';
     this.readyAt = this.game.loop.time + INPUT_LOCK_MS;
-    this.layout();
+    if (this.results.length === REELS) {
+      this.burstCoins(SLOT_FACE.width / 2, COINS_JACKPOT);
+      this.cameras.main.flash(JACKPOT_FLASH_MS, 255, 214, 110);
+    }
+    this.headline.setText(this.headlineText());
+    this.showResults(true);
   }
 
-  private randomSymbol(): string {
-    return this.symbols[Math.floor(Math.random() * this.symbols.length)];
+  private burstCoins(artX: number, count: number) {
+    const x = this.machineX + artX * this.pixel;
+    const y = this.machineY + WINDOW_MIDDLE * this.pixel;
+    for (let i = 0; i < count; i++) {
+      const coin = this.add.image(x, y, ATLAS, 'drop-data-small').setScale(this.pixel);
+      this.tweens.add({
+        targets: coin,
+        x: x + (Math.random() - 0.5) * COIN_SPREAD * 2,
+        y: y + (Math.random() - 0.3) * COIN_SPREAD - COIN_RISE,
+        alpha: 0,
+        duration: COIN_MS * (0.7 + Math.random() * 0.6),
+        ease: 'Cubic.easeOut',
+        onComplete: () => coin.destroy(),
+      });
+    }
   }
 
-  private setReel(i: number, frame: string) {
-    this.reelFrames[i] = frame;
-    this.reelIcons[i].setFrame(frame);
+  /** A short run of lit bulbs chases around the sign, then they all flash once the reels stop. */
+  private updateBulbs(delta: number) {
+    this.bulbMs += delta;
+    const interval = this.state === 'ready' ? BULB_IDLE_MS : BULB_SPIN_MS;
+    if (this.bulbMs < interval) return;
+    this.bulbMs = 0;
+    this.bulbStep++;
+    this.bulbs.forEach((bulb, i) => {
+      const lit = this.state === 'done' ? this.bulbStep % 2 === 0 : (i + this.bulbStep) % BULB_CHASE_LENGTH === 0;
+      bulb.setFrame(lit ? 'slot-bulb-on' : 'slot-bulb-off');
+    });
   }
 
   /** The upgrades land as the lever goes down; the reels only reveal them. */
-  private pull(stick: Phaser.GameObjects.Rectangle, knob: Phaser.GameObjects.Arc) {
+  private pull(rod: Phaser.GameObjects.Rectangle, knob: Phaser.GameObjects.Image) {
     if (this.state !== 'ready' || this.game.loop.time < this.readyAt) return;
     this.state = 'spinning';
     this.spinMs = 0;
-    this.symbolMs = 0;
     this.results = this.upgrades.spin(rollHits(this.odds));
-    const pulledY = LEVER_BASE_Y - LEVER_LENGTH * LEVER_PULLED_SCALE;
+    this.hand?.destroy();
+    this.hand = null;
+    const pulledY = SLOT_LEVER.baseY - SLOT_LEVER.length * LEVER_PULLED_SCALE;
     this.tweens.add({ targets: knob, y: pulledY, duration: LEVER_PULL_MS, yoyo: true });
-    this.tweens.add({ targets: stick, scaleY: LEVER_PULLED_SCALE, duration: LEVER_PULL_MS, yoyo: true });
+    this.tweens.add({ targets: rod, scaleY: LEVER_PULLED_SCALE, duration: LEVER_PULL_MS, yoyo: true });
   }
 
   private close() {
@@ -145,73 +230,105 @@ export class SlotScene extends Phaser.Scene {
     this.scene.stop();
   }
 
-  /** Rebuilds the screen; runs on entry, on resize and once the reels have stopped. */
+  /** Rebuilds the screen; runs on entry and on resize. */
   private layout() {
     this.tweens.killAll();
     clearScene(this);
+    this.hand = null;
     const { width, height } = this.scale;
-    this.add.rectangle(0, 0, width, height, 0x000000, 0.6).setOrigin(0);
+    this.add.rectangle(0, 0, width, height, 0x000000, 0.72).setOrigin(0);
 
-    const fullWidth = LEFT_EDGE + RIGHT_EDGE;
-    const fullHeight = BODY_HEIGHT + BODY_OUTLINE * 2;
-    const scale = Math.min(1, (width - SIDE_MARGIN * 2) / fullWidth, (height * MAX_MACHINE_SHARE) / fullHeight);
-    const machineX = width / 2 - ((RIGHT_EDGE - LEFT_EDGE) / 2) * scale;
-    const machineY = HEADLINE_SPACE + (fullHeight / 2) * scale;
-    this.add.container(machineX, machineY, this.createMachine()).setScale(scale);
+    const wide = width > height;
+    // The body is what gets centered, so it lines up with the text; the lever just hangs off its side
+    const columnCenter = wide ? width / 4 : width / 2;
+    const halfRoom = columnCenter - LEVER_MARGIN;
+    const halfArt = SLOT_FACE.width / 2 + LEVER_OVERHANG;
+    const roomHeight = wide ? height - HEADLINE_SPACE - SIDE_MARGIN : height * TALL_MACHINE_SHARE;
+    // Whole screen pixels per sprite pixel, so the art stays as crisp as the rest of the game
+    this.pixel = Math.max(1, Math.floor(Math.min(halfRoom / halfArt, roomHeight / SLOT_FACE.height)));
+    this.machineX = Math.round(columnCenter - (SLOT_FACE.width * this.pixel) / 2);
+    this.machineY = HEADLINE_SPACE;
 
-    pixelText(this, width / 2, HEADLINE_SPACE / 2, this.headline(), {
-      color: COLOR.gold,
-      maxWidth: width - SIDE_MARGIN * 2,
-    }).setOrigin(0.5);
-    if (this.state !== 'done') return;
-
-    const rowWidth = Math.min(width - SIDE_MARGIN * 2, ROW_MAX_WIDTH);
-    let rowY = machineY + (fullHeight / 2) * scale + ROW_GAP + ROW_HEIGHT / 2;
-    for (const pick of this.results) {
-      this.add.container(width / 2, rowY, this.createResultRow(pick, rowWidth));
-      rowY += ROW_HEIGHT + ROW_GAP;
+    const machine = this.add.container(this.machineX, this.machineY, this.createMachine()).setScale(this.pixel);
+    if (!this.entered) {
+      this.entered = true;
+      machine.setAlpha(0).setY(this.machineY - ENTER_DROP);
+      this.tweens.add({ targets: machine, y: this.machineY, alpha: 1, duration: ENTER_MS, ease: 'Back.easeOut' });
     }
-    pixelText(this, width / 2, height - FOOTER_SPACE / 2, 'Tap to continue', { color: COLOR.muted }).setOrigin(0.5);
+
+    this.headline = pixelText(this, width / 2, HEADLINE_SPACE / 2, this.headlineText(), { color: COLOR.gold }).setOrigin(0.5);
+    if (this.state === 'ready') this.pointAtLever();
+    if (this.state === 'done') this.showResults(false);
   }
 
-  private headline(): string {
+  private headlineText(): string {
     if (this.state !== 'done') return 'Pull the lever';
     const count = this.results.length;
     return count === REELS ? 'Jackpot' : `${count} upgrade${count > 1 ? 's' : ''}`;
   }
 
-  /** Blocks of flat color, which stay as hard-edged as the pixel art at any screen size. */
   private createMachine(): Phaser.GameObjects.GameObject[] {
-    const reelsWidth = REELS * REEL_SIZE + (REELS - 1) * REEL_GAP;
-    const parts: Phaser.GameObjects.GameObject[] = [
-      this.add.rectangle(0, 0, BODY_WIDTH + BODY_OUTLINE * 2, BODY_HEIGHT + BODY_OUTLINE * 2, INK_COLOR),
-      this.add.rectangle(0, 0, BODY_WIDTH, BODY_HEIGHT, BODY_COLOR),
-      this.add.rectangle(0, BODY_HEIGHT / 2 - 8, BODY_WIDTH, 16, BODY_SHADE),
-      this.add.rectangle(0, SIGN_Y, BODY_WIDTH - 24, SIGN_HEIGHT, TRIM_COLOR).setStrokeStyle(3, INK_COLOR),
-      pixelText(this, 0, SIGN_Y, 'Slot', { size: 18, color: INK_COLOR }).setOrigin(0.5),
-      this.add.rectangle(0, TRAY_Y, BODY_WIDTH - 60, TRAY_HEIGHT, METAL_COLOR).setStrokeStyle(3, INK_COLOR),
-      this.add.rectangle(0, TRAY_Y, 80, 12, INK_COLOR),
-      this.add.rectangle(0, REELS_Y, reelsWidth + 12, REEL_SIZE + 12, INK_COLOR),
-    ];
-
-    this.reelIcons = [];
+    const parts: Phaser.GameObjects.GameObject[] = [];
+    this.reels = [];
+    // Reels first: the face is drawn over them, and its windows do the clipping
     for (let i = 0; i < REELS; i++) {
-      const x = -reelsWidth / 2 + REEL_SIZE / 2 + i * (REEL_SIZE + REEL_GAP);
-      const icon = this.add.image(x, REELS_Y, ATLAS, this.reelFrames[i]).setScale(ICON_SCALE);
-      parts.push(this.add.rectangle(x, REELS_Y, REEL_SIZE, REEL_SIZE, REEL_COLOR), icon);
-      this.reelIcons.push(icon);
+      const x = SLOT_WINDOW.left + SLOT_WINDOW.width / 2 + i * (SLOT_WINDOW.width + SLOT_WINDOW.gap);
+      parts.push(this.add.image(x, WINDOW_MIDDLE, ATLAS, 'slot-reel'));
+      const symbols = [-1, 0, 1].map((k) => this.add.image(x, WINDOW_MIDDLE + k * SYMBOL_PITCH, ATLAS, this.reelFrames[i]));
+      symbols.forEach((symbol, k) => this.setSymbol(symbol, k === 1 ? this.reelFrames[i] : this.randomFrame()));
+      parts.push(...symbols);
+      this.reels.push({ symbols, x });
     }
+    parts.push(this.add.image(0, 0, ATLAS, 'slot-face').setOrigin(0));
+
+    this.bulbs = SLOT_BULBS.map(({ x, y }) => this.add.image(x, y, ATLAS, 'slot-bulb-off').setOrigin(0));
+    parts.push(...this.bulbs);
+
+    parts.push(
+      pixelText(this, SLOT_SIGN.x + 1, SLOT_SIGN.y + 1, 'Slots', { color: COLOR.panelShadow }).setOrigin(0.5),
+      pixelText(this, SLOT_SIGN.x, SLOT_SIGN.y, 'Slots', { color: COLOR.gold }).setOrigin(0.5),
+    );
     return [...parts, ...this.createLever()];
   }
 
   private createLever(): Phaser.GameObjects.GameObject[] {
-    const joint = this.add.rectangle((BODY_WIDTH / 2 + LEVER_X) / 2, LEVER_BASE_Y, LEVER_X - BODY_WIDTH / 2 + 8, 12, METAL_COLOR);
-    const stick = this.add.rectangle(LEVER_X, LEVER_BASE_Y, 8, LEVER_LENGTH, METAL_COLOR).setOrigin(0.5, 1);
-    const knob = this.add.circle(LEVER_X, LEVER_BASE_Y - LEVER_LENGTH, 16, TRIM_COLOR).setStrokeStyle(3, INK_COLOR);
-    const hitHeight = LEVER_LENGTH + 64;
-    const hit = this.add.rectangle(LEVER_X, LEVER_BASE_Y - LEVER_LENGTH / 2, LEVER_HIT_WIDTH, hitHeight, 0x000000, 0);
-    hit.setInteractive().on('pointerdown', () => this.pull(stick, knob));
-    return [joint, stick, knob, hit];
+    const { x, baseY, length } = SLOT_LEVER;
+    const housing = this.add.image(x - 4, baseY + 4, ATLAS, 'slot-lever-base');
+    const rod = this.add.rectangle(x, baseY, LEVER_ROD_WIDTH, length, 0xc7ccd3).setOrigin(0.5, 1);
+    const knob = this.add.image(x, baseY - length, ATLAS, 'slot-knob');
+    const hit = this.add.rectangle(x, baseY - length / 2, LEVER_HIT_WIDTH, length + 36, 0x000000, 0);
+    hit.setInteractive().on('pointerdown', () => this.pull(rod, knob));
+    return [rod, housing, knob, hit];
+  }
+
+  private pointAtLever() {
+    const x = this.machineX + SLOT_LEVER.x * this.pixel;
+    const y = this.machineY + (SLOT_LEVER.baseY - SLOT_LEVER.length / 2) * this.pixel;
+    this.hand = createHand(this).setPosition(x, y);
+    this.tweens.add({
+      targets: this.hand,
+      y: y + HAND_TAP_DISTANCE,
+      duration: HAND_TAP_MS,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+  }
+
+  private showResults(animate: boolean) {
+    const { width, height } = this.scale;
+    const wide = width > height;
+    const rowWidth = Math.min((wide ? width / 2 : width) - SIDE_MARGIN * 2, ROW_MAX_WIDTH);
+    const rowX = wide ? (width * 3) / 4 : width / 2;
+    const firstY = wide ? HEADLINE_SPACE + ROW_HEIGHT / 2 : this.machineY + SLOT_FACE.height * this.pixel + ROW_GAP + ROW_HEIGHT / 2;
+    this.results.forEach((pick, i) => {
+      const y = firstY + i * (ROW_HEIGHT + ROW_GAP);
+      const row = this.add.container(rowX, y, this.createResultRow(pick, rowWidth));
+      if (!animate) return;
+      row.setAlpha(0).setY(y + ROW_SLIDE);
+      this.tweens.add({ targets: row, y, alpha: 1, duration: ROW_SLIDE_MS, delay: i * ROW_DELAY_MS, ease: 'Cubic.easeOut' });
+    });
+    pixelText(this, width / 2, height - FOOTER_SPACE / 2, 'Tap to continue', { color: COLOR.muted }).setOrigin(0.5);
   }
 
   /** The level just gained shows as a white star, the same way the level-up cards mark it. */
