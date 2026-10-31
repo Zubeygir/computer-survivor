@@ -1,45 +1,50 @@
 import Phaser from 'phaser';
 import { ATLAS, PIXEL_SCALE } from '../art/atlas';
-import { ARENA_RADIUS, BOSS_EVENTS, type BossEventDef } from '../data/bosses';
+import { ARENA_RADIUS, ARENA_WALL_DPS, BOSS_EVENTS, type BossEventDef } from '../data/bosses';
 import type { EnemyDef } from '../data/enemies';
 import type { Player } from '../entities/Player';
+import { BossBrain } from './BossBrain';
+import type { DangerZones } from './DangerZones';
 import type { EnemyBullets } from './EnemyBullets';
 import type { Enemy, EnemyManager } from './EnemyManager';
 
 const WALL_RADIUS = 10;
 const WALL_SPACING = 24;
+// Standing still right against the wall must count as touching it too
+const WALL_TOUCH_MARGIN = 4;
 // Keeps the boss from appearing on top of the wall
 const BOSS_INSET = 80;
 
 /**
  * Boss fights: on each boss event a firewall ring closes around the player, enemies outside it
- * vanish and a boss appears inside. The ring is not made of enemies: projectiles pass through it
- * and only the player is held inside.
+ * vanish and a boss appears inside. The ring is not made of enemies: projectiles pass through it,
+ * but it holds the player inside and burns on touch.
  */
 export class Arena {
   /** Set once a final boss dies; the scene ends the run. */
   won = false;
   bossKills = 0;
   private readonly walls: Phaser.GameObjects.Image[] = [];
+  private readonly brain: BossBrain;
   private nextEvent = 0;
   private current: BossEventDef | null = null;
   private boss: Enemy | null = null;
   private bossMaxHp = 0;
   private cx = 0;
   private cy = 0;
-  private ringLeft = 0;
-  private summonLeft = 0;
 
   constructor(
     scene: Phaser.Scene,
     private readonly enemies: EnemyManager,
     private readonly player: Player,
-    private readonly bullets: EnemyBullets,
+    bullets: EnemyBullets,
+    private readonly zones: DangerZones,
   ) {
     const count = Math.round((2 * Math.PI * ARENA_RADIUS) / WALL_SPACING);
     for (let i = 0; i < count; i++) {
       this.walls.push(scene.add.image(0, 0, ATLAS, 'firewall').setScale(PIXEL_SCALE).setVisible(false));
     }
+    this.brain = new BossBrain(scene, enemies, player, bullets, zones);
   }
 
   get active(): boolean {
@@ -56,18 +61,22 @@ export class Arena {
     return this.boss ? Math.max(0, this.boss.hp) / this.bossMaxHp : 1;
   }
 
-  /** Call right after the player moves: starts due boss fights and holds the player inside the wall. */
-  update(time: number, delta: number) {
+  /**
+   * Call right after the player moves: starts due boss fights and holds the player inside the wall.
+   * Returns the damage the wall, dashes and exploding marks deal the player this frame.
+   */
+  update(time: number, delta: number): number {
     if (!this.current) {
       if (this.nextEvent < BOSS_EVENTS.length && time >= BOSS_EVENTS[this.nextEvent].time) {
         this.start(BOSS_EVENTS[this.nextEvent++]);
       }
-      return;
+      return 0;
     }
     // The pool can be full when the ring closes; retry until a dying enemy frees a slot
     if (!this.boss) this.spawnBoss(this.current);
-    if (this.boss) this.updateBossAttacks(this.boss, this.current, delta / 1000);
-    this.constrainPlayer();
+    const seconds = delta / 1000;
+    const dashDamage = this.boss ? this.brain.update(seconds, this.bossHpRatio) : 0;
+    return dashDamage + this.holdPlayer(seconds) + this.zones.update(delta, this.player);
   }
 
   /** Call from the enemy kill callback. Returns true when the kill was the current boss. */
@@ -76,42 +85,16 @@ export class Arena {
     if (!this.current || def !== this.current.boss) return false;
     this.bossKills++;
     if (this.current.final) this.won = true;
+    this.brain.stop();
+    this.zones.clear();
     this.current = null;
     this.boss = null;
     for (const wall of this.walls) wall.setVisible(false);
     return true;
   }
 
-  private updateBossAttacks(boss: Enemy, event: BossEventDef, seconds: number) {
-    const { x, y } = boss.sprite;
-    if (event.ring) {
-      this.ringLeft -= seconds;
-      if (this.ringLeft <= 0) {
-        this.ringLeft = event.ring.interval;
-        this.bullets.fireRing(x, y, event.ring.count, event.ring.speed, event.ring.damage);
-      }
-    }
-    if (event.summon && this.bossHpRatio < event.summon.belowHp) {
-      this.summonLeft -= seconds;
-      if (this.summonLeft <= 0) {
-        this.summonLeft = event.summon.interval;
-        this.summon(event.summon.enemy, event.summon.count, x, y);
-      }
-    }
-  }
-
-  private summon(def: EnemyDef, count: number, x: number, y: number) {
-    const step = (Math.PI * 2) / count;
-    const dist = def.radius * 4;
-    for (let i = 0; i < count; i++) {
-      this.enemies.spawn(def, x + Math.cos(i * step) * dist, y + Math.sin(i * step) * dist);
-    }
-  }
-
   private start(event: BossEventDef) {
     this.current = event;
-    this.ringLeft = event.ring?.interval ?? 0;
-    this.summonLeft = 0;
     this.cx = this.player.sprite.x;
     this.cy = this.player.sprite.y;
     this.enemies.removeOutside(this.cx, this.cy, ARENA_RADIUS);
@@ -136,17 +119,23 @@ export class Arena {
       this.cy + Math.sin(angle) * dist,
       this.bossMaxHp,
     );
+    if (this.boss) this.brain.begin(this.boss, event, this.cx, this.cy);
   }
 
-  private constrainPlayer() {
+  /** Returns the damage from touching the wall this frame. */
+  private holdPlayer(seconds: number): number {
     const s = this.player.sprite;
     const max = ARENA_RADIUS - WALL_RADIUS - this.player.radius;
+    const touch = max - WALL_TOUCH_MARGIN;
     const dx = s.x - this.cx;
     const dy = s.y - this.cy;
     const d2 = dx * dx + dy * dy;
-    if (d2 <= max * max) return;
-    const k = max / Math.sqrt(d2);
-    s.x = this.cx + dx * k;
-    s.y = this.cy + dy * k;
+    if (d2 < touch * touch) return 0;
+    if (d2 > max * max) {
+      const k = max / Math.sqrt(d2);
+      s.x = this.cx + dx * k;
+      s.y = this.cy + dy * k;
+    }
+    return ARENA_WALL_DPS * seconds;
   }
 }

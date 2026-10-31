@@ -86,17 +86,9 @@ export const ENEMIES = {
 
   // Bosses only spawn through boss events and never coexist, so the radius limit is boss + largest
   // regular enemy; ransomware + trojan slightly exceeds it, which allows a few pixels of overlap.
-  /** Mini boss; boss events scale its HP. */
-  rootkit: {
-    id: 'rootkit',
-    speed: 70,
-    radius: 34,
-    hp: 900,
-    contactDps: 20,
-    xp: 30,
-    frames: ['rootkit'],
-    charge: { triggerRange: 400, aimTime: 0.6, dashSpeed: 300, dashTime: 0.5, restTime: 2.9 },
-  },
-  /** Final boss. */
-  ransomware: { id: 'ransomware', speed: 75, radius: 40, hp: 5000, contactDps: 30, xp: 0, frames: ['ransomware'] },
+  // What bosses do lives in their boss events; these are only their bodies.
+  rootkit: { id: 'rootkit', speed: 70, radius: 34, hp: 1200, contactDps: 20, xp: 30, frames: ['rootkit'] },
+  spyware: { id: 'spyware', speed: 85, radius: 30, hp: 2800, contactDps: 14, xp: 30, frames: ['spyware'] },
+  forkBomb: { id: 'forkBomb', speed: 60, radius: 32, hp: 5000, contactDps: 16, xp: 30, frames: ['fork-bomb'] },
+  ransomware: { id: 'ransomware', speed: 75, radius: 40, hp: 24000, contactDps: 30, xp: 0, frames: ['ransomware'] },
 } satisfies Record<string, EnemyDef>;

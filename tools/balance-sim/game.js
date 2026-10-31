@@ -4,6 +4,7 @@ import { EVOLUTIONS, UPGRADES } from '../../src/data/upgrades';
 import { WEAPONS } from '../../src/data/weapons';
 import { Player } from '../../src/entities/Player';
 import { Arena } from '../../src/systems/Arena';
+import { DangerZones } from '../../src/systems/DangerZones';
 import { Effects } from '../../src/systems/Effects';
 import { EnemyBullets } from '../../src/systems/EnemyBullets';
 import { EnemyManager } from '../../src/systems/EnemyManager';
@@ -16,8 +17,8 @@ import { Weapon } from '../../src/systems/Weapon';
 
 const DELTA = 1000 / 30;
 const MAX_SECONDS = 900;
-/** The bots don't try to dodge bullets; a human sidesteps most of them. */
-const BULLET_DAMAGE_TAKEN = 0.4;
+/** The bots don't try to dodge bullets, dashes or ground marks; a human sidesteps most of them. */
+const DODGEABLE_DAMAGE_TAKEN = 0.4;
 /** How far the bot looks for enemies and for gems, in pixels. */
 const THREAT_RANGE = 220;
 const GEM_RANGE = 260;
@@ -34,7 +35,7 @@ function fakeImage() {
     image.y = y;
     return image;
   };
-  for (const method of ['setVisible', 'setDepth', 'setTexture', 'setOrigin', 'setRotation', 'setScale', 'setTint', 'setAlpha', 'setFrame', 'setFlipX', 'setAngle']) {
+  for (const method of ['setVisible', 'setDepth', 'setTexture', 'setOrigin', 'setRotation', 'setScale', 'setTint', 'setAlpha', 'setFrame', 'setFlipX', 'setAngle', 'clearTint']) {
     image[method] = () => image;
   }
   return image;
@@ -65,7 +66,7 @@ export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, 
       bossesKilled++;
     }
   });
-  arena = new Arena(scene, enemies, player, bullets);
+  arena = new Arena(scene, enemies, player, bullets, new DangerZones(scene));
   const spawner = new Spawner(camera, player, enemies);
   const effects = new Effects(scene);
   const projectiles = new ProjectileManager(scene, enemies, player, effects);
@@ -105,7 +106,7 @@ export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, 
     seconds += DELTA / 1000;
     if (bot === 'strafe') strafe(move, player, enemies, gems, arena, seconds);
     player.update(move, DELTA);
-    arena.update(spawner.time, DELTA);
+    const arenaDamage = arena.update(spawner.time, DELTA);
     if (arena.active && fightStart === null) fightStart = seconds;
     if (!arena.active && fightStart !== null) {
       fights.push(Math.round(seconds - fightStart));
@@ -115,9 +116,9 @@ export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, 
 
     const stats = player.stats;
     const contactDamage = enemies.update(DELTA, player) * stats.damageTakenMult;
-    const bulletDamage = bullets.update(DELTA, player) * (bot === 'strafe' ? BULLET_DAMAGE_TAKEN : 1);
+    const dodgeable = (bullets.update(DELTA, player) + arenaDamage) * (bot === 'strafe' ? DODGEABLE_DAMAGE_TAKEN : 1);
     player.heal((stats.regen * DELTA) / 1000);
-    player.hp -= (contactDamage + bulletDamage) * damageTaken;
+    player.hp -= (contactDamage + dodgeable) * damageTaken;
     if (player.hp <= 0) return result('dead');
 
     for (const weapon of weapons) weapon.update(DELTA);

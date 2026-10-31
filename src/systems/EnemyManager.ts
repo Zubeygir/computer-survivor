@@ -25,6 +25,8 @@ export interface Enemy {
   hp: number;
   /** Moves along (dirX, dirY) and ignores the player; turned off when recycled. */
   crossing: boolean;
+  /** Moved by a boss brain instead of by this manager; turned off when recycled. */
+  scripted: boolean;
   /** Crossing or dash direction, unit vector. */
   dirX: number;
   dirY: number;
@@ -58,6 +60,7 @@ export class EnemyManager {
         def: ENEMIES.bug,
         hp: 0,
         crossing: false,
+        scripted: false,
         dirX: 0,
         dirY: 0,
         phase: 'approach',
@@ -85,6 +88,7 @@ export class EnemyManager {
     enemy.def = def;
     enemy.hp = hp;
     enemy.crossing = false;
+    enemy.scripted = false;
     enemy.phase = 'approach';
     enemy.timer = def.ranged?.fireInterval ?? 0;
     enemy.orbitReadyAt = 0;
@@ -285,6 +289,7 @@ export class EnemyManager {
       const ux = dx / d;
       const uy = dy / d;
       sprite.flipX = ux < 0;
+      if (enemy.scripted) continue;
       if (def.ranged) {
         this.moveRanged(enemy, def.ranged, ux, uy, d, seconds);
       } else if (def.charge) {

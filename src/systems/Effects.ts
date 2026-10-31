@@ -5,8 +5,9 @@ const MAX_EFFECTS = 64;
 const DEPTH = 5;
 const EXPLOSION_TIME = 0.25;
 const LINE_TIME = 0.15;
-const LINE_TEXTURE = 'fx-line';
 
+/** White pixel other visuals can tint and stretch into a line. */
+export const FX_LINE = 'fx-line';
 /** White circle other visuals can tint and scale. */
 export const FX_CIRCLE = 'fx-circle';
 export const FX_CIRCLE_RADIUS = 24;
@@ -26,7 +27,7 @@ export class Effects {
 
   constructor(scene: Phaser.Scene) {
     createPixelDisc(scene, FX_CIRCLE, FX_CIRCLE_RADIUS);
-    createRectTexture(scene, LINE_TEXTURE, 1, 1, 0xffffff);
+    createRectTexture(scene, FX_LINE, 1, 1, 0xffffff);
     for (let i = 0; i < MAX_EFFECTS; i++) {
       const sprite = scene.add.image(0, 0, FX_CIRCLE).setVisible(false).setDepth(DEPTH);
       this.effects.push({ sprite, life: 0, maxLife: 0, scale: 0 });
@@ -47,7 +48,7 @@ export class Effects {
     e.life = e.maxLife = LINE_TIME;
     e.scale = 0;
     e.sprite
-      .setTexture(LINE_TEXTURE)
+      .setTexture(FX_LINE)
       .setOrigin(0, 0.5)
       .setPosition(x1, y1)
       .setRotation(Math.atan2(y2 - y1, x2 - x1))

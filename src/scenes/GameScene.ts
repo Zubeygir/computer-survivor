@@ -5,6 +5,7 @@ import { WEAPONS, type WeaponId } from '../data/weapons';
 import { Player } from '../entities/Player';
 import { VirtualJoystick } from '../input/VirtualJoystick';
 import { Arena } from '../systems/Arena';
+import { DangerZones } from '../systems/DangerZones';
 import { Effects } from '../systems/Effects';
 import { EnemyBullets } from '../systems/EnemyBullets';
 import { EnemyManager } from '../systems/EnemyManager';
@@ -34,6 +35,7 @@ export class GameScene extends Phaser.Scene {
   private player!: Player;
   private hpBar!: HpBar;
   private hurtFlash!: HurtFlash;
+  private zones!: DangerZones;
   private gems!: GemManager;
   private enemies!: EnemyManager;
   private spawner!: Spawner;
@@ -66,7 +68,9 @@ export class GameScene extends Phaser.Scene {
 
     this.scenery = new Scenery(this);
 
-    // Draw order follows creation order: scenery under gems, gems under enemies, enemies under the player
+    // Draw order follows creation order: scenery under ground marks, those under gems,
+    // gems under enemies, enemies under the player
+    this.zones = new DangerZones(this);
     this.gems = new GemManager(this);
     this.bullets = new EnemyBullets(this);
     this.enemies = new EnemyManager(this, this.bullets, (x, y, def) => {
@@ -79,7 +83,7 @@ export class GameScene extends Phaser.Scene {
     this.hpBar = new HpBar(this);
     this.hurtFlash = new HurtFlash(this, this.player.sprite);
     // After the player, so the wall draws over anything brushing against it
-    this.arena = new Arena(this, this.enemies, this.player, this.bullets);
+    this.arena = new Arena(this, this.enemies, this.player, this.bullets, this.zones);
     this.spawner = new Spawner(this.cameras.main, this.player, this.enemies);
     this.effects = new Effects(this);
     this.projectiles = new ProjectileManager(this, this.enemies, this.player, this.effects);
@@ -125,7 +129,7 @@ export class GameScene extends Phaser.Scene {
       this.tutorial = null;
       progress.markTutorialDone();
     }
-    this.arena.update(this.spawner.time, delta);
+    const arenaDamage = this.arena.update(this.spawner.time, delta);
     this.hpBar.follow(this.player.sprite.x, this.player.sprite.y + this.player.radius + 8);
     // Skipping the spawner during a boss fight or the tutorial stops both the waves and the run clock
     if (this.arena.active) {
@@ -139,7 +143,7 @@ export class GameScene extends Phaser.Scene {
     const stats = this.player.stats;
     const contactDamage = this.enemies.update(delta, this.player) * stats.damageTakenMult;
     const bulletDamage = this.bullets.update(delta, this.player);
-    const damage = contactDamage + bulletDamage;
+    const damage = contactDamage + bulletDamage + arenaDamage;
     this.player.heal((stats.regen * delta) / 1000);
     this.player.hp -= damage;
     this.hpBar.set(this.player.hp, stats.maxHp);
