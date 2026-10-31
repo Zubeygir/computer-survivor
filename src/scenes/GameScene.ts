@@ -3,6 +3,7 @@ import { GROUND } from '../art/atlas';
 import { BOSS_KILL_HEAL } from '../data/bosses';
 import { BOSS_DROP, MINI_BOSS_DROP } from '../data/drops';
 import { rollGem } from '../data/gems';
+import { runData } from '../data/meta';
 import type { SlotOdds } from '../data/slots';
 import { WEAPONS, type WeaponId } from '../data/weapons';
 import { Player } from '../entities/Player';
@@ -25,6 +26,7 @@ import { Upgrades } from '../systems/Upgrades';
 import { Weapon } from '../systems/Weapon';
 import { BossBar } from '../ui/BossBar';
 import { pixelText } from '../ui/Button';
+import { DataCounter } from '../ui/DataCounter';
 import { HpBar } from '../ui/HpBar';
 import { HurtFlash } from '../ui/HurtFlash';
 import { InventoryBar } from '../ui/InventoryBar';
@@ -58,6 +60,7 @@ export class GameScene extends Phaser.Scene {
   private runTimer!: RunTimer;
   private arena!: Arena;
   private bossBar!: BossBar;
+  private dataCounter!: DataCounter;
   private tutorial: Tutorial | null = null;
   private joystick!: VirtualJoystick;
   private ground!: Phaser.GameObjects.TileSprite;
@@ -122,6 +125,7 @@ export class GameScene extends Phaser.Scene {
     this.refreshInventory();
     this.runTimer = new RunTimer(this);
     this.bossBar = new BossBar(this);
+    this.dataCounter = new DataCounter(this);
     this.tutorial = progress.tutorialDone
       ? null
       : new Tutorial(this, this.player, this.enemies, (x, y, text) => this.openSpotlight(x, y, text));
@@ -181,6 +185,9 @@ export class GameScene extends Phaser.Scene {
     this.enemies.removeDead();
 
     this.pickups.update();
+    this.dataCounter.set(
+      runData(this.spawner.time, this.enemies.kills, this.arena.bossKills, this.arena.milestoneKills, this.pickups.dataFound),
+    );
     // Held back during the tutorial, or the first shots would go to a computer instead of its bug
     if (!this.tutorial) this.breakables.update(delta);
 
@@ -280,6 +287,7 @@ export class GameScene extends Phaser.Scene {
     this.xpBar.resize(gameSize.width);
     this.runTimer.resize(gameSize.width);
     this.bossBar.resize(gameSize.width);
+    this.dataCounter.resize(gameSize.width);
     this.tutorial?.resize(gameSize.width);
   }
 }

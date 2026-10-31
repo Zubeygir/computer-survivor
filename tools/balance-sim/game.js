@@ -2,7 +2,7 @@ import { ARENA_RADIUS, BOSS_KILL_HEAL } from '../../src/data/bosses';
 import { BOSS_DROP, MINI_BOSS_DROP } from '../../src/data/drops';
 import { rollGem } from '../../src/data/gems';
 import { rollHits } from '../../src/data/slots';
-import { RUN_REWARDS, STARTING_WEAPONS, WORKSHOP, workshopBonus } from '../../src/data/meta';
+import { runData, STARTING_WEAPONS, WORKSHOP, workshopBonus } from '../../src/data/meta';
 import { EVOLUTIONS, UPGRADES } from '../../src/data/upgrades';
 import { WEAPONS } from '../../src/data/weapons';
 import { Player } from '../../src/entities/Player';
@@ -110,7 +110,7 @@ export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, 
       level: experience.level,
       kills: enemies.kills,
       bossesKilled,
-      data: dataEarned(spawner.time, enemies.kills, bossesKilled, arena.milestoneKills) + pickups.dataFound,
+      data: runData(spawner.time, enemies.kills, bossesKilled, arena.milestoneKills, pickups.dataFound),
       fights,
       evolvedAt,
       levelAtMinute,
@@ -159,15 +159,6 @@ export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, 
     levelAtMinute[minute] ??= experience.level;
   }
   return result('timeout');
-}
-
-function dataEarned(time, kills, bosses, milestones) {
-  return (
-    Math.floor(kills / RUN_REWARDS.killsPerData) +
-    Math.floor(time / 60) * RUN_REWARDS.perMinute +
-    (bosses - milestones) * RUN_REWARDS.boss +
-    milestones * RUN_REWARDS.milestoneBoss
-  );
 }
 
 /** A decent human: circles the crowd instead of fleeing it, swaps direction, grabs gems and items when safe. */

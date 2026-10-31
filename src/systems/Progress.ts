@@ -4,6 +4,7 @@ import {
   DAILY_TASK_REWARD,
   DAILY_TASKS,
   RUN_REWARDS,
+  runData,
   WEAPON_PRICES,
   workshopBonus,
   type DailyTaskDef,
@@ -126,14 +127,8 @@ class Progress {
 
   /** Pays out a finished run and saves. */
   settleRun(run: RunSummary): RunReward {
-    const normalBosses = run.bossKills - run.milestoneKills;
     const lines: string[] = [];
-    let total =
-      Math.floor(run.kills / RUN_REWARDS.killsPerData) +
-      Math.floor(run.time / 60) * RUN_REWARDS.perMinute +
-      normalBosses * RUN_REWARDS.boss +
-      run.milestoneKills * RUN_REWARDS.milestoneBoss;
-    total += run.dataFound;
+    let total = runData(run.time, run.kills, run.bossKills, run.milestoneKills, run.dataFound);
     if (run.dataFound > 0) lines.push(`Picked up ${run.dataFound} Data`);
 
     for (const evolution of EVOLUTIONS) {

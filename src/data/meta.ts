@@ -11,6 +11,17 @@ export const RUN_REWARDS = {
   firstEvolution: 100,
 };
 
+/** Data a run has earned so far, before the one-off evolution and daily task bonuses. */
+export function runData(time: number, kills: number, bossKills: number, milestoneKills: number, dataFound: number): number {
+  return (
+    Math.floor(kills / RUN_REWARDS.killsPerData) +
+    Math.floor(time / 60) * RUN_REWARDS.perMinute +
+    (bossKills - milestoneKills) * RUN_REWARDS.boss +
+    milestoneKills * RUN_REWARDS.milestoneBoss +
+    dataFound
+  );
+}
+
 export const STARTING_WEAPONS: readonly WeaponId[] = ['cursor', 'brickPhone', 'floppyDisk', 'crtMonitor'];
 
 /** Data to unlock a weapon in the Museum. */

@@ -34,6 +34,8 @@ export interface EnemyDef {
   greenChance?: number;
   /** Chance from 0 to 1 that the gem is purple instead, late in the run. */
   purpleChance?: number;
+  /** Always drops a purple gem, at any time. */
+  alwaysPurple?: boolean;
   /** Atlas frames, stepped through by the shared animation clock. Art faces right. */
   frames: string[];
   ranged?: RangedDef;
@@ -116,8 +118,8 @@ export const ENEMIES = {
   // Bosses only spawn through boss events and never coexist, so the radius limit is boss + largest
   // regular enemy; ransomware + trojan slightly exceeds it, which allows a few pixels of overlap.
   // What bosses do and how much HP they have lives in their boss events; these are only their bodies.
-  rootkit: { id: 'rootkit', speed: 70, radius: 34, hp: 1, contactDps: 20, xp: 30, frames: ['rootkit'] },
-  spyware: { id: 'spyware', speed: 85, radius: 30, hp: 1, contactDps: 14, xp: 30, frames: ['spyware'] },
-  forkBomb: { id: 'forkBomb', speed: 60, radius: 32, hp: 1, contactDps: 16, xp: 30, frames: ['fork-bomb'] },
-  ransomware: { id: 'ransomware', speed: 75, radius: 40, hp: 1, contactDps: 30, xp: 0, frames: ['ransomware'] },
+  rootkit: { id: 'rootkit', speed: 70, radius: 34, hp: 1, contactDps: 20, xp: 30, alwaysPurple: true, frames: ['rootkit'] },
+  spyware: { id: 'spyware', speed: 85, radius: 30, hp: 1, contactDps: 14, xp: 30, alwaysPurple: true, frames: ['spyware'] },
+  forkBomb: { id: 'forkBomb', speed: 60, radius: 32, hp: 1, contactDps: 16, xp: 30, alwaysPurple: true, frames: ['fork-bomb'] },
+  ransomware: { id: 'ransomware', speed: 75, radius: 40, hp: 1, contactDps: 30, xp: 30, alwaysPurple: true, frames: ['ransomware'] },
 } satisfies Record<string, EnemyDef>;
