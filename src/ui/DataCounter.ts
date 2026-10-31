@@ -4,7 +4,8 @@ import { COLOR, pixelText } from './Button';
 import { XP_BAR_HEIGHT } from './XpBar';
 
 const RIGHT_MARGIN = 8;
-const Y = XP_BAR_HEIGHT + 16;
+// Below the level label, which shares the top right corner
+const Y = XP_BAR_HEIGHT + 30;
 const ICON_GAP = 6;
 const ICON_WIDTH = 16;
 const DEPTH = 1500;

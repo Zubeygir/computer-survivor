@@ -7,6 +7,9 @@ export interface SlotOdds {
 export const MINI_BOSS_ODDS: SlotOdds = { two: 0.07, three: 0.01 };
 export const BOSS_ODDS: SlotOdds = { two: 0.16, three: 0.04 };
 
+/** Chance from 0 to 1 that a mini boss drops a slot machine; regular bosses always do. */
+export const MINI_BOSS_SLOT_CHANCE = 0.4;
+
 /** Chance from 0 to 1 that one upgrade goes to a weapon instead of a passive. */
 export const SLOT_WEAPON_CHANCE = 0.2;
 

@@ -1,7 +1,7 @@
 import { ARENA_RADIUS, BOSS_KILL_HEAL } from '../../src/data/bosses';
 import { BOSS_DROP, MINI_BOSS_DROP } from '../../src/data/drops';
 import { rollGem } from '../../src/data/gems';
-import { rollHits } from '../../src/data/slots';
+import { MINI_BOSS_SLOT_CHANCE, rollHits } from '../../src/data/slots';
 import { runData, STARTING_WEAPONS, WORKSHOP, workshopBonus } from '../../src/data/meta';
 import { EVOLUTIONS, UPGRADES } from '../../src/data/upgrades';
 import { WEAPONS } from '../../src/data/weapons';
@@ -72,7 +72,7 @@ export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, 
     }
     const gem = rollGem(def, spawner.time);
     gems.spawn(x, y, def.xp * gem.xpMult, gem.sprite);
-    if (def.miniBoss) pickups.spawn(x, y, MINI_BOSS_DROP);
+    if (def.miniBoss && Math.random() < MINI_BOSS_SLOT_CHANCE) pickups.spawn(x, y, MINI_BOSS_DROP);
     if (arena.onKill(def)) {
       player.heal(BOSS_KILL_HEAL);
       pickups.spawn(x, y, BOSS_DROP);

@@ -4,7 +4,7 @@ import { BOSS_KILL_HEAL } from '../data/bosses';
 import { BOSS_DROP, MINI_BOSS_DROP } from '../data/drops';
 import { rollGem } from '../data/gems';
 import { runData } from '../data/meta';
-import type { SlotOdds } from '../data/slots';
+import { MINI_BOSS_SLOT_CHANCE, type SlotOdds } from '../data/slots';
 import { WEAPONS, type WeaponId } from '../data/weapons';
 import { Player } from '../entities/Player';
 import { VirtualJoystick } from '../input/VirtualJoystick';
@@ -91,7 +91,7 @@ export class GameScene extends Phaser.Scene {
       }
       const gem = rollGem(def, this.spawner.time);
       this.gems.spawn(x, y, def.xp * gem.xpMult, gem.sprite);
-      if (def.miniBoss) this.pickups.spawn(x, y, MINI_BOSS_DROP);
+      if (def.miniBoss && Math.random() < MINI_BOSS_SLOT_CHANCE) this.pickups.spawn(x, y, MINI_BOSS_DROP);
       if (this.arena.onKill(def)) {
         this.player.heal(BOSS_KILL_HEAL);
         this.pickups.spawn(x, y, BOSS_DROP);
