@@ -44,7 +44,7 @@ export class Spawner {
       this.spawnFrom(wave, ring);
     }
 
-    for (let i = 0; i < MAX_REFILL_PER_FRAME && this.enemies.count < wave.minimum; i++) {
+    for (let i = 0; i < MAX_REFILL_PER_FRAME && this.enemies.hostileCount < wave.minimum; i++) {
       this.spawnFrom(wave, ring);
     }
 
@@ -83,6 +83,7 @@ export class Spawner {
     const py = this.player.sprite.y;
     for (let i = 0; i < this.enemies.count; i++) {
       const enemy = this.enemies.enemies[i];
+      if (enemy.def.prop) continue;
       const s = enemy.sprite;
       const dx = s.x - px;
       const dy = s.y - py;

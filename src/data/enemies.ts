@@ -36,6 +36,11 @@ export interface EnemyDef {
   charge?: ChargeDef;
   /** Spawned where this enemy dies. */
   split?: { into: EnemyDef; count: number };
+  /**
+   * A still object for weapons to break, not a real enemy: it blocks the player, enemies walk
+   * through it, and it never counts as a kill. No single hit takes more than half its HP.
+   */
+  prop?: boolean;
 }
 
 const miniAd: EnemyDef = { id: 'miniAd', speed: 120, radius: 10, hp: 8, contactDps: 4, xp: 1, frames: ['mini-ad'] };
@@ -83,6 +88,8 @@ export const ENEMIES = {
     split: { into: miniAd, count: 2 },
   },
   miniAd,
+  /** Lies around the map; see `Breakables`. */
+  computer: { id: 'computer', speed: 0, radius: 16, hp: 30, contactDps: 0, xp: 0, frames: ['junk-crt'], prop: true },
 
   // Bosses only spawn through boss events and never coexist, so the radius limit is boss + largest
   // regular enemy; ransomware + trojan slightly exceeds it, which allows a few pixels of overlap.

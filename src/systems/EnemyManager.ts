@@ -41,6 +41,7 @@ export class EnemyManager {
   /** Fixed pool; the first `count` entries are in play (some may be dead until `removeDead`). */
   readonly enemies: Enemy[] = [];
   private aliveCount = 0;
+  private propCount = 0;
   private killCount = 0;
   private animationTime = 0;
   private animationStep = 0;
@@ -74,6 +75,11 @@ export class EnemyManager {
     return this.aliveCount;
   }
 
+  /** Enemies in play without the props, which should not hold back the waves. */
+  get hostileCount(): number {
+    return this.aliveCount - this.propCount;
+  }
+
   get kills(): number {
     return this.killCount;
   }
@@ -85,6 +91,7 @@ export class EnemyManager {
   spawn(def: EnemyDef, x: number, y: number, hp = def.hp): Enemy | null {
     if (this.aliveCount === MAX_ENEMIES) return null;
     const enemy = this.enemies[this.aliveCount++];
+    if (def.prop) this.propCount++;
     enemy.def = def;
     enemy.hp = hp;
     enemy.crossing = false;
@@ -111,7 +118,8 @@ export class EnemyManager {
 
   /** Dead enemies keep their index until `removeDead`, so hash query results stay valid all frame. */
   damage(i: number, amount: number) {
-    this.enemies[i].hp -= amount;
+    const enemy = this.enemies[i];
+    enemy.hp -= hitDamage(enemy.def, amount);
   }
 
   /** Index of the closest living enemy, or -1 if there is none. */
@@ -178,7 +186,7 @@ export class EnemyManager {
       const reach = radius + enemy.def.radius;
       const dx = enemy.sprite.x - x;
       const dy = enemy.sprite.y - y;
-      if (dx * dx + dy * dy < reach * reach) enemy.hp -= amount;
+      if (dx * dx + dy * dy < reach * reach) enemy.hp -= hitDamage(enemy.def, amount);
     }
   }
 
@@ -192,7 +200,17 @@ export class EnemyManager {
       const along = dx * dirX + dy * dirY;
       if (along < 0 || along > length) continue;
       const across = Math.abs(dx * dirY - dy * dirX);
-      if (across < halfWidth + enemy.def.radius) enemy.hp -= amount;
+      if (across < halfWidth + enemy.def.radius) enemy.hp -= hitDamage(enemy.def, amount);
+    }
+  }
+
+  /** Kills everything in the rectangle around (x, y) except props and bosses, on the next `removeDead`. */
+  killInView(x: number, y: number, halfWidth: number, halfHeight: number) {
+    for (let i = 0; i < this.aliveCount; i++) {
+      const enemy = this.enemies[i];
+      if (enemy.scripted || enemy.def.prop) continue;
+      const s = enemy.sprite;
+      if (Math.abs(s.x - x) <= halfWidth && Math.abs(s.y - y) <= halfHeight) enemy.hp = 0;
     }
   }
 
@@ -221,7 +239,7 @@ export class EnemyManager {
       this.onKill(enemy.sprite.x, enemy.sprite.y, enemy.def);
       this.spawnSplit(enemy);
       this.release(i);
-      this.killCount++;
+      if (!enemy.def.prop) this.killCount++;
     }
   }
 
@@ -235,15 +253,18 @@ export class EnemyManager {
     }
   }
 
-  /** Despawns every enemy outside the circle: no gem, no kill. Call only while no enemy indices are held. */
+  /**
+   * Despawns every enemy outside the circle: no gem, no kill. Props stay, `Breakables` looks after them.
+   * Call only while no enemy indices are held.
+   */
   removeOutside(cx: number, cy: number, radius: number) {
     const r2 = radius * radius;
     let i = 0;
     while (i < this.aliveCount) {
-      const s = this.enemies[i].sprite;
+      const { sprite: s, def } = this.enemies[i];
       const dx = s.x - cx;
       const dy = s.y - cy;
-      if (dx * dx + dy * dy <= r2) {
+      if (def.prop || dx * dx + dy * dy <= r2) {
         i++;
         continue;
       }
@@ -251,9 +272,20 @@ export class EnemyManager {
     }
   }
 
+  /** Takes a prop out of play unbroken. Scans the pool, but only runs when one leaves the screen. */
+  removeProp(x: number, y: number) {
+    for (let i = 0; i < this.aliveCount; i++) {
+      const { sprite, def } = this.enemies[i];
+      if (!def.prop || sprite.x !== x || sprite.y !== y) continue;
+      this.release(i);
+      return;
+    }
+  }
+
   /** Swaps with the last one in play, so the caller must re-check index `i` instead of advancing. */
   private release(i: number) {
     const enemy = this.enemies[i];
+    if (enemy.def.prop) this.propCount--;
     enemy.sprite.setVisible(false);
     const last = --this.aliveCount;
     this.enemies[i] = this.enemies[last];
@@ -278,6 +310,7 @@ export class EnemyManager {
     for (let i = 0; i < this.aliveCount; i++) {
       const enemy = this.enemies[i];
       const { def, sprite } = enemy;
+      if (def.prop) continue;
       if (enemy.crossing) {
         step(sprite, enemy.dirX, enemy.dirY, def.speed, seconds);
         continue;
@@ -325,6 +358,7 @@ export class EnemyManager {
 
     for (let i = 0; i < this.aliveCount; i++) {
       const a = this.enemies[i];
+      if (a.def.prop) continue;
       const as = a.sprite;
       const n = hash.query(as.x, as.y, this.neighbors);
       for (let k = 0; k < n; k++) {
@@ -332,6 +366,7 @@ export class EnemyManager {
         // Every pair shows up in both enemies' queries; resolve it only once
         if (j <= i) continue;
         const b = this.enemies[j];
+        if (b.def.prop) continue;
         const bs = b.sprite;
         const minDist = a.def.radius + b.def.radius;
         const dx = bs.x - as.x;
@@ -353,7 +388,7 @@ export class EnemyManager {
   }
 
   /**
-   * Enemies can't overlap the player, but the player is never pushed.
+   * Enemies can't overlap the player, and only props push the player back, since they block the way.
    * Shares the distance math with contact detection; returns the summed DPS of touching enemies.
    */
   private pushOutOf(player: Player): number {
@@ -372,11 +407,20 @@ export class EnemyManager {
       dps += enemy.def.contactDps;
       if (d2 >= minDist * minDist || d2 === 0) continue;
       const k = minDist / Math.sqrt(d2);
-      s.x = px + dx * k;
-      s.y = py + dy * k;
+      if (enemy.def.prop) {
+        player.sprite.x = s.x - dx * k;
+        player.sprite.y = s.y - dy * k;
+      } else {
+        s.x = px + dx * k;
+        s.y = py + dy * k;
+      }
     }
     return dps;
   }
+}
+
+function hitDamage(def: EnemyDef, amount: number): number {
+  return def.prop ? Math.min(amount, def.hp / 2) : amount;
 }
 
 function step(sprite: Phaser.GameObjects.Image, dirX: number, dirY: number, speed: number, seconds: number) {

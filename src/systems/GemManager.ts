@@ -35,6 +35,16 @@ export class GemManager {
     gem.sprite.setPosition(x, y).setVisible(true);
   }
 
+  /** Sends every gem on the map after the player. */
+  attractAll() {
+    for (let i = 0; i < this.aliveCount; i++) {
+      const gem = this.gems[i];
+      if (gem.attracted) continue;
+      gem.attracted = true;
+      gem.speed = ATTRACT_START_SPEED;
+    }
+  }
+
   /** Returns the XP collected this frame. */
   update(delta: number, player: Player): number {
     const seconds = delta / 1000;

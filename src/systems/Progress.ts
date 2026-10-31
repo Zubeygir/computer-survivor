@@ -23,6 +23,8 @@ export interface RunSummary {
   bossKills: number;
   /** Ids of the weapons held at the end, evolved forms included. */
   weapons: string[];
+  /** Picked up during the run. */
+  dataFound: number;
 }
 
 export interface RunReward {
@@ -125,6 +127,8 @@ class Progress {
       Math.floor(run.time / 60) * RUN_REWARDS.perMinute +
       miniBosses * RUN_REWARDS.miniBoss;
     if (run.won) total += RUN_REWARDS.finalBoss;
+    total += run.dataFound;
+    if (run.dataFound > 0) lines.push(`Picked up ${run.dataFound} Data`);
 
     for (const evolution of EVOLUTIONS) {
       if (!run.weapons.includes(evolution.into) || this.state.evolutions.includes(evolution.into)) continue;

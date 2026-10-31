@@ -61,6 +61,14 @@ export class Arena {
     return this.boss ? Math.max(0, this.boss.hp) / this.bossMaxHp : 1;
   }
 
+  /** False for points outside the wall during a boss fight; true everywhere otherwise. */
+  contains(x: number, y: number): boolean {
+    if (!this.current) return true;
+    const dx = x - this.cx;
+    const dy = y - this.cy;
+    return dx * dx + dy * dy < ARENA_RADIUS * ARENA_RADIUS;
+  }
+
   /**
    * Call right after the player moves: starts due boss fights and holds the player inside the wall.
    * Returns the damage the wall, dashes and exploding marks deal the player this frame.

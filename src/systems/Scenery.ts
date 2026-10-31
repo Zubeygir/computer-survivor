@@ -8,7 +8,7 @@ const MAX_ITEMS = 140;
 const MAX_ITEMS_PER_CHUNK = 2;
 
 /** Mixes chunk coordinates into a number that is always the same for that chunk. */
-function hash(x: number, y: number, salt: number): number {
+export function hash(x: number, y: number, salt: number): number {
   let h = Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(salt, 2147483647);
   h = Math.imul(h ^ (h >>> 13), 1274126177);
   return (h ^ (h >>> 16)) >>> 0;

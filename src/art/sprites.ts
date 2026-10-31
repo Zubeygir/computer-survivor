@@ -673,6 +673,68 @@ export const SPRITES: Record<string, string[]> = {
     '.KUUUK.',
     '..KKK..',
   ],
+  'drop-heal': [
+    '.KKK...KKK.',
+    'KRRRK.KRRRK',
+    'KRXRRKRRRRK',
+    'KRRRRRRRRRK',
+    'KRRRRRRRRrK',
+    '.KRRRRRRrK.',
+    '..KRRRRrK..',
+    '...KRRrK...',
+    '....KrK....',
+    '.....K.....',
+  ],
+  'drop-data-small': [
+    '..KKKK..',
+    '.KYYYYK.',
+    'KYYPPYYK',
+    'KYPYYYYK',
+    'KYPYYYYK',
+    'KYYYYYYK',
+    '.KYYYYK.',
+    '..KKKK..',
+  ],
+  'drop-data-medium': [
+    '.KKKKKKKK.',
+    'KYYYYYYYYK',
+    'KKKKKKKKKK',
+    'KYYPPYYYYK',
+    'KKKKKKKKKK',
+    'KYPYYYYYYK',
+    'KKKKKKKKKK',
+    'KYYYYYYYYK',
+    '.KKKKKKKK.',
+  ],
+  'drop-data-large': mirror([
+    '.....KK',
+    '....KYY',
+    '....KKK',
+    '...KYYY',
+    '..KYYYP',
+    '.KYYYPY',
+    'KYYYYPY',
+    'KYYYYYP',
+    'KYYYYYY',
+    'KYYYYPY',
+    '.KYYYYY',
+    '..KKKKK',
+  ]),
+  'drop-nuke': mirror([
+    '....KKK',
+    '..KKYYY',
+    '.KYYKKY',
+    '.KYKKKY',
+    'KYYKKYY',
+    'KYYYYYK',
+    'KYYYYKK',
+    'KYYYYYK',
+    'KYKKYYY',
+    '.KKKKYY',
+    '.KYKKKY',
+    '..KKYYY',
+    '....KKK',
+  ]),
   hand: [
     '...KK......',
     '..KSSK.....',
@@ -764,7 +826,7 @@ export const SPRITES: Record<string, string[]> = {
 
 export const PLAYER_FRAMES = { stand: 'tech-stand', walk: ['tech-step-a', 'tech-stand', 'tech-step-b', 'tech-stand'] };
 
-export const SCENERY_FRAMES = ['junk-crt', 'junk-tire', 'junk-pile', 'junk-rock', 'junk-rock', 'junk-cable'];
+export const SCENERY_FRAMES = ['junk-tire', 'junk-pile', 'junk-rock', 'junk-rock', 'junk-cable'];
 
 /** 5x7 glyphs; `#` is a pixel, rows are separated by `/`. Text is uppercased before drawing. */
 export const FONT_GLYPHS: Record<string, string> = {

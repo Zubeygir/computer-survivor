@@ -5,12 +5,14 @@ import { WEAPONS, type WeaponId } from '../data/weapons';
 import { Player } from '../entities/Player';
 import { VirtualJoystick } from '../input/VirtualJoystick';
 import { Arena } from '../systems/Arena';
+import { Breakables } from '../systems/Breakables';
 import { DangerZones } from '../systems/DangerZones';
 import { Effects } from '../systems/Effects';
 import { EnemyBullets } from '../systems/EnemyBullets';
 import { EnemyManager } from '../systems/EnemyManager';
 import { Experience } from '../systems/Experience';
 import { GemManager } from '../systems/GemManager';
+import { Pickups } from '../systems/Pickups';
 import { ProjectileManager } from '../systems/ProjectileManager';
 import { progress } from '../systems/Progress';
 import { Scenery } from '../systems/Scenery';
@@ -37,6 +39,8 @@ export class GameScene extends Phaser.Scene {
   private hurtFlash!: HurtFlash;
   private zones!: DangerZones;
   private gems!: GemManager;
+  private pickups!: Pickups;
+  private breakables!: Breakables;
   private enemies!: EnemyManager;
   private spawner!: Spawner;
   private projectiles!: ProjectileManager;
@@ -74,6 +78,10 @@ export class GameScene extends Phaser.Scene {
     this.gems = new GemManager(this);
     this.bullets = new EnemyBullets(this);
     this.enemies = new EnemyManager(this, this.bullets, (x, y, def) => {
+      if (def.prop) {
+        this.breakables.onBroken(x, y);
+        return;
+      }
       this.gems.spawn(x, y, def.xp);
       if (this.arena.onKill(def)) this.player.heal(BOSS_KILL_HEAL);
       this.tutorial?.onKill(x, y);
@@ -86,6 +94,10 @@ export class GameScene extends Phaser.Scene {
     this.arena = new Arena(this, this.enemies, this.player, this.bullets, this.zones);
     this.spawner = new Spawner(this.cameras.main, this.player, this.enemies);
     this.effects = new Effects(this);
+    this.pickups = new Pickups(this, this.cameras.main, this.player, this.gems, this.enemies);
+    this.breakables = new Breakables(this.cameras.main, this.player, this.enemies, this.pickups, this.effects, (x, y) =>
+      this.arena.contains(x, y),
+    );
     this.projectiles = new ProjectileManager(this, this.enemies, this.player, this.effects);
     this.weapons = [];
     this.addWeapon('cursor');
@@ -163,6 +175,10 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
+    this.pickups.update();
+    // Held back during the tutorial, or the first shots would go to a computer instead of its bug
+    if (!this.tutorial) this.breakables.update(delta);
+
     const gained = this.gems.update(delta, this.player);
     if (gained > 0) this.gainXp(gained);
 
@@ -222,6 +238,7 @@ export class GameScene extends Phaser.Scene {
       ...run,
       bossKills: this.arena.bossKills,
       weapons: this.weapons.map((weapon) => weapon.def.id),
+      dataFound: this.pickups.dataFound,
     });
     const data: GameOverSceneData = { ...run, reward };
     this.scene.launch('GameOverScene', data);

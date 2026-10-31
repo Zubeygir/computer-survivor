@@ -4,12 +4,14 @@ import { EVOLUTIONS, UPGRADES } from '../../src/data/upgrades';
 import { WEAPONS } from '../../src/data/weapons';
 import { Player } from '../../src/entities/Player';
 import { Arena } from '../../src/systems/Arena';
+import { Breakables } from '../../src/systems/Breakables';
 import { DangerZones } from '../../src/systems/DangerZones';
 import { Effects } from '../../src/systems/Effects';
 import { EnemyBullets } from '../../src/systems/EnemyBullets';
 import { EnemyManager } from '../../src/systems/EnemyManager';
 import { Experience } from '../../src/systems/Experience';
 import { GemManager } from '../../src/systems/GemManager';
+import { Pickups } from '../../src/systems/Pickups';
 import { ProjectileManager } from '../../src/systems/ProjectileManager';
 import { Spawner } from '../../src/systems/Spawner';
 import { Upgrades } from '../../src/systems/Upgrades';
@@ -43,7 +45,7 @@ function fakeImage() {
 
 const scene = { add: { image: fakeImage, circle: fakeImage }, textures: { exists: () => true } };
 // Portrait phone: the camera only decides the spawn ring
-const camera = { width: 390, height: 844 };
+const camera = { width: 390, height: 844, flash() {} };
 
 /**
  * Plays one run, following the frame order of `GameScene.update`.
@@ -57,9 +59,14 @@ export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, 
   const bullets = new EnemyBullets(scene);
   const gems = new GemManager(scene);
   let arena;
+  let breakables;
   let seconds = 0;
   let bossesKilled = 0;
   const enemies = new EnemyManager(scene, bullets, (x, y, def) => {
+    if (def.prop) {
+      breakables.onBroken(x, y);
+      return;
+    }
     gems.spawn(x, y, def.xp);
     if (arena.onKill(def)) {
       player.heal(BOSS_KILL_HEAL);
@@ -69,6 +76,8 @@ export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, 
   arena = new Arena(scene, enemies, player, bullets, new DangerZones(scene));
   const spawner = new Spawner(camera, player, enemies);
   const effects = new Effects(scene);
+  const pickups = new Pickups(scene, camera, player, gems, enemies);
+  breakables = new Breakables(camera, player, enemies, pickups, effects, (x, y) => arena.contains(x, y));
   const projectiles = new ProjectileManager(scene, enemies, player, effects);
   const weapons = [];
   const addWeapon = (id) => {
@@ -94,7 +103,7 @@ export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, 
       level: experience.level,
       kills: enemies.kills,
       bossesKilled,
-      data: dataEarned(outcome === 'won', spawner.time, enemies.kills, bossesKilled),
+      data: dataEarned(outcome === 'won', spawner.time, enemies.kills, bossesKilled) + pickups.dataFound,
       fights,
       evolvedAt,
       levelAtMinute,
@@ -104,7 +113,7 @@ export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, 
 
   while (seconds < MAX_SECONDS) {
     seconds += DELTA / 1000;
-    if (bot === 'strafe') strafe(move, player, enemies, gems, arena, seconds);
+    if (bot === 'strafe') strafe(move, player, enemies, gems, pickups, arena, seconds);
     player.update(move, DELTA);
     const arenaDamage = arena.update(spawner.time, DELTA);
     if (arena.active && fightStart === null) fightStart = seconds;
@@ -126,6 +135,8 @@ export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, 
     effects.update(DELTA);
     enemies.removeDead();
     if (arena.won) return result('won');
+    pickups.update();
+    breakables.update(DELTA);
 
     const gained = gems.update(DELTA, player);
     if (gained > 0) {
@@ -154,8 +165,8 @@ function dataEarned(won, time, kills, bosses) {
   );
 }
 
-/** A decent human: circles the crowd instead of fleeing it, swaps direction, grabs gems when safe. */
-function strafe(move, player, enemies, gems, arena, seconds) {
+/** A decent human: circles the crowd instead of fleeing it, swaps direction, grabs gems and items when safe. */
+function strafe(move, player, enemies, gems, pickups, arena, seconds) {
   const px = player.sprite.x;
   const py = player.sprite.y;
   let awayX = 0;
@@ -163,6 +174,7 @@ function strafe(move, player, enemies, gems, arena, seconds) {
   let nearest = Infinity;
   for (let i = 0; i < enemies.count; i++) {
     const enemy = enemies.enemies[i];
+    if (enemy.def.prop) continue;
     const dx = px - enemy.sprite.x;
     const dy = py - enemy.sprite.y;
     const d = Math.hypot(dx, dy);
@@ -190,8 +202,7 @@ function strafe(move, player, enemies, gems, arena, seconds) {
     let best = GEM_RANGE * GEM_RANGE;
     let gemX = 0;
     let gemY = 0;
-    for (let i = 0; i < gems.aliveCount; i++) {
-      const sprite = gems.gems[i].sprite;
+    const consider = ({ sprite }) => {
       const dx = sprite.x - px;
       const dy = sprite.y - py;
       const d2 = dx * dx + dy * dy;
@@ -200,7 +211,9 @@ function strafe(move, player, enemies, gems, arena, seconds) {
         gemX = dx;
         gemY = dy;
       }
-    }
+    };
+    for (let i = 0; i < gems.aliveCount; i++) consider(gems.gems[i]);
+    for (let i = 0; i < pickups.aliveCount; i++) consider(pickups.pickups[i]);
     const d = Math.hypot(gemX, gemY);
     if (d > 0) {
       x += (gemX / d) * 0.8;
