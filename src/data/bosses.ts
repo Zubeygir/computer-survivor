@@ -3,6 +3,8 @@ import { ENEMIES, type EnemyDef } from './enemies';
 /** Every attack opens with `tell` seconds in which the boss stands still and blinks. */
 interface BossAttackBase {
   tell: number;
+  /** Comes straight after this attack with no walking in between, but still with its own tell. */
+  then?: BossAttack;
 }
 
 /** Lunges along a line shown during the tell. */
@@ -33,6 +35,8 @@ export interface FanAttack extends BossAttackBase {
   spread: number;
   speed: number;
   damage: number;
+  /** Aims at where the player will be when the bullets arrive, so running straight stops working. */
+  lead?: boolean;
 }
 
 /** Keeps firing while turning, which draws spinning arms of bullets. */
@@ -55,6 +59,8 @@ export interface ZonesAttack extends BossAttackBase {
   radius: number;
   fuse: number;
   damage: number;
+  /** Marks around where the player will be when the fuse runs out instead of where they are now. */
+  ahead?: boolean;
 }
 
 /** Calls in enemies around the boss. */
@@ -62,6 +68,8 @@ export interface SummonAttack extends BossAttackBase {
   kind: 'summon';
   enemy: EnemyDef;
   count: number;
+  /** Pixels from the player: the enemies form a ring around them instead of around the boss. */
+  encircle?: number;
 }
 
 export type BossAttack = DashAttack | RingAttack | FanAttack | SpiralAttack | ZonesAttack | SummonAttack;
@@ -75,6 +83,22 @@ export interface BossPhase {
   attacks: BossAttack[];
 }
 
+/** Marks a boss leaves behind while it backs away, so chasing it has a price. */
+export interface BossTrail {
+  /** Seconds between marks. */
+  interval: number;
+  radius: number;
+  fuse: number;
+  damage: number;
+}
+
+/** Goes by time, not boss HP, so hurting the boss faster never brings the wall in sooner. */
+export interface ClosingWall {
+  pixelsPerSecond: number;
+  /** Where it stops, so the player always keeps room to move. */
+  minRadius: number;
+}
+
 export interface BossEventDef {
   /** Run clock seconds. The clock stops during boss fights, so a slow kill never delays later waves. */
   time: number;
@@ -86,6 +110,8 @@ export interface BossEventDef {
   milestone: boolean;
   /** Pixels the boss stays away from the player; 0 chases. */
   keepDistance: number;
+  trail?: BossTrail;
+  closingWall?: ClosingWall;
   /** From `belowHp: 1` downwards. */
   phases: BossPhase[];
 }
@@ -103,6 +129,10 @@ export const BOSS_HP_GROWTH = 1.7;
 /** The list starts over after its last boss, its attacks multiplied by this once per time round. */
 export const BOSS_LOOP_DAMAGE_MULT = 1.5;
 
+/** ROOTKIT's follow-up to a dash. It is the first boss a new player meets, so this stays light. */
+const ROOTKIT_SHOT: FanAttack = { kind: 'fan', tell: 0.3, count: 3, spread: 0.25, speed: 200, damage: 5, lead: true };
+const ROOTKIT_DASH: DashAttack = { kind: 'dash', tell: 0.6, speed: 460, seconds: 0.5, repeats: 2, damage: 12, then: ROOTKIT_SHOT };
+
 /** Sorted by time. */
 export const BOSS_EVENTS: BossEventDef[] = [
   {
@@ -116,12 +146,18 @@ export const BOSS_EVENTS: BossEventDef[] = [
       {
         belowHp: 1,
         pause: 2.2,
-        attacks: [{ kind: 'dash', tell: 0.8, speed: 420, seconds: 0.55, repeats: 1, damage: 12 }],
+        attacks: [{ kind: 'dash', tell: 0.8, speed: 420, seconds: 0.55, repeats: 1, damage: 12, then: ROOTKIT_SHOT }],
       },
       {
         belowHp: 0.5,
         pause: 1.6,
-        attacks: [{ kind: 'dash', tell: 0.6, speed: 460, seconds: 0.5, repeats: 2, damage: 12 }],
+        // The dash is listed twice so the ring stays occasional: weapons shoot the nearest target,
+        // and Bugs arriving faster than a low level build can clear them shield the boss
+        attacks: [
+          ROOTKIT_DASH,
+          ROOTKIT_DASH,
+          { kind: 'summon', tell: 0.6, enemy: ENEMIES.bug, count: 8, encircle: 150 },
+        ],
       },
     ],
   },
@@ -132,12 +168,13 @@ export const BOSS_EVENTS: BossEventDef[] = [
     hpMult: 1.2,
     milestone: false,
     keepDistance: 180,
+    trail: { interval: 0.5, radius: 50, fuse: 1, damage: 10 },
     phases: [
       {
         belowHp: 1,
         pause: 1.8,
         attacks: [
-          { kind: 'fan', tell: 0.6, count: 5, spread: 0.22, speed: 200, damage: 7 },
+          { kind: 'fan', tell: 0.6, count: 5, spread: 0.22, speed: 200, damage: 7, lead: true },
           { kind: 'ring', tell: 0.7, count: 14, speed: 150, damage: 7 },
         ],
       },
@@ -145,7 +182,7 @@ export const BOSS_EVENTS: BossEventDef[] = [
         belowHp: 0.5,
         pause: 1.4,
         attacks: [
-          { kind: 'fan', tell: 0.5, count: 7, spread: 0.2, speed: 220, damage: 7 },
+          { kind: 'fan', tell: 0.5, count: 7, spread: 0.2, speed: 220, damage: 7, lead: true },
           { kind: 'ring', tell: 0.6, count: 18, speed: 170, damage: 7 },
         ],
       },
@@ -163,7 +200,7 @@ export const BOSS_EVENTS: BossEventDef[] = [
         belowHp: 1,
         pause: 1.8,
         attacks: [
-          { kind: 'zones', tell: 0.3, count: 4, radius: 60, fuse: 1, damage: 15 },
+          { kind: 'zones', tell: 0.3, count: 4, radius: 60, fuse: 1, damage: 15, ahead: true },
           { kind: 'summon', tell: 0.6, enemy: ENEMIES.bug, count: 6 },
         ],
       },
@@ -171,8 +208,8 @@ export const BOSS_EVENTS: BossEventDef[] = [
         belowHp: 0.5,
         pause: 1.3,
         attacks: [
-          { kind: 'zones', tell: 0.3, count: 6, radius: 70, fuse: 0.9, damage: 15 },
-          { kind: 'summon', tell: 0.5, enemy: ENEMIES.spam, count: 8 },
+          { kind: 'zones', tell: 0.3, count: 6, radius: 70, fuse: 0.9, damage: 15, ahead: true },
+          { kind: 'summon', tell: 0.5, enemy: ENEMIES.spam, count: 12, encircle: 170 },
         ],
       },
     ],
@@ -184,6 +221,7 @@ export const BOSS_EVENTS: BossEventDef[] = [
     hpMult: 2,
     milestone: true,
     keepDistance: 0,
+    closingWall: { pixelsPerSecond: 3, minRadius: 180 },
     phases: [
       {
         belowHp: 1,
@@ -206,10 +244,34 @@ export const BOSS_EVENTS: BossEventDef[] = [
         belowHp: 0.3,
         pause: 1,
         attacks: [
-          { kind: 'fan', tell: 0.5, count: 7, spread: 0.18, speed: 240, damage: 15 },
+          {
+            kind: 'fan',
+            tell: 0.5,
+            count: 7,
+            spread: 0.18,
+            speed: 240,
+            damage: 15,
+            lead: true,
+            then: { kind: 'ring', tell: 0.3, count: 16, speed: 190, damage: 15 },
+          },
           { kind: 'spiral', tell: 0.5, arms: 4, interval: 0.16, turn: 0.35, seconds: 3, speed: 180, damage: 12 },
-          { kind: 'dash', tell: 0.6, speed: 460, seconds: 0.5, repeats: 2, damage: 25 },
-          { kind: 'ring', tell: 0.5, count: 22, speed: 210, damage: 15 },
+          {
+            kind: 'dash',
+            tell: 0.6,
+            speed: 460,
+            seconds: 0.5,
+            repeats: 2,
+            damage: 25,
+            then: { kind: 'fan', tell: 0.3, count: 5, spread: 0.2, speed: 240, damage: 15, lead: true },
+          },
+          {
+            kind: 'ring',
+            tell: 0.5,
+            count: 22,
+            speed: 210,
+            damage: 15,
+            then: { kind: 'dash', tell: 0.5, speed: 460, seconds: 0.5, repeats: 1, damage: 25 },
+          },
         ],
       },
     ],

@@ -1,4 +1,4 @@
-import { ARENA_RADIUS, BOSS_KILL_HEAL } from '../../src/data/bosses';
+import { BOSS_KILL_HEAL } from '../../src/data/bosses';
 import { BOSS_DROP, MINI_BOSS_DROP } from '../../src/data/drops';
 import { rollGem } from '../../src/data/gems';
 import { MINI_BOSS_SLOT_CHANCE, rollHits } from '../../src/data/slots';
@@ -32,6 +32,8 @@ const SAFE_GAP = 90;
 /** Beyond this fraction of the arena radius the bot steers back to the middle. */
 const ARENA_COMFORT = 0.6;
 const STRAFE_SWAP_SECONDS = 5;
+/** The largest circle the 'circle' bot runs; a closing wall makes it tighter. */
+const CIRCLE_RADIUS = 200;
 
 function fakeImage() {
   const image = { x: 0, y: 0 };
@@ -52,11 +54,12 @@ const camera = { width: 390, height: 844, flash() {} };
 
 /**
  * Plays one run, following the frame order of `GameScene.update`.
- * `bot` is 'still' or 'strafe', `start` a weapon id, `pick(options)` returns a card or null to skip.
+ * `bot` is 'still', 'strafe' or 'circle', `start` a weapon id, `pick(options)` returns a card or null to skip.
  * `damageTaken` scales everything that hurts the player, to test late waves with a sturdier bot.
  * `unlocked(id)` and `bonus` stand in for saved progress.
+ * `stopAfterFights` ends the run once that many boss fights are over.
  */
-export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, bonus = {} }) {
+export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, bonus = {}, stopAfterFights = Infinity }) {
   const player = new Player(scene, 0, 0);
   player.applyBonus(bonus);
   const bullets = new EnemyBullets(scene);
@@ -99,6 +102,9 @@ export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, 
   const move = { x: 0, y: 0 };
   const levelAtMinute = {};
   const fights = [];
+  /** Bullets, dashes, marks and wall in each fight, before `damageTaken` and the dodge allowance. */
+  const fightDamage = [];
+  let damageThisFight = 0;
   let fightStart = null;
   let evolvedAt = null;
 
@@ -112,6 +118,7 @@ export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, 
       bossesKilled,
       data: runData(spawner.time, enemies.kills, bossesKilled, arena.milestoneKills, pickups.dataFound),
       fights,
+      fightDamage,
       evolvedAt,
       levelAtMinute,
       weapons: weapons.map((weapon) => weapon.def.id),
@@ -120,19 +127,25 @@ export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, 
 
   while (seconds < MAX_SECONDS) {
     seconds += DELTA / 1000;
-    if (bot === 'strafe') strafe(move, player, enemies, gems, pickups, arena, seconds);
+    if (bot !== 'still') strafe(move, player, enemies, gems, pickups, arena, seconds);
+    if (bot === 'circle' && arena.active) circle(move, player, arena);
     player.update(move, DELTA);
     const arenaDamage = arena.update(spawner.time, DELTA);
     if (arena.active && fightStart === null) fightStart = seconds;
     if (!arena.active && fightStart !== null) {
       fights.push(Math.round(seconds - fightStart));
+      fightDamage.push(damageThisFight);
+      damageThisFight = 0;
       fightStart = null;
+      if (fights.length === stopAfterFights) return result('stopped');
     }
     if (!arena.active) spawner.update(DELTA);
 
     const stats = player.stats;
     const contactDamage = enemies.update(DELTA, player) * stats.damageTakenMult * spawner.damageMult;
-    const dodgeable = (bullets.update(DELTA, player) + arenaDamage) * (bot === 'strafe' ? DODGEABLE_DAMAGE_TAKEN : 1);
+    const dodgeableRaw = bullets.update(DELTA, player) + arenaDamage;
+    if (arena.active) damageThisFight += dodgeableRaw;
+    const dodgeable = dodgeableRaw * (bot === 'strafe' ? DODGEABLE_DAMAGE_TAKEN : 1);
     player.heal((stats.regen * DELTA) / 1000);
     player.hp -= (contactDamage + dodgeable) * damageTaken;
     if (player.hp <= 0) return result('dead');
@@ -221,7 +234,7 @@ function strafe(move, player, enemies, gems, pickups, arena, seconds) {
     const dx = arena.cx - px;
     const dy = arena.cy - py;
     const d = Math.hypot(dx, dy) || 1;
-    const pull = Math.max(0, d / ARENA_RADIUS - ARENA_COMFORT) * 5;
+    const pull = Math.max(0, d / arena.radius - ARENA_COMFORT) * 5;
     x += (dx / d) * pull;
     y += (dy / d) * pull;
   }
@@ -229,6 +242,19 @@ function strafe(move, player, enemies, gems, pickups, arena, seconds) {
   const length = Math.hypot(x, y);
   move.x = length > 0 ? x / length : 0;
   move.y = length > 0 ? y / length : 0;
+}
+
+/** One steady circle around the arena with no dodging: the habit that used to beat every boss. */
+function circle(move, player, arena) {
+  const dx = player.sprite.x - arena.cx || 1;
+  const dy = player.sprite.y - arena.cy;
+  const d = Math.hypot(dx, dy);
+  const drift = (Math.min(CIRCLE_RADIUS, arena.radius * 0.75) - d) / 100;
+  const x = -dy / d + (dx / d) * drift;
+  const y = dx / d + (dy / d) * drift;
+  const length = Math.hypot(x, y);
+  move.x = x / length;
+  move.y = y / length;
 }
 
 /** Takes evolutions, then the favoured weapon line and its key passive, then any weapon. */

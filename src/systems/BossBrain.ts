@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 import {
-  ARENA_RADIUS,
   type BossAttack,
   type BossEventDef,
   type BossPhase,
@@ -30,6 +29,9 @@ const BACK_OFF_MARGIN = 40;
 const DASH_HIT_MARGIN = 4;
 /** Pixels around the player that a zone attack scatters its marks over. */
 const ZONE_SCATTER = 170;
+const LEAD_PASSES = 3;
+/** How far down the player's path a boss looks at most, or long shots and fuses land off screen. */
+const MAX_LEAD_SECONDS = 0.6;
 
 type State = 'pause' | 'tell' | 'act';
 
@@ -42,6 +44,7 @@ export class BossBrain {
   private cy = 0;
   private damageMult = 1;
   private hpRatio = 1;
+  private wallRadius = 0;
   private state: State = 'pause';
   /** Seconds left in the current state. */
   private timer = 0;
@@ -51,6 +54,10 @@ export class BossBrain {
   private dashLanded = false;
   private spiralAngle = 0;
   private volleyLeft = 0;
+  private trailLeft = 0;
+  /** Filled by `predictPlayer`. */
+  private aimX = 0;
+  private aimY = 0;
 
   constructor(
     scene: Phaser.Scene,
@@ -77,6 +84,7 @@ export class BossBrain {
     this.damageMult = damageMult;
     this.hpRatio = 1;
     this.attackIndex = -1;
+    this.trailLeft = 0;
     boss.scripted = true;
     this.rest();
   }
@@ -88,8 +96,11 @@ export class BossBrain {
   }
 
   /** Returns the damage a dash deals the player this frame; everything else hits through its own system. */
-  update(seconds: number, hpRatio: number): number {
+  update(seconds: number, hpRatio: number, wallRadius: number): number {
     this.hpRatio = hpRatio;
+    this.wallRadius = wallRadius;
+    // A closing wall has to push along a boss standing still for an attack too
+    this.keepInside();
     this.timer -= seconds;
     switch (this.state) {
       case 'pause':
@@ -133,11 +144,22 @@ export class BossBrain {
     sprite.x += (dx / d) * step;
     sprite.y += (dy / d) * step;
     this.keepInside();
+    if (heading < 0) this.leaveTrail(seconds);
+  }
+
+  private leaveTrail(seconds: number) {
+    const { trail } = this.event;
+    if (!trail) return;
+    this.trailLeft -= seconds;
+    if (this.trailLeft > 0) return;
+    this.trailLeft = trail.interval;
+    const { x, y } = this.boss.sprite;
+    this.zones.spawn(x, y, trail.radius, trail.fuse, trail.damage * this.damageMult);
   }
 
   private keepInside() {
     const s = this.boss.sprite;
-    const max = ARENA_RADIUS - this.boss.def.radius;
+    const max = this.wallRadius - this.boss.def.radius;
     const dx = s.x - this.cx;
     const dy = s.y - this.cy;
     const d2 = dx * dx + dy * dy;
@@ -153,10 +175,20 @@ export class BossBrain {
     // Any index but the last one used, so an attack never repeats back to back
     const offset = n > 1 ? 1 + Math.floor(Math.random() * (n - 1)) : 0;
     this.attackIndex = (this.attackIndex + offset + n) % n;
-    this.attack = attacks[this.attackIndex];
-    if (this.attack.kind === 'dash') this.dashesLeft = this.attack.repeats;
+    this.prepare(attacks[this.attackIndex]);
+  }
+
+  private prepare(attack: BossAttack) {
+    this.attack = attack;
+    if (attack.kind === 'dash') this.dashesLeft = attack.repeats;
     this.state = 'tell';
-    this.timer = this.attack.tell;
+    this.timer = attack.tell;
+  }
+
+  /** Call when an attack is over. */
+  private finish() {
+    if (this.attack.then) this.prepare(this.attack.then);
+    else this.rest();
   }
 
   private showTell() {
@@ -174,6 +206,22 @@ export class BossBrain {
       .setRotation(Math.atan2(this.boss.dirY, this.boss.dirX))
       .setScale(length, AIM_LINE_WIDTH)
       .setVisible(true);
+  }
+
+  /**
+   * Sets `aimX`, `aimY` to where the player will be in `seconds` if they keep going, held inside the wall.
+   * Follows the curve they are on, because a straight guess always overshoots someone running in circles.
+   */
+  private predictPlayer(seconds: number) {
+    const { sprite, velocityX, velocityY, turnRate } = this.player;
+    const ahead = Math.min(seconds, MAX_LEAD_SECONDS);
+    const forward = turnRate === 0 ? ahead : Math.sin(turnRate * ahead) / turnRate;
+    const sideways = turnRate === 0 ? 0 : (1 - Math.cos(turnRate * ahead)) / turnRate;
+    const dx = sprite.x + velocityX * forward - velocityY * sideways - this.cx;
+    const dy = sprite.y + velocityY * forward + velocityX * sideways - this.cy;
+    const k = Math.min(1, this.wallRadius / Math.hypot(dx, dy));
+    this.aimX = this.cx + dx * k;
+    this.aimY = this.cy + dy * k;
   }
 
   private aimAtPlayer() {
@@ -216,7 +264,7 @@ export class BossBrain {
         this.summon(attack);
         break;
     }
-    this.rest();
+    this.finish();
   }
 
   /** Returns the impact damage, once per dash. */
@@ -242,7 +290,7 @@ export class BossBrain {
       this.state = 'tell';
       this.timer = attack.tell;
     } else {
-      this.rest();
+      this.finish();
     }
     return damage;
   }
@@ -260,12 +308,17 @@ export class BossBrain {
       }
       this.spiralAngle += attack.turn;
     }
-    if (this.timer <= 0) this.rest();
+    if (this.timer <= 0) this.finish();
   }
 
   private fireFan(attack: FanAttack) {
     const { x, y } = this.boss.sprite;
-    const aim = Math.atan2(this.player.sprite.y - y, this.player.sprite.x - x);
+    this.predictPlayer(0);
+    // Each pass refines the guess, since how long the bullets fly depends on where they are going
+    for (let i = 0; attack.lead && i < LEAD_PASSES; i++) {
+      this.predictPlayer(Math.hypot(this.aimX - x, this.aimY - y) / attack.speed);
+    }
+    const aim = Math.atan2(this.aimY - y, this.aimX - x);
     const damage = attack.damage * this.damageMult;
     for (let i = 0; i < attack.count; i++) {
       const angle = aim + (i - (attack.count - 1) / 2) * attack.spread;
@@ -273,11 +326,12 @@ export class BossBrain {
     }
   }
 
-  /** The first mark lands on the player, so standing still is never safe. */
+  /** The first mark lands on the player, or on their path with `ahead`; the rest scatter around the player. */
   private dropZones(attack: ZonesAttack) {
-    const { x, y } = this.player.sprite;
+    this.predictPlayer(attack.ahead ? attack.fuse : 0);
     const damage = attack.damage * this.damageMult;
-    this.zones.spawn(x, y, attack.radius, attack.fuse, damage);
+    this.zones.spawn(this.aimX, this.aimY, attack.radius, attack.fuse, damage);
+    const { x, y } = this.player.sprite;
     for (let i = 1; i < attack.count; i++) {
       const angle = Math.random() * Math.PI * 2;
       const dist = Math.random() * ZONE_SCATTER;
@@ -286,10 +340,10 @@ export class BossBrain {
   }
 
   private summon(attack: SummonAttack) {
-    const { x, y } = this.boss.sprite;
-    const { enemy, count } = attack;
+    const { enemy, count, encircle } = attack;
+    const { x, y } = encircle ? this.player.sprite : this.boss.sprite;
     const step = (Math.PI * 2) / count;
-    const dist = enemy.radius * 4 + this.boss.def.radius;
+    const dist = encircle ?? enemy.radius * 4 + this.boss.def.radius;
     for (let i = 0; i < count; i++) {
       this.enemies.spawn(enemy, x + Math.cos(i * step) * dist, y + Math.sin(i * step) * dist);
     }

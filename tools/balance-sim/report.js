@@ -1,11 +1,12 @@
 // npm run sim -- [runs per scenario] [comma-separated sections]
-// Sections: still, solo, build, random, late, new, maxed. Example: npm run sim -- 8 new,maxed
+// Sections: still, solo, build, random, late, new, maxed, boss. Example: npm run sim -- 8 new,maxed
+import { BOSS_EVENTS } from '../../src/data/bosses';
 import { focused, maxedPlayer, newPlayer, noPick, randomPick, run, startingWeapons, weaponIds } from './game.js';
 
 const LATE_DAMAGE_TAKEN = 0.15;
 
 const runs = Number(process.argv[2]) || 6;
-const sections = (process.argv[3] ?? 'still,solo,build,random,late,new,maxed').split(',');
+const sections = (process.argv[3] ?? 'still,solo,build,random,late,new,maxed,boss').split(',');
 
 const clock = (seconds) => {
   const minutes = String(Math.floor(seconds / 60)).padStart(2, '0');
@@ -37,6 +38,19 @@ function scenario(label, config) {
     `evolved ${evolved.length}/${runs}${evolved.length > 0 ? ` at ${clock(average(evolved, (r) => r.evolvedAt))}` : ''}`,
   ];
   console.log(columns.join('  '));
+}
+
+/** An unkillable bot runs circles through every boss once; damage per second shows how well that still works. */
+function bossFights(label, config) {
+  const results = Array.from({ length: runs }, () =>
+    run({ ...config, bot: 'circle', damageTaken: 0, stopAfterFights: BOSS_EVENTS.length }),
+  );
+  const columns = BOSS_EVENTS.map((event, boss) => {
+    const seconds = average(results, (r) => r.fights[boss]);
+    const damage = average(results, (r) => r.fightDamage[boss]);
+    return `${event.name} ${Math.round(seconds)}s ${Math.round(damage)} dmg ${(damage / seconds).toFixed(1)}/s`;
+  });
+  console.log(`${label.padEnd(10)}  ${columns.join('  |  ')}`);
 }
 
 if (sections.includes('still')) {
@@ -74,4 +88,9 @@ if (sections.includes('maxed')) {
   for (const id of weaponIds) {
     scenario(id, { bot: 'strafe', start: 'cursor', pick: focused(id), ...maxedPlayer });
   }
+}
+if (sections.includes('boss')) {
+  console.log('--- Unkillable bot running circles: seconds, attack damage it would have taken, per second ---');
+  bossFights('fresh', { start: 'cursor', pick: focused('cursor'), ...newPlayer });
+  bossFights('maxed', { start: 'cursor', pick: focused('cursor'), ...maxedPlayer });
 }

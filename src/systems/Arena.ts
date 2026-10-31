@@ -8,6 +8,7 @@ import {
   BOSS_HP_GROWTH,
   BOSS_LOOP_DAMAGE_MULT,
   type BossEventDef,
+  type ClosingWall,
 } from '../data/bosses';
 import type { EnemyDef } from '../data/enemies';
 import type { Player } from '../entities/Player';
@@ -44,6 +45,8 @@ export class Arena {
   private bossMaxHp = 0;
   private cx = 0;
   private cy = 0;
+  /** World pixels from the center to the wall, which some bosses close in during the fight. */
+  private radius = ARENA_RADIUS;
 
   constructor(
     scene: Phaser.Scene,
@@ -78,7 +81,7 @@ export class Arena {
     if (!this.current) return true;
     const dx = x - this.cx;
     const dy = y - this.cy;
-    return dx * dx + dy * dy < ARENA_RADIUS * ARENA_RADIUS;
+    return dx * dx + dy * dy < this.radius * this.radius;
   }
 
   /**
@@ -96,7 +99,8 @@ export class Arena {
     // The pool can be full when the ring closes; retry until a dying enemy frees a slot
     if (!this.boss) this.spawnBoss(this.current);
     const seconds = delta / 1000;
-    const dashDamage = this.boss ? this.brain.update(seconds, this.bossHpRatio) : 0;
+    if (this.current.closingWall) this.closeWall(this.current.closingWall, seconds);
+    const dashDamage = this.boss ? this.brain.update(seconds, this.bossHpRatio, this.radius) : 0;
     return dashDamage + this.holdPlayer(seconds) + this.zones.update(delta, this.player);
   }
 
@@ -125,21 +129,31 @@ export class Arena {
     this.bossesStarted++;
     this.cx = this.player.sprite.x;
     this.cy = this.player.sprite.y;
+    this.radius = ARENA_RADIUS;
     this.enemies.removeOutside(this.cx, this.cy, ARENA_RADIUS);
 
+    this.placeWalls();
+    for (const wall of this.walls) wall.setVisible(true);
+    this.spawnBoss(event);
+  }
+
+  private placeWalls() {
     const step = (Math.PI * 2) / this.walls.length;
     for (let i = 0; i < this.walls.length; i++) {
       const angle = i * step;
-      this.walls[i]
-        .setPosition(this.cx + Math.cos(angle) * ARENA_RADIUS, this.cy + Math.sin(angle) * ARENA_RADIUS)
-        .setVisible(true);
+      this.walls[i].setPosition(this.cx + Math.cos(angle) * this.radius, this.cy + Math.sin(angle) * this.radius);
     }
-    this.spawnBoss(event);
+  }
+
+  private closeWall(closing: ClosingWall, seconds: number) {
+    if (this.radius === closing.minRadius) return;
+    this.radius = Math.max(closing.minRadius, this.radius - closing.pixelsPerSecond * seconds);
+    this.placeWalls();
   }
 
   private spawnBoss(event: BossEventDef) {
     const angle = Math.random() * Math.PI * 2;
-    const dist = ARENA_RADIUS - BOSS_INSET;
+    const dist = this.radius - BOSS_INSET;
     this.bossMaxHp = BOSS_FIRST_HP * BOSS_HP_GROWTH ** this.fightOrder * event.hpMult;
     this.boss = this.enemies.spawn(
       event.boss,
@@ -153,7 +167,7 @@ export class Arena {
   /** Returns the damage from touching the wall this frame. */
   private holdPlayer(seconds: number): number {
     const s = this.player.sprite;
-    const max = ARENA_RADIUS - WALL_RADIUS - this.player.radius;
+    const max = this.radius - WALL_RADIUS - this.player.radius;
     const touch = max - WALL_TOUCH_MARGIN;
     const dx = s.x - this.cx;
     const dy = s.y - this.cy;
