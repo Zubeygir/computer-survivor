@@ -80,7 +80,7 @@ Kullanıcıdan gelen son gerçek veri: 3-4 Atölye yıldızlı hesapta 8+ dakika
 
 ## Denge ölçümü
 
-**Kullanıcı istemedikçe bot simülasyonu çalıştırma.** 2026-10-31'de kullanıcı birini durdurdu ve simülasyonların çok uzun sürdüğünü, bütün token'ları bitirdiğini söyledi. Değişikliği yap, ölçülmediğini söyle ve oynayarak değerlendirmesine bırak. Gerçek denge işi için izin veriyor, 2026-11-01'de silahlar için verdiği gibi.
+**Kullanıcı istemedikçe bot simülasyonu çalıştırmak için her zaman sor.** 2026-10-31'de kullanıcı birini durdurdu ve simülasyonların çok uzun sürdüğünü, bütün token'ları bitirdiğini söyledi. Değişikliği yap, ölçülmediğini söyle ve oynayarak değerlendirmesine bırak. Gerçek denge işi için izin veriyor, 2026-11-01'de silahlar için verdiği gibi.
 
 `npm run sim -- <runs> <sections>`, örneğin `npm run sim -- 8 new,maxed`. Bölümler: `still`, `solo`, `build`, `random`, `late`, `new`, `maxed`, `boss`, `weapons`. `tools/balance-sim/game.js`, `GameScene.update` kare sırasını kopyalar, ikisini uyumlu tut.
 
