@@ -1,217 +1,217 @@
 # Handoff — Computer Survivor
 
-Last updated: 2026-10-31. Read `CLAUDE.md` first for the stack and architecture rules; this file is the current state, every decision made so far and all the work that is left.
+Son güncelleme: 2026-11-01. Teknoloji ve mimari kuralları için önce `CLAUDE.md` dosyasını oku. Bu dosya güncel durumu, şimdiye kadar alınan bütün kararları ve kalan bütün işleri içerir.
 
-The user writes in Turkish and must get replies **only in Turkish**, in plain words. Code, comments, commits and this file stay in English. See "Working agreement" at the end before doing anything.
+Kullanıcı Türkçe yazar ve **yalnızca Türkçe**, sade yanıt almalıdır. Kod, kod yorumları ve commit mesajları İngilizce kalır; bu dosya kullanıcının isteğiyle Türkçedir. Bir şey yapmadan önce sondaki "Çalışma anlaşması" bölümüne bak.
 
-## Where we are
+## Neredeyiz
 
-Everything below is committed and pushed to `main`, which Vercel deploys. `main` and `playtest-feedback-fixes` point at the same commit.
+Aşağıdaki her şey commit edildi ve Vercel'in yayınladığı `main` dalına gönderildi. `main` ve `playtest-feedback-fixes` aynı commit'i gösteriyor.
 
-The game is an **endless** survivors-like: a run only ends in death. It has a first-run tutorial, 4 distinct bosses, mini bosses, slot machines, breakable computers and three colors of XP gems.
+Oyun **sonsuz** bir survivors-like: bir oyun yalnızca ölünce biter. İlk oyuna özel eğitim, 20 boss, mini bosslar, slot makineleri, kırılabilir bilgisayarlar, 19 silah ve üç renk XP gem'i var.
 
-**The next job is the Workshop** (job 1 below). Show its plan in short form and get the user's go-ahead first, since their rule is that each job's plan comes right before that job.
+**Sıradaki iş Atölye (Workshop)** (aşağıda İş 1). Önce planını kısaca göster ve kullanıcının onayını al, çünkü kuralı her işin planının o işten hemen önce sunulmasıdır.
 
-The game design doc is at https://claude.ai/artifact/8yApVH6VuMDwYmPwAqVosy (Turkish, read with the docs tools). It predates the endless run, bosses, slots and drops, so `src/data/*.ts` and this file win where they differ.
+Oyun tasarım dokümanı https://claude.ai/artifact/8yApVH6VuMDwYmPwAqVosy adresinde (Türkçe, docs araçlarıyla okunur). Sonsuz oyun, bosslar, slotlar ve düşenlerden önce yazıldı, bu yüzden farklı oldukları yerde `src/data/*.ts` ve bu dosya geçerlidir.
 
-## What is left, in order
+## Kalan işler, sırayla
 
-### Job 1: Workshop
+### İş 1: Atölye
 
-The user was firm that the endless run needs far more content: "kesinlikle artması gerekiyor, çok fazla". Bosses and weapons are done, so what is left of that is:
-- **Workshop:** from 5 upgrades to about 15-20, with more levels each. Today it is shallow: the Workshop costs 6,000 Data in total, and the core idea is that a player cannot get further without improving. The Museum now costs 16,300.
-- More passives only if needed. Evolutions share them today (`magnet` has one, most have two).
+Kullanıcı sonsuz oyunun çok daha fazla içeriğe ihtiyacı olduğu konusunda kesindi: "kesinlikle artması gerekiyor, çok fazla". Bosslar ve silahlar bitti, geriye şunlar kaldı:
+- **Atölye:** 5 yükseltmeden yaklaşık 15-20'ye çıkacak, her birinin seviyesi de artacak. Şu an çok sığ: Atölye'nin tamamı 6.000 Data ediyor, oysa temel fikir oyuncunun kendini geliştirmeden ilerleyememesi. Müze'nin toplamı artık 16.300 Data.
+- Yeni pasifler yalnızca gerekirse eklenecek. Evrimler şu an pasifleri paylaşıyor (`magnet` bir evrimde, çoğu iki evrimde kullanılıyor).
 
-### Job 2: Economy and final balance
+### İş 2: Ekonomi ve son denge
 
-Everything is tuned here in one go, through the user's playthroughs, with a simulation only if they ask for one. Prices come last, and they should really push the player. All numbers in "Current numbers" are provisional until this job.
+Her şey burada tek seferde, kullanıcının oyunlarına bakarak ayarlanacak. Simülasyon yalnızca kullanıcı isterse kullanılır. Fiyatlar en sona kalıyor ve oyuncuyu gerçekten zorlamalı. "Güncel sayılar" bölümündeki her şey bu işe kadar geçicidir.
 
-Time targets, proposed by Claude and not yet confirmed in detail (the run counts are suggestions):
+Claude'un önerdiği, ayrıntıları henüz onaylanmamış süre hedefleri (oyun sayıları öneridir):
 
-| Player | Target |
+| Oyuncu | Hedef |
 |---|---|
-| First runs | 6-7 min, even a good player |
-| After about 10 runs | 9-10 min |
-| After about 30 runs | 13-15 min |
-| Workshop mostly full | 20+ min |
+| İlk oyunlar | 6-7 dakika, iyi oyuncu için bile |
+| Yaklaşık 10 oyundan sonra | 9-10 dakika |
+| Yaklaşık 30 oyundan sonra | 13-15 dakika |
+| Atölye büyük ölçüde dolu | 20+ dakika |
 
-Latest real data from the user: 8+ minutes on an account with 3-4 Workshop stars, and an estimated 3-5 minutes at most for a newcomer. That is close to the target, so nothing was changed.
+Kullanıcıdan gelen son gerçek veri: 3-4 Atölye yıldızlı hesapta 8+ dakika, yeni oyuncu için tahminen en fazla 3-5 dakika. Bu hedefe yakın olduğu için bir şey değiştirilmedi.
 
-### Later, on purpose
+### Bilerek sonraya bırakılanlar
 
-- **Phone performance:** the user will look at it later. Late runs reach 450 enemies, which has not been measured on a real phone.
-- **Debug text (FPS, ENEMIES, KILLS):** stays while testing goes on. The user said removal is far off, so do not remove it unasked.
-- **Audio:** none yet.
-- **Mobile packaging:** Capacitor, real phone test, safe-area insets, orientation lock, moving the save off `localStorage`.
-- **Rewarded ads:** designed, not built (revive once per run, double Data on the result screen).
-- **Closed test and release prep.**
+- **Telefon performansı:** Kullanıcı sonra bakacak. Geç oyunda 450 düşmana çıkılıyor ve bu gerçek telefonda ölçülmedi.
+- **Debug yazıları (FPS, ENEMIES, KILLS):** Test sürdüğü müddetçe kalacak. Kullanıcı kaldırılmasının çok uzak olduğunu söyledi, istenmeden kaldırma.
+- **Ses:** Henüz yok.
+- **Mobil paketleme:** Capacitor, gerçek telefon testi, safe-area, yön kilidi, kaydı `localStorage` dışına taşıma.
+- **Ödüllü reklamlar:** Tasarlandı, yapılmadı (oyun başına bir kez dirilme, sonuç ekranında Data'yı ikiye katlama).
+- **Kapalı test ve yayın hazırlığı.**
 
-## Done in this stretch (playtest feedback, 2026-10-31)
+## Bu dönemde yapılanlar (oyun testi geri bildirimleri, 2026-10-31)
 
-- XP bug: at 500 gems new kills dropped nothing. The farthest gem now burns and the new one appears at the kill. Carrying its XP over was rejected because levels ran away.
-- Damage feedback: red screen edges and a red player (`HurtFlash`), softened once on request.
-- Multishot: one shot always flies straight at the target and the rest alternate sides, because even counts used to straddle it.
-- First-run tutorial (below).
-- 4 distinct bosses with phases, tells, random attacks and a burning wall.
-- Breakable computers and drops.
-- Endless run, best time, boss loop.
-- Rebalance: more enemies from the start, slower XP, weaker Repair, boss HP by order.
-- Blue, green and purple gems.
-- Mini bosses and pixel art slot machine.
-- Live Data counter.
-- Deeper bosses, because simply running in circles beat them. ROOTKIT follows a dash with a light lead shot and below half HP sometimes rings Bugs around the player. SPYWARE's fans lead and it leaves delayed marks while backing away. FORK BOMB's first mark lands on the player's path and below half HP its Spam ring the player. RANSOMWARE's wall closes in and its last phase chains attacks. Not judged yet: RANSOMWARE may be too harsh in the small ring (first knob: `minRadius` 220), FORK BOMB's marks can overlap, and Bugs may lengthen ROOTKIT for players who keep their distance.
-- 20 bosses in 8 random groups, designed by Claude on the user's request. New attack kinds: `front` (wall of bullets with an opening), `sweep` (lines of marks), `blink` (teleport with a warning mark), `pull` (drags the player), plus `speedMult` on phases and `always` on trails. The user okayed most of them; the numbers are first guesses.
-- 19 weapons, with Cassette Tape cut after the user tried it. New: CD-ROM, Trackball, Fax Machine, Robot Vacuum, Flatbed Scanner, Ethernet Cable, Pager, Pocket Calculator, Boombox, each with an evolution. Museum splits over pages.
-- A balance pass over every weapon on real waves. CRT and Degausser shrank and Widescreen dropped to +6% per level, after the user said CRT grew too big.
+- XP hatası: 500 gem'de yeni öldürmeler hiç gem düşürmüyordu. Artık en uzaktaki gem yanıyor, yenisi öldürülen yerde çıkıyor. XP'sini taşımak denendi ve reddedildi, çünkü seviyeler kontrolden çıktı.
+- Hasar geri bildirimi: kırmızı ekran kenarları ve kırmızı oyuncu (`HurtFlash`), istek üzerine bir kez yumuşatıldı.
+- Çoklu atış: bir mermi her zaman doğrudan hedefe gider, diğerleri sırayla iki yana açılır. Çift sayılı atışlar eskiden hedefin iki yanından geçiyordu.
+- İlk oyuna özel eğitim (aşağıda).
+- Fazları, uyarıları, rastgele saldırıları ve yakan duvarı olan 4 ayrı boss.
+- Kırılabilir bilgisayarlar ve düşenler.
+- Sonsuz oyun, en iyi süre, boss döngüsü.
+- Yeniden denge: baştan daha çok düşman, daha yavaş XP, daha zayıf Repair, sıraya göre boss canı.
+- Mavi, yeşil ve mor gem'ler.
+- Mini bosslar ve piksel sanatı slot makinesi.
+- Canlı Data sayacı.
+- Derinleştirilmiş bosslar, çünkü daire çizerek koşmak hepsini yeniyordu. ROOTKIT hamlesinden sonra hafif bir yola nişanlı atış yapar, yarı canın altında bazen oyuncunun etrafına Bug halkası çağırır. SPYWARE'in yelpazeleri yola nişan alır, geri çekilirken gecikmeli işaretler bırakır. FORK BOMB'un ilk işareti oyuncunun yoluna düşer, yarı canın altında Spam'leri oyuncuyu sarar. RANSOMWARE'in duvarı kapanır, son fazında saldırıları zincirler. Henüz değerlendirilmeyenler: RANSOMWARE dar halkada fazla sert olabilir (ilk ayar: `minRadius` 220), FORK BOMB'un işaretleri üst üste binebilir, Bug'lar uzak duran oyuncular için ROOTKIT'i uzatabilir.
+- 8 rastgele grupta 20 boss, kullanıcının isteğiyle Claude tasarladı. Yeni saldırı türleri: `front` (boşluklu mermi duvarı), `sweep` (işaret hatları), `blink` (uyarı işaretli ışınlanma), `pull` (oyuncuyu çeker), ayrıca fazlarda `speedMult` ve izlerde `always`. Kullanıcı çoğunu onayladı, sayılar ilk tahmindir.
+- 19 silah; Cassette Tape, kullanıcı deneyip beğenmeyince çıkarıldı. Yeniler: CD-ROM, Trackball, Fax Machine, Robot Vacuum, Flatbed Scanner, Ethernet Cable, Pager, Pocket Calculator, Boombox, her birinin evrimi var. Müze sayfalara bölündü.
+- Bütün silahların gerçek dalgalarda dengelenmesi. Kullanıcı CRT'nin fazla büyüdüğünü söyleyince CRT ve Degausser küçültüldü, Widescreen seviye başına +%6'ya indi.
 
-## Current numbers (all in `src/data`, all provisional)
+## Güncel sayılar (hepsi `src/data` içinde, hepsi geçici)
 
-- **Waves (`waves.ts`):** quotas by minute 20, 40, 65, 90, 120, 150, 190, 220, 280, 340. HP multipliers 1, 1.1, 1.3, 1.6, 2, 2.5, 3.1, 3.8, 4.6, 5.5. Intervals 0.7, 0.45, 0.2, 0.3, 0.2, 0.2, 0.12, 0.25, 0.14, 0.1. Interval spawns pile up past the quota, so shortening them inflates the crowd fast.
-- **Easy start:** anything spawned in the first 15 s has 1 HP.
-- **Overtime (past the last wave, per full minute):** +40 quota up to 450, +6% HP, +4% contact damage. The user wants difficulty to come from numbers, with HP and damage rising only a little. The 450 cap is for phones.
-- **XP (`progression.ts`):** `5 + 6(L-1) + L²/2`. Hand-set faster first levels were tried and cancelled by the user because they brought the evolve too early.
-- **Gems (`gems.ts`):** blue x1, green x2, purple x4. Worm 30% green, Pop-Up 40%, Phisher 40% and 10% purple, Adware 30%, Trojan 50% and 30% purple. Purple from regular enemies starts at 6:00. Mini bosses drop green or purple, purple at 10% and +10% per minute. Bosses always drop purple, 30 x 4 = 120 XP.
-- **Bosses (`bosses.ts`):** 20 bosses in 8 groups, one random boss per group, one every 2:30 from 2:30 to 20:00. Then the groups start over, never sending the boss they sent last round. HP = 3000 x 1.7^order x `hpMult`, so about 246,000 at 20:00, which nobody has tested. Attack damage x1.5 per round. Wall 25 DPS; RANSOMWARE's closes from 320 to 180 at 3 px/s. A kill heals 50 HP and always drops a slot machine.
-- **Mini bosses (`miniBosses.ts`):** every 60 s from 1:00, skipping boss beats (5:00, 10:00). 1.5x size, purple outline, 5x XP. Bug, then Worm from 2:00, Phisher from 4:00, Trojan from 6:00. HP = 60 x (t/30)^1.6.
-- **Slots (`slots.ts`):** mini bosses drop one 40% of the time. Odds of 2 and 3 upgrades: mini boss 7% and 1%, boss 16% and 4%. A slot only upgrades what is already owned, 20% weapon and 80% passive. With no passives owned it heals 30 HP instead of the 80%, because falling back on a weapon rewarded piling into one weapon and pulled the evolve to 3:04. Once passives are full it moves on to weapons. Slots never evolve.
-- **Computers (`drops.ts`, `Breakables.ts`):** 20% chance per 640x640 chunk (the user asked twice for fewer), at least 320 px apart, 30 HP, always at least 2 hits. Drops: Heal 25 (35%), 5 Data (35%), 15 Data (15%), 40 Data (4%), Magnet (7%), Nuke (4%).
-- **Repair card:** 10 HP (was 30, since repeated cards healed about 800 HP in a run).
-- **Rewards (`meta.ts`):** 1 Data per 10 kills, 5 per minute, 30 per boss, 100 per milestone boss, 100 per first evolution. `runData` is the shared formula used by the counter, the reward and the simulator.
+- **Dalgalar (`waves.ts`):** Dakikaya göre kotalar 20, 40, 65, 90, 120, 150, 190, 220, 280, 340. Can çarpanları 1, 1.1, 1.3, 1.6, 2, 2.5, 3.1, 3.8, 4.6, 5.5. Aralıklar 0.7, 0.45, 0.2, 0.3, 0.2, 0.2, 0.12, 0.25, 0.14, 0.1. Aralıklı doğanlar kotanın üstüne birikir, bu yüzden aralığı kısaltmak kalabalığı hızla şişirir.
+- **Kolay başlangıç:** İlk 15 saniyede doğan her şeyin canı 1'dir.
+- **Uzatma (son dalgadan sonra, her tam dakikada):** 450'ye kadar +40 kota, +%6 can, +%4 temas hasarı. Kullanıcı zorluğun sayıdan gelmesini, can ve hasarın az artmasını istiyor. 450 sınırı telefonlar içindir.
+- **XP (`progression.ts`):** `5 + 6(L-1) + L²/2`. Elle ayarlanmış daha hızlı ilk seviyeler denendi, evrimi çok erkene çektiği için kullanıcı iptal etti.
+- **Gem'ler (`gems.ts`):** Mavi x1, yeşil x2, mor x4. Worm %30 yeşil, Pop-Up %40, Phisher %40 ve %10 mor, Adware %30, Trojan %50 ve %30 mor. Normal düşmanlardan mor 6:00'da başlar. Mini bosslar yeşil veya mor düşürür, mor %10'dan başlar ve dakikada +%10 artar. Bosslar her zaman mor düşürür, 30 x 4 = 120 XP.
+- **Bosslar (`bosses.ts`):** 8 grupta 20 boss. Her gruptan rastgele bir boss, 2:30'dan 20:00'ye kadar 2:30'da bir. Sonra gruplar baştan başlar ve bir önceki turda gönderdikleri boss'u göndermezler. Can = 3000 x 1.7^sıra x `hpMult`, yani 20:00'de yaklaşık 246.000, bu hiç test edilmedi. Saldırı hasarı tur başına x1.5. Duvar 25 DPS; RANSOMWARE'inki saniyede 3 pikselle 320'den 180'e kapanır. Öldürünce 50 can gelir ve her zaman slot makinesi düşer.
+- **Mini bosslar (`miniBosses.ts`):** 1:00'den itibaren 60 saniyede bir, boss anlarını atlayarak (5:00, 10:00). 1.5 kat boyut, mor kenar, 5 kat XP. Önce Bug, 2:00'den Worm, 4:00'ten Phisher, 6:00'dan Trojan. Can = 60 x (t/30)^1.6.
+- **Slotlar (`slots.ts`):** Mini bosslar %40 ihtimalle düşürür. 2 ve 3 yükseltme ihtimali: mini boss %7 ve %1, boss %16 ve %4. Slot yalnızca sahip olunanı yükseltir, %20 silah ve %80 pasif. Pasif yoksa %80'lik kısım yerine 30 can verir, çünkü silaha düşmek tek silaha yığılmayı ödüllendirip evrimi 3:04'e çekiyordu. Pasifler dolunca silahlara geçer. Slotlar evrim yapmaz.
+- **Bilgisayarlar (`drops.ts`, `Breakables.ts`):** 640x640'lık parça başına %20 ihtimal (kullanıcı iki kez azaltılmasını istedi), en az 320 piksel arayla, 30 can, her zaman en az 2 vuruş. Düşenler: Can 25 (%35), 5 Data (%35), 15 Data (%15), 40 Data (%4), Magnet (%7), Nuke (%4).
+- **Repair kartı:** 10 can (eskiden 30'du, tekrarlanan kartlar bir oyunda yaklaşık 800 can veriyordu).
+- **Ödüller (`meta.ts`):** 10 öldürme başına 1 Data, dakika başına 5, boss başına 30, milestone boss başına 100, ilk evrim başına 100. `runData` sayacın, ödülün ve simülatörün ortak formülüdür.
 
-## Measuring balance
+## Denge ölçümü
 
-**Do not run bot simulations unless the user asks.** On 2026-10-31 they stopped one and said simulations take far too long and burn all the tokens. Make the change, say it is unmeasured and let them judge it by playing. They allow simulations for real balance work, as they did on 2026-11-01 for the weapons.
+**Kullanıcı istemedikçe bot simülasyonu çalıştırma.** 2026-10-31'de kullanıcı birini durdurdu ve simülasyonların çok uzun sürdüğünü, bütün token'ları bitirdiğini söyledi. Değişikliği yap, ölçülmediğini söyle ve oynayarak değerlendirmesine bırak. Gerçek denge işi için izin veriyor, 2026-11-01'de silahlar için verdiği gibi.
 
-`npm run sim -- <runs> <sections>`, for example `npm run sim -- 8 new,maxed`. Sections: `still`, `solo`, `build`, `random`, `late`, `new`, `maxed`, `boss`, `weapons`. `tools/balance-sim/game.js` copies the frame order of `GameScene.update`, so keep the two in step.
+`npm run sim -- <runs> <sections>`, örneğin `npm run sim -- 8 new,maxed`. Bölümler: `still`, `solo`, `build`, `random`, `late`, `new`, `maxed`, `boss`, `weapons`. `tools/balance-sim/game.js`, `GameScene.update` kare sırasını kopyalar, ikisini uyumlu tut.
 
-The fresh-save bot now dies in the first boss fight, so only `boss` reaches later bosses: an unkillable `circle` bot runs steady circles and reports boss attack damage per fight. Strafing bot numbers are swamped by swarm contact, so they cannot judge a boss. The last `boss` run predates the cap on how far bosses lead and the random pool, so its numbers are no longer current.
+Yeni hesaptaki bot artık ilk boss kavgasında ölüyor, bu yüzden sonraki bosslara yalnızca `boss` bölümü ulaşır: ölümsüz `circle` botu sabit daireler çizer ve kavga başına boss saldırı hasarını raporlar. Yana kayan botun sayıları sürü temasına boğulur, boss değerlendiremez. Son `boss` ölçümü ileri nişan sınırından ve rastgele havuzdan öncedir, sayıları artık geçerli değil.
 
-`npm run sim -- 3 weapons <clock> [ids]` puts every weapon form alone on one point of the waves and reports kills per minute, contact damage and boss damage. Read level 1 and max level at 300, evolutions at 600. **Never compare weapons on a small fixed target set:** area weapons scale with enemy count, so a 24-target check hid level 1 weapons beating evolved ones. Level 1 area weapons read high at 600 only because an unkillable bot sits buried in the crowd. The Printer's boss 0 is the bot's facing, not the weapon. Last bands at 5:00: level 1 up to about 60, max level 44-487, evolved 228-780, at 10:00 evolved up to about 1,040.
+`npm run sim -- 3 weapons <clock> [ids]` her silah halini tek başına dalgaların bir noktasına koyar, dakikada öldürme, temas hasarı ve boss hasarını raporlar. Birinci ve son seviyeyi 300'de, evrimleri 600'de oku. **Silahları asla küçük sabit hedef kümesinde karşılaştırma:** alan silahları düşman sayısıyla güçlenir, 24 hedefli bir kontrol birinci seviye silahların evrimlileri geçtiğini gizlemişti. Birinci seviye alan silahlarının 600'de yüksek görünmesi yalnızca ölümsüz botun kalabalığa gömülmesindendir. Printer'ın boss hasarının 0 çıkması silahtan değil, botun baktığı yöndendir. 5:00'teki son aralıklar: birinci seviye en fazla yaklaşık 60, son seviye 44-487, evrimli 228-780; 10:00'da evrimli en fazla yaklaşık 1.040.
 
-**Never present bot survival times as what a player will reach.** The bot does not chase bosses, cannot really dodge (it takes 40% of dodgeable damage to stand in for that) and is far weaker: its fresh-save median was about 5 minutes while the user, with no upgrades and dying on purpose, reached 12:56, and did about 1,800 DPS against the bot's 276. Use the bot to compare options. Use an unkillable bot (`damageTaken: 0`) for power curves. Calibrate boss HP on the user's real fights.
+**Bot sürelerini asla oyuncunun ulaşacağı süre gibi sunma.** Bot bossları kovalamaz, gerçekten kaçamaz (bunun yerine kaçınılabilir hasarın %40'ını alır) ve çok daha zayıftır: yeni hesapta ortalaması yaklaşık 5 dakikayken kullanıcı yükseltmesiz, bilerek ölerek 12:56'ya ulaştı ve botun 276'sına karşı yaklaşık 1.800 DPS yaptı. Botu seçenekleri karşılaştırmak için kullan. Güç eğrileri için ölümsüz bot (`damageTaken: 0`) kullan. Boss canını kullanıcının gerçek kavgalarına göre ayarla.
 
-Last unkillable bot, Cursor focus, fresh save, before purple boss gems: level 3 at 1:00, 6 at 2:00, 10 at 3:00, 12 at 5:00, 27 at 10:00, first evolve about 5:00. The target is no evolve before the 2:30 boss.
+Son ölümsüz bot, Cursor odaklı, yeni hesap, mor boss gem'lerinden önce: 1:00'de seviye 3, 2:00'de 6, 3:00'te 10, 5:00'te 12, 10:00'da 27, ilk evrim yaklaşık 5:00. Hedef, 2:30 boss'undan önce evrim olmamasıdır.
 
-A throwaway measurement can bundle the real code with Vite outside the repo and patch prototypes (`Arena.prototype.start`, `Upgrades.prototype.spin`, ...). A patch of `Arena.update` must return its value.
+Geçici bir ölçüm için gerçek kod Vite ile repo dışında paketlenip prototipler yamalanabilir (`Arena.prototype.start`, `Upgrades.prototype.spin`, ...). `Arena.update` yamasının değerini döndürmesi gerekir.
 
-## Decisions
+## Kararlar
 
-Endless run:
-- No win: a run only ends in death, and the result screen has a best-time record. The bosses at 10:00 and 20:00 are milestones that pay 100 Data and drop a slot.
-- After 10:00 waves keep going, and after 20:00 bosses repeat harder. A wall appears by itself, since upgrades run out while enemies keep growing.
-- When upgrades run out, cards and slots give HP. No endless bonus cards for now; they would wear the wall down.
+Sonsuz oyun:
+- Kazanma yok: bir oyun yalnızca ölünce biter, sonuç ekranında en iyi süre rekoru var. 10:00 ve 20:00 bossları 100 Data veren ve slot düşüren milestone'lardır.
+- 10:00'dan sonra dalgalar sürer, 20:00'den sonra bosslar daha sert tekrar eder. Yükseltmeler biterken düşmanlar büyüdüğü için kendiliğinden bir duvar oluşur.
+- Yükseltmeler bitince kartlar ve slotlar can verir. Şimdilik sonsuz bonus kart yok, duvarı aşındırırdı.
 
-Mini bosses are the purple-outlined elites from the waves; **"normal boss" means the arena bosses**, in the user's words too. In code `RUN_REWARDS.boss` is the arena boss reward.
+Mini bosslar dalgalardan gelen mor kenarlı seçkin düşmanlardır; **"normal boss" kullanıcının dilinde de arena bossları demektir**. Kodda `RUN_REWARDS.boss` arena boss ödülüdür.
 
-Tutorial: plays only on the first run, as part of that run, with no skip button. A hand shows dragging, one Bug shows auto-fire, then the screen greys out around the chip, collecting it gives the first level, and a hand taps a card. The run clock and waves wait for it, and computers stay away during it. Any card may be picked. Quitting replays it next time. `Survive as long as you can` is its last line.
+Eğitim: yalnızca ilk oyunda, oyunun parçası olarak oynanır, atlama düğmesi yoktur. Bir el sürüklemeyi gösterir, bir Bug otomatik ateşi gösterir, sonra ekran çip dışında griye döner, çipi toplamak ilk seviyeyi verir ve bir el karta dokunur. Oyun saati ve dalgalar bekler, bu sırada bilgisayar çıkmaz. Herhangi bir kart seçilebilir. Oyundan çıkılırsa bir dahaki sefere tekrar oynanır. Son satırı `Survive as long as you can`.
 
-Computers: they sit in the enemy pool as `prop` enemies while near the screen, so all weapons target and hit them with no extra code. They block the player (who can get stuck on them), enemies walk through them, they never count as kills or against the wave quota, and Nuke ignores them. Items drop exactly where the computer stood and are collected by walking over them. Weapons shoot one when it is the nearest target; if that annoys the user, an "enemies first" rule is easy.
+Bilgisayarlar: ekrana yakınken düşman havuzunda `prop` düşman olarak durur, böylece bütün silahlar ek kod olmadan hedefler ve vurur. Oyuncuyu engeller (takılabilir), düşmanlar içinden geçer, öldürme veya dalga kotası sayılmaz, Nuke onları yok sayar. Eşyalar tam bilgisayarın durduğu yere düşer ve üstünden geçince toplanır. Silahlar en yakın hedefse bilgisayara ateş eder; kullanıcıyı rahatsız ederse "önce düşmanlar" kuralı kolaydır.
 
-Bosses: every attack has a tell (blink, aim line that locks 0.25 s before a dash, ground fuse). Attacks are random with no immediate repeat. The wall burns on touch, and standing right against it counts, so the edge is never safe. Computers outside the ring hide during a fight.
+Bosslar: her saldırının uyarısı var (yanıp sönme, hamleden 0,25 saniye önce kilitlenen nişan çizgisi, yerde fitil). Saldırılar rastgeledir, aynısı üst üste gelmez. Duvar değince yakar, tam dibinde durmak da sayılır, yani kenar asla güvenli değildir. Halkanın dışındaki bilgisayarlar kavga boyunca gizlenir.
 
-Weapons: nothing but the Nuke drop may clear the screen, and the user called a Pager that did it unacceptable, so Pager zaps a few random enemies. Some builds may be stronger, but not by multiples. Robot Vacuum never turns back: it drives at the enemy nearest to it and stops at the edge of its range, sliding along it with that enemy, because a robot that returned to the player looked bad.
+Silahlar: ekranı yalnızca Nuke temizleyebilir. Kullanıcı bunu yapan Pager'ı kabul edilemez buldu, bu yüzden Pager rastgele birkaç düşmana vurur. Bazı kurulumlar daha güçlü olabilir, ama katlarca değil. Robot Vacuum asla geri dönmez: kendine en yakın düşmana gider, menzilinin sınırında durur ve o düşmanla sınır boyunca kayar. Oyuncuya dönen robot kötü görünüyordu.
 
-Lead aim: `predictPlayer` follows the curve the player is on (`Player.turnRate`), because a straight guess misses anyone running in circles. It looks at most `MAX_LEAD_SECONDS` (0.6) ahead, because the user found longer leads absurd: shots and marks landed 360+ px away, off a portrait screen. Only the first mark goes on the path; the rest scatter around the player. A closing wall goes by time, not boss HP, so hurting the boss faster is never punished. Weapons shoot the nearest target, so summons shield the boss: ROOTKIT's ring is only 8 Bugs and its dash is listed twice to keep the ring occasional.
+İleri nişan: `predictPlayer` oyuncunun üzerinde olduğu eğriyi izler (`Player.turnRate`), çünkü düz tahmin daire çizen birini ıskalar. En fazla `MAX_LEAD_SECONDS` (0.6) ileriye bakar, çünkü kullanıcı daha uzun nişanları saçma buldu: atışlar ve işaretler 360+ piksel uzağa, dikey ekranın dışına düşüyordu. Yalnızca ilk işaret yola düşer, diğerleri oyuncunun etrafına saçılır. Kapanan duvar boss canına göre değil zamana göre işler, böylece boss'a hızlı hasar vermek cezalandırılmaz. Silahlar en yakın hedefe ateş ettiği için çağrılanlar boss'u korur: ROOTKIT'in halkası yalnızca 8 Bug'dır ve halka seyrek kalsın diye hamlesi listede iki kez geçer.
 
-Older decisions still in force:
-- **Name: Computer Survivor.** Weapons are iconic devices from computer and phone history. Enemies are computer threats.
-- **No real brand names or exact likenesses**, because of store takedown risk. The genre is the reference; never copy another game's content tables.
-- **Pixel art, all of it.** A junkyard of old electronics and a Technician player. Sprites are text grids in `src/art/sprites.ts`, packed into one atlas by `src/art/atlas.ts`, with no new dependency. Large art is drawn by code in `src/art/slotMachine.ts`. The font is a hand-made 5x7 bitmap; sizes must be multiples of 6. In-game text stays English.
-- **Money model:** free with rewarded ads, plus a one-time purchase that gives those rewards without ads. No power or Data for sale, no forced ads.
-- **Progress lives on the device**, no accounts or server.
-- **Contact damage:** per second, stacking per touching enemy, no invulnerability frames.
-- **Cards and overlays:** a pick counts only if the press starts and ends on the same card, and taps are ignored for 0.4 s after an overlay opens, because the finger is usually on the joystick.
-- **Boss arena:** a ring closes around the player, enemies outside vanish with no gem or kill, and waves and the run clock stop during the fight.
-- **Evolution:** a weapon at max level plus its paired passive at any level; it shows as a gold card on the next level-up.
-- **Brick Phone:** thrown in a fake-3D arc. **Magnet passive:** +5% per level, deliberately weak.
+Hâlâ geçerli eski kararlar:
+- **Ad: Computer Survivor.** Silahlar bilgisayar ve telefon tarihinin ikonik cihazlarıdır. Düşmanlar bilgisayar tehditleridir.
+- **Gerçek marka adı veya birebir benzerlik yok**, mağazadan kaldırılma riski yüzünden. Referans türün kendisidir, başka bir oyunun içerik tablolarını asla kopyalama.
+- **Her şey piksel sanatı.** Eski elektronik hurdalığı ve Teknisyen oyuncu. Görseller `src/art/sprites.ts` içinde metin ızgaralarıdır, `src/art/atlas.ts` tek atlasa paketler, yeni bağımlılık yok. Büyük görseller `src/art/slotMachine.ts` içinde kodla çizilir. Yazı tipi elle yapılmış 5x7 bitmap'tir, boyutlar 6'nın katı olmalıdır. Oyun içi metinler İngilizce kalır.
+- **Gelir modeli:** Ödüllü reklamlarla ücretsiz, ayrıca bu ödülleri reklamsız veren tek seferlik satın alma. Güç veya Data satışı yok, zorunlu reklam yok.
+- **İlerleme cihazda durur**, hesap veya sunucu yok.
+- **Temas hasarı:** Saniye başına, değen her düşman için toplanır, dokunulmazlık karesi yok.
+- **Kartlar ve katmanlar:** Seçim yalnızca basış aynı kartta başlayıp bitiyorsa sayılır. Katman açıldıktan sonraki 0,4 saniye dokunuşlar yok sayılır, çünkü parmak genelde joystick üzerindedir.
+- **Boss arenası:** Oyuncunun etrafında halka kapanır, dışarıdaki düşmanlar gem veya öldürme vermeden yok olur, kavga boyunca dalgalar ve oyun saati durur.
+- **Evrim:** Son seviyede silah ve herhangi bir seviyede eşi olan pasif gerekir; bir sonraki seviye atlamada altın kart olarak çıkar.
+- **Brick Phone:** Sahte 3B yayla atılır. **Magnet pasifi:** Seviye başına +%5, bilerek zayıf.
 
-## Traps
+## Tuzaklar
 
-- **Never check, poll or report on Vercel deployments.** The user got angry about this; a push is the end of the job. They test locally too.
-- **The Vite dev server once missed a change to `Arena.ts`** and served the old file next to new ones, which made HP `NaN` (no HP bar, no red flash, no death) and stopped the boss attacking. If behavior makes no sense, fetch `http://localhost:5173/src/...` and compare, then touch the file or restart `npm run dev`. Compiled output differs from source (`0.7` becomes `.7`, `24000` becomes `24e3`, types vanish), so a failed text match is not proof by itself.
-- A `damage` of `NaN` in one frame poisons HP for the whole run.
-- `pixelText` uppercases; `BitmapText.setText` does not, so uppercase the string yourself.
-- `pixelArt: true` makes textures nearest-neighbor. Smooth textures need `setFilter(LINEAR)`, as `createVignette` does.
-- The scene object outlives its runs, so anything cached on a scene must be reset in `create`.
-- Pooled sprites keep tint and scale: `BossBrain.stop` clears the tint, `EnemyManager.spawn` sets the scale.
-- `Arena.update` returns damage, so every caller must add it in.
-- The player pushes bosses (`pushOutOf`), so `BossBrain.update` holds them inside the wall every frame, even while they stand still. Without that a boss gets shoved through the wall and fires from outside.
+- **Vercel dağıtımlarını asla kontrol etme, bekleme veya raporlama.** Kullanıcı buna kızdı; push işin sonudur. Yerelde de test ediyor.
+- **Vite dev sunucusu bir keresinde `Arena.ts` değişikliğini kaçırdı** ve eski dosyayı yenilerin yanında sundu. Bu, canı `NaN` yaptı (can çubuğu yok, kırmızı parlama yok, ölüm yok) ve boss'un saldırısını durdurdu. Davranış anlamsızsa `http://localhost:5173/src/...` adresini çekip karşılaştır, sonra dosyaya dokun veya `npm run dev` komutunu yeniden başlat. Derlenmiş çıktı kaynaktan farklıdır (`0.7` `.7` olur, `24000` `24e3` olur, türler silinir), yani metin eşleşmemesi tek başına kanıt değildir.
+- Tek karede `NaN` bir `damage`, bütün oyun boyunca canı bozar.
+- `pixelText` büyük harfe çevirir, `BitmapText.setText` çevirmez; metni kendin büyüt.
+- `pixelArt: true` dokuları nearest-neighbor yapar. Yumuşak dokular `createVignette` gibi `setFilter(LINEAR)` ister.
+- Sahne nesnesi oyunlardan uzun yaşar, sahnede saklanan her şey `create` içinde sıfırlanmalıdır.
+- Havuzdaki görseller renk ve ölçeğini korur: `BossBrain.stop` rengi temizler, `EnemyManager.spawn` ölçeği ayarlar.
+- `Arena.update` hasar döndürür, her çağıran bunu eklemelidir.
+- Oyuncu bossları iter (`pushOutOf`), bu yüzden `BossBrain.update` onları dururken bile her karede duvarın içinde tutar. Bu olmazsa boss duvardan dışarı itilir ve dışarıdan ateş eder.
 
-## Testing tips
+## Test ipuçları
 
-- Stress test: temporarily set the first wave's `minimum` to `500`. Revert before committing.
-- Late waves: temporarily start `elapsed` in `src/systems/Spawner.ts` at e.g. `8 * 60`, and `nextMiniBoss` to match.
-- Bosses: start `elapsed` a few seconds before an event (e.g. `145`). To reach a later boss, also start `bossesStarted` in `src/systems/Arena.ts`.
-- Fast level-ups: temporarily lower `xpToNext`.
-- Try one weapon: open the game with `?weapon=usbStick`, next to the Cursor. Evolved ids work too.
-- See every boss: open the game with `?bosstest`. They come in turn with 400 HP and the player has 100,000 HP. Data earned there counts.
-- Replay the tutorial: open the game in a private window, or remove `computer-survivor-save` from `localStorage`.
-- To let the user judge a visual, publish a temporary Artifact page that runs the real scene with Phaser from jsDelivr, keep its files in the scratchpad, and delete it after their decision. This worked well for the slot machine.
+- Stres testi: Geçici olarak ilk dalganın `minimum` değerini `500` yap. Commit'ten önce geri al.
+- Geç dalgalar: `src/systems/Spawner.ts` içinde `elapsed` değerini geçici olarak örneğin `8 * 60` başlat, `nextMiniBoss` değerini de buna uydur.
+- Bosslar: `elapsed` değerini boss anından birkaç saniye önce başlat (örneğin `145`). Daha sonraki boss için `src/systems/Arena.ts` içindeki `bossesStarted` değerini de başlat.
+- Hızlı seviye atlama: Geçici olarak `xpToNext` değerini düşür.
+- Tek silah deneme: Oyunu `?weapon=usbStick` ile aç, silah Cursor'ın yanına eklenir. Evrimli adlar da çalışır.
+- Bütün bossları görme: Oyunu `?bosstest` ile aç. Sırayla 400 canla gelirler, oyuncunun 100.000 canı olur. Burada kazanılan Data kayda geçer.
+- Eğitimi tekrar oynama: Oyunu gizli pencerede aç veya `localStorage` içinden `computer-survivor-save` kaydını sil.
+- Kullanıcının bir görseli değerlendirmesi için gerçek sahneyi jsDelivr'den gelen Phaser ile çalıştıran geçici bir Artifact sayfası yayınla, dosyalarını scratchpad'de tut ve kararından sonra sil. Bu slot makinesinde işe yaradı.
 
-## Code map
+## Kod haritası
 
-| File | Responsibility |
+| Dosya | Görevi |
 |---|---|
-| `src/main.ts` | Phaser config (`RESIZE`), scene list |
-| `src/scenes/GameScene.ts` | Wires everything; owns the per-frame order |
-| `src/scenes/UpgradeScene.ts` | Level-up overlay; `guided` adds the tutorial hand |
-| `src/scenes/SlotScene.ts` | Slot machine overlay: reels behind the face, lever, coins, result rows |
-| `src/scenes/SpotlightScene.ts` | Tutorial overlay that greys out all but one spot |
-| `src/scenes/MenuScene.ts` | Opening screen: Play, Museum, Workshop, daily tasks, best time |
-| `src/scenes/MuseumScene.ts`, `WorkshopScene.ts` | Weapon unlocks and permanent upgrades |
-| `src/scenes/GameOverScene.ts` | Result overlay: stats, record, Data, Restart, Menu, Workshop |
-| `src/input/VirtualJoystick.ts` | Floating joystick, unit `direction`, `reset()` before pausing |
-| `src/entities/Player.ts` | Movement, `radius`, `velocity` and `turnRate`, mutable `stats` and `hp` |
-| `src/systems/SpatialHash.ts` | Allocation-free grid, rebuilt every frame |
-| `src/systems/EnemyManager.ts` | Enemy pool, movement, separation, contact, props, deferred death (`removeDead`) |
-| `src/systems/Spawner.ts` | Waves, overtime, Botnet lines, mini bosses, recycling; owns the run clock |
-| `src/systems/Arena.ts` | Boss fights: wall, order, HP, boss loop, holding and burning the player |
-| `src/systems/BossBrain.ts` | One boss during its fight: walk, tell, attack, phases |
-| `src/systems/DangerZones.ts` | Pooled ground marks that explode after a fuse |
-| `src/systems/Breakables.ts` | Places computers per chunk, adds them to the pool near the screen, remembers broken ones |
-| `src/systems/Pickups.ts` | Pooled ground items and their effects; `dataFound` |
-| `src/systems/GemManager.ts` | Gem pool, attraction, overflow, `attractAll` |
-| `src/systems/Experience.ts` | Level and XP state |
-| `src/systems/Upgrades.ts` | Taken levels, slot limits, card rolls, `spin` for slot machines |
-| `src/systems/Tutorial.ts` | Steps of the first-run tutorial |
-| `src/systems/ProjectileManager.ts` | Projectile pool, flight, explosions, hit tests via the enemy hash |
-| `src/systems/Weapon.ts` | Cooldown, targeting, one attack per behavior, `evolve` |
-| `src/systems/Effects.ts` | Pooled explosion and line visuals |
-| `src/systems/EnemyBullets.ts` | Pooled enemy projectiles |
-| `src/systems/Progress.ts`, `SaveData.ts` | Data, unlocks, Workshop, daily tasks, best time, tutorial flag; storage |
-| `src/systems/Scenery.ts` | Junk per chunk from a hash; exports `hash` |
-| `src/ui/XpBar.ts`, `HpBar.ts`, `RunTimer.ts`, `BossBar.ts`, `InventoryBar.ts`, `DataCounter.ts` | HUD |
-| `src/ui/HurtFlash.ts`, `HintBox.ts`, `Hand.ts` | Damage glow, tutorial text box, tutorial hand |
-| `src/ui/Button.ts` | Pixel text, panels, stars, guarded button, grid layout, UI colors |
-| `src/data/*.ts` | Player stats, enemies, weapons, upgrades, waves, bosses, mini bosses, slots, drops, gems, level curve, `meta.ts` for the return loop |
-| `src/art/` | Sprites, font, palette, `slotMachine.ts`; `loadArt` builds the atlas once from `MenuScene` |
-| `src/textures.ts` | Generated disc, line, vignette and spotlight textures |
-| `tools/balance-sim/` | Headless simulator, not part of the game build |
+| `src/main.ts` | Phaser ayarları (`RESIZE`), sahne listesi |
+| `src/scenes/GameScene.ts` | Her şeyi bağlar; kare sırası burada |
+| `src/scenes/UpgradeScene.ts` | Seviye atlama katmanı; `guided` eğitim elini ekler |
+| `src/scenes/SlotScene.ts` | Slot makinesi katmanı: makaralar, kol, paralar, sonuç satırları |
+| `src/scenes/SpotlightScene.ts` | Tek nokta dışını grileştiren eğitim katmanı |
+| `src/scenes/MenuScene.ts` | Açılış ekranı: Play, Müze, Atölye, günlük görevler, en iyi süre |
+| `src/scenes/MuseumScene.ts`, `WorkshopScene.ts` | Silah açma ve kalıcı yükseltmeler |
+| `src/scenes/GameOverScene.ts` | Sonuç katmanı: istatistikler, rekor, Data, Restart, Menu, Workshop |
+| `src/input/VirtualJoystick.ts` | Yüzen joystick, birim `direction`, duraklatmadan önce `reset()` |
+| `src/entities/Player.ts` | Hareket, `radius`, `velocity` ve `turnRate`, değişken `stats` ve `hp` |
+| `src/systems/SpatialHash.ts` | Bellek ayırmayan ızgara, her karede yeniden kurulur |
+| `src/systems/EnemyManager.ts` | Düşman havuzu, hareket, ayrılma, temas, prop'lar, ertelenmiş ölüm (`removeDead`) |
+| `src/systems/Spawner.ts` | Dalgalar, uzatma, Botnet hatları, mini bosslar, geri dönüşüm; oyun saati burada |
+| `src/systems/Arena.ts` | Boss kavgaları: duvar, sıra, can, boss döngüsü, oyuncuyu tutma ve yakma |
+| `src/systems/BossBrain.ts` | Kavgadaki tek boss: yürüme, uyarı, saldırı, fazlar |
+| `src/systems/DangerZones.ts` | Fitilden sonra patlayan havuzlu yer işaretleri |
+| `src/systems/Breakables.ts` | Parça başına bilgisayar yerleştirir, ekrana yakınken havuza ekler, kırılanları hatırlar |
+| `src/systems/Pickups.ts` | Havuzlu yer eşyaları ve etkileri; `dataFound` |
+| `src/systems/GemManager.ts` | Gem havuzu, çekim, taşma, `attractAll` |
+| `src/systems/Experience.ts` | Seviye ve XP durumu |
+| `src/systems/Upgrades.ts` | Alınan seviyeler, slot sınırları, kart seçimi, slot makineleri için `spin` |
+| `src/systems/Tutorial.ts` | İlk oyun eğitiminin adımları |
+| `src/systems/ProjectileManager.ts` | Mermi havuzu, uçuş, patlamalar, düşman hash'iyle isabet testleri |
+| `src/systems/Weapon.ts` | Bekleme süresi, hedefleme, her davranış için bir saldırı, `evolve` |
+| `src/systems/Effects.ts` | Havuzlu patlama ve çizgi görselleri |
+| `src/systems/EnemyBullets.ts` | Havuzlu düşman mermileri |
+| `src/systems/Progress.ts`, `SaveData.ts` | Data, açılanlar, Atölye, günlük görevler, en iyi süre, eğitim bayrağı; kayıt |
+| `src/systems/Scenery.ts` | Hash'ten parça başına hurda; `hash` dışa verir |
+| `src/ui/XpBar.ts`, `HpBar.ts`, `RunTimer.ts`, `BossBar.ts`, `InventoryBar.ts`, `DataCounter.ts` | Arayüz göstergeleri |
+| `src/ui/HurtFlash.ts`, `HintBox.ts`, `Hand.ts` | Hasar parlaması, eğitim metin kutusu, eğitim eli |
+| `src/ui/Button.ts` | Piksel yazı, paneller, yıldızlar, korumalı düğme, ızgara düzeni, arayüz renkleri |
+| `src/data/*.ts` | Oyuncu değerleri, düşmanlar, silahlar, yükseltmeler, dalgalar, bosslar, mini bosslar, slotlar, düşenler, gem'ler, seviye eğrisi, geri dönüş döngüsü için `meta.ts` |
+| `src/art/` | Görseller, yazı tipi, palet, `slotMachine.ts`; `loadArt` atlası `MenuScene` içinden bir kez kurar |
+| `src/textures.ts` | Üretilen disk, çizgi, vignette ve spot dokuları |
+| `tools/balance-sim/` | Ekransız simülatör, oyun derlemesinin parçası değil |
 
-Frame order in `GameScene.update`: input → tutorial hold → player → tutorial → arena (returns damage) → HP bar position → spawner and timer (skipped during a fight or the tutorial) or boss bar → enemies (builds the hash, contact damage) → enemy bullets → regen, HP, hurt flash, death check → weapons → projectiles → effects → `removeDead` → pickups → Data counter → breakables → gems → XP and level-up → camera, ground, scenery. Enemy indices are only stable until `removeDead`; `breakables.update` adds and removes pool entries, so it runs after that.
+`GameScene.update` kare sırası: girdi → eğitim beklemesi → oyuncu → eğitim → arena (hasar döndürür) → can çubuğu konumu → spawner ve zamanlayıcı (kavga veya eğitim sırasında atlanır) ya da boss çubuğu → düşmanlar (hash'i kurar, temas hasarı) → düşman mermileri → can yenileme, can, hasar parlaması, ölüm kontrolü → silahlar → mermiler → efektler → `removeDead` → eşyalar → Data sayacı → bilgisayarlar → gem'ler → XP ve seviye atlama → kamera, zemin, manzara. Düşman indeksleri yalnızca `removeDead` öncesine kadar sabittir; `breakables.update` havuza ekleyip çıkardığı için ondan sonra çalışır.
 
-Overlays pause `GameScene` with `scene.pause()` and reset the joystick first, since a paused scene never receives the `pointerup`.
+Katmanlar `GameScene` sahnesini `scene.pause()` ile duraklatır ve önce joystick'i sıfırlar, çünkü duraklatılmış sahne `pointerup` almaz.
 
-## Deferred on purpose
+## Bilerek ertelenenler
 
-- Crowd jitter in dense groups: resolve only part of the overlap per frame. Revisit with real densities.
-- Blurry rendering on high-DPR screens (Phaser 3 renders at CSS pixels).
-- Phaser 4 exists; we stayed on 3.90 by decision.
+- Yoğun gruplarda kalabalık titremesi: Çakışmanın kare başına yalnızca bir kısmını çöz. Gerçek yoğunluklarla tekrar bak.
+- Yüksek DPR ekranlarda bulanık görüntü (Phaser 3 CSS pikseliyle çizer).
+- Phaser 4 var; kararla 3.90'da kaldık.
 
-## Open questions
+## Açık sorular
 
-- FPS on a real phone with 450+ enemies.
-- Audio: when and how.
-- Different player characters.
-- Moving progress to a new phone.
+- 450+ düşmanla gerçek telefonda FPS.
+- Ses: ne zaman ve nasıl.
+- Farklı oyuncu karakterleri (kullanıcı şu an önemli olmadığını söyledi).
+- İlerlemeyi yeni telefona taşıma (kullanıcı çok sonranın işi olduğunu söyledi).
 
-## Working agreement
+## Çalışma anlaşması
 
-- Reply **only in Turkish**, in plain words; the user does not follow English replies. Code, comments, commits and docs in English.
-- Be direct. If something is wrong, say so, and point out weak ideas instead of agreeing.
-- **Present each job's plan right before that job and wait for the user's edits.** They often change the design, so one approval never covers later jobs. Small direct requests can just be done.
-- If an approved approach turns out not to work, stop and report; do not silently switch. This happened with the slot fallback rule.
-- The user does all visual testing: never run browser or visual tests. Say plainly what was not seen on screen. Do not claim a sim number is what a player will experience.
-- Verify with `npx tsc --noEmit`. No bot simulations unless asked, see "Measuring balance". After changes, check the dev server serves the new code.
-- Commit and push only when asked. When asked: run `npm run build`, commit on `playtest-feedback-fixes`, fast-forward `main` with `git merge --ff-only`, `git push origin main`, and stop there.
-- Keep diffs minimal, no new dependencies without asking, and no documentation files unless asked.
+- **Yalnızca Türkçe**, sade yanıt ver; kullanıcı İngilizce yanıtları takip edemiyor. Kod, kod yorumları ve commit mesajları İngilizce olur, bu dosya Türkçe kalır.
+- Doğrudan ol. Yanlış bir şey varsa söyle, zayıf fikirlere katılmak yerine bunu belirt.
+- **Her işin planını o işten hemen önce sun ve kullanıcının düzeltmelerini bekle.** Tasarımı sık sık değiştirir, bir onay sonraki işleri kapsamaz. Küçük doğrudan istekler hemen yapılabilir.
+- Onaylanan yaklaşım çalışmazsa dur ve bildir, sessizce başka yola geçme. Slot geri dönüş kuralında bu oldu.
+- Bütün görsel testleri kullanıcı yapar: tarayıcı veya görsel test çalıştırma. Ekranda neyin görülmediğini açıkça söyle. Bir simülasyon sayısını oyuncunun yaşayacağı şey gibi sunma.
+- `npx tsc --noEmit` ile doğrula. İstenmedikçe bot simülasyonu yok, "Denge ölçümü" bölümüne bak. Değişikliklerden sonra dev sunucusunun yeni kodu sunduğunu kontrol et.
+- Yalnızca istenince commit ve push yap. İstenince: `npm run build`, `playtest-feedback-fixes` dalında commit, `git merge --ff-only` ile `main` ileri al, `git push origin main`, orada dur.
+- Değişiklikleri küçük tut, sormadan yeni bağımlılık ekleme, istenmedikçe doküman dosyası oluşturma.
