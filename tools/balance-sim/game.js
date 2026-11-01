@@ -1,9 +1,11 @@
 import { BOSS_KILL_HEAL } from '../../src/data/bosses';
 import { BOSS_DROP, MINI_BOSS_DROP } from '../../src/data/drops';
 import { rollGem } from '../../src/data/gems';
+import { nextMiniBossTime } from '../../src/data/miniBosses';
 import { MINI_BOSS_SLOT_CHANCE, rollHits } from '../../src/data/slots';
 import { runData, STARTING_WEAPONS, WORKSHOP, workshopBonus } from '../../src/data/meta';
 import { EVOLUTIONS, UPGRADES } from '../../src/data/upgrades';
+import { BOTNET_EVENTS } from '../../src/data/waves';
 import { WEAPONS } from '../../src/data/weapons';
 import { Player } from '../../src/entities/Player';
 import { Arena } from '../../src/systems/Arena';
@@ -34,6 +36,8 @@ const ARENA_COMFORT = 0.6;
 const STRAFE_SWAP_SECONDS = 5;
 /** The largest circle the 'circle' bot runs; a closing wall makes it tighter. */
 const CIRCLE_RADIUS = 200;
+/** Pixels the 'duel' bot keeps from the boss. */
+const DUEL_DISTANCE = 100;
 
 function fakeImage() {
   const image = { x: 0, y: 0 };
@@ -54,12 +58,26 @@ const camera = { width: 390, height: 844, flash() {} };
 
 /**
  * Plays one run, following the frame order of `GameScene.update`.
- * `bot` is 'still', 'strafe' or 'circle', `start` a weapon id, `pick(options)` returns a card or null to skip.
+ * `bot` is 'still', 'strafe', 'circle' or 'duel', `start` a weapon id, `pick(options)` returns a card or null to skip.
  * `damageTaken` scales everything that hurts the player, to test late waves with a sturdier bot.
  * `unlocked(id)` and `bonus` stand in for saved progress.
  * `stopAfterFights` ends the run once that many boss fights are over.
+ * `clock` starts the run at that many seconds, `maxSeconds` shortens it, `noBosses` skips the fights,
+ * and `prepare(weapon)` changes the starting weapon, to test one weapon on one point of the waves.
  */
-export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, bonus = {}, stopAfterFights = Infinity }) {
+export function run({
+  bot,
+  start,
+  pick,
+  damageTaken = 1,
+  unlocked = () => true,
+  bonus = {},
+  stopAfterFights = Infinity,
+  clock = 0,
+  maxSeconds = MAX_SECONDS,
+  noBosses = false,
+  prepare = () => {},
+}) {
   const player = new Player(scene, 0, 0);
   player.applyBonus(bonus);
   const bullets = new EnemyBullets(scene);
@@ -84,6 +102,13 @@ export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, 
   });
   arena = new Arena(scene, enemies, player, bullets, new DangerZones(scene));
   const spawner = new Spawner(camera, player, enemies);
+  if (clock > 0) {
+    spawner.elapsed = clock;
+    spawner.nextMiniBoss = nextMiniBossTime(clock);
+    spawner.nextBotnet = BOTNET_EVENTS.findIndex((event) => event.time >= clock);
+    if (spawner.nextBotnet === -1) spawner.nextBotnet = BOTNET_EVENTS.length;
+  }
+  if (noBosses) arena.bossesStarted = Infinity;
   const effects = new Effects(scene);
   // The bot pulls the lever straight away; the upgrades land the same way as in the real overlay
   const pickups = new Pickups(scene, camera, player, gems, enemies, (odds) => upgrades.spin(rollHits(odds)));
@@ -95,7 +120,7 @@ export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, 
     weapons.push(weapon);
     return weapon;
   };
-  addWeapon(start);
+  prepare(addWeapon(start));
   const upgrades = new Upgrades(player, weapons, addWeapon, unlocked);
   const experience = new Experience();
 
@@ -107,11 +132,14 @@ export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, 
   let damageThisFight = 0;
   let fightStart = null;
   let evolvedAt = null;
+  let contactTotal = 0;
 
   const result = (outcome) => {
-    if (fightStart !== null) fights.push(Math.round(seconds - fightStart));
+    if (fightStart !== null) fights.push(seconds - fightStart);
     return {
       outcome,
+      contactPerSecond: contactTotal / seconds,
+      bossHpLost: 1 - arena.bossHpRatio,
       clock: spawner.time,
       level: experience.level,
       kills: enemies.kills,
@@ -125,15 +153,16 @@ export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, 
     };
   };
 
-  while (seconds < MAX_SECONDS) {
+  while (seconds < maxSeconds) {
     seconds += DELTA / 1000;
     if (bot !== 'still') strafe(move, player, enemies, gems, pickups, arena, seconds);
     if (bot === 'circle' && arena.active) circle(move, player, arena);
+    if (bot === 'duel' && arena.active) duel(move, player, arena);
     player.update(move, DELTA);
     const arenaDamage = arena.update(spawner.time, DELTA);
     if (arena.active && fightStart === null) fightStart = seconds;
     if (!arena.active && fightStart !== null) {
-      fights.push(Math.round(seconds - fightStart));
+      fights.push(seconds - fightStart);
       fightDamage.push(damageThisFight);
       damageThisFight = 0;
       fightStart = null;
@@ -143,6 +172,7 @@ export function run({ bot, start, pick, damageTaken = 1, unlocked = () => true, 
 
     const stats = player.stats;
     const contactDamage = enemies.update(DELTA, player) * stats.damageTakenMult * spawner.damageMult;
+    contactTotal += contactDamage;
     const dodgeableRaw = bullets.update(DELTA, player) + arenaDamage;
     if (arena.active) damageThisFight += dodgeableRaw;
     const dodgeable = dodgeableRaw * (bot === 'strafe' ? DODGEABLE_DAMAGE_TAKEN : 1);
@@ -252,6 +282,20 @@ function circle(move, player, arena) {
   const drift = (Math.min(CIRCLE_RADIUS, arena.radius * 0.75) - d) / 100;
   const x = -dy / d + (dx / d) * drift;
   const y = dx / d + (dy / d) * drift;
+  const length = Math.hypot(x, y);
+  move.x = x / length;
+  move.y = y / length;
+}
+
+/** Stays close to the boss and circles it, as a player does so short range weapons reach. */
+function duel(move, player, arena) {
+  if (!arena.boss) return;
+  const dx = arena.boss.sprite.x - player.sprite.x;
+  const dy = arena.boss.sprite.y - player.sprite.y;
+  const d = Math.hypot(dx, dy) || 1;
+  const drift = (d - DUEL_DISTANCE) / 40;
+  const x = (dx / d) * drift - dy / d;
+  const y = (dy / d) * drift + dx / d;
   const length = Math.hypot(x, y);
   move.x = x / length;
   move.y = y / length;

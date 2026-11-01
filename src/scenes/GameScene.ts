@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { GROUND } from '../art/atlas';
-import { BOSS_KILL_HEAL } from '../data/bosses';
+import { BOSS_KILL_HEAL, BOSS_TEST } from '../data/bosses';
 import { BOSS_DROP, MINI_BOSS_DROP } from '../data/drops';
 import { rollGem } from '../data/gems';
 import { runData } from '../data/meta';
@@ -98,12 +98,14 @@ export class GameScene extends Phaser.Scene {
       }
       this.tutorial?.onKill(x, y);
     });
+    const address = new URLSearchParams(location.search);
+    const bossTest = address.has('bosstest');
     this.player = new Player(this, 0, 0);
-    this.player.applyBonus(progress.bonus);
+    this.player.applyBonus(bossTest ? { ...progress.bonus, maxHp: BOSS_TEST.playerHp } : progress.bonus);
     this.hpBar = new HpBar(this);
     this.hurtFlash = new HurtFlash(this, this.player.sprite);
     // After the player, so the wall draws over anything brushing against it
-    this.arena = new Arena(this, this.enemies, this.player, this.bullets, this.zones);
+    this.arena = new Arena(this, this.enemies, this.player, this.bullets, this.zones, bossTest);
     this.spawner = new Spawner(this.cameras.main, this.player, this.enemies);
     this.effects = new Effects(this);
     this.pickups = new Pickups(this, this.cameras.main, this.player, this.gems, this.enemies, (odds) => this.openSlot(odds));
@@ -113,6 +115,9 @@ export class GameScene extends Phaser.Scene {
     this.projectiles = new ProjectileManager(this, this.enemies, this.player, this.effects);
     this.weapons = [];
     this.addWeapon('cursor');
+    // Testing aid: `?weapon=<id>` starts the run with that weapon, locked or evolved ones too
+    const testWeapon = address.get('weapon');
+    if (testWeapon && testWeapon in WEAPONS) this.addWeapon(testWeapon as WeaponId);
     this.experience = new Experience();
     this.upgrades = new Upgrades(
       this.player,

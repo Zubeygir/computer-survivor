@@ -13,6 +13,12 @@ const MAX_STEP = 12;
 const RETURN_CATCH_DIST = 24;
 /** Quarter turns per second for thrown sprites; free rotation would break the pixel grid. */
 const SPIN_STEPS_PER_SECOND = 10;
+const SHADOW_ALPHA = 0.35;
+const FIELD_ALPHA = 0.22;
+/** Radians per second a homing shot can turn. */
+const HOMING_TURN = 5;
+/** Finding the nearest enemy scans them all, so homing shots only do it this often. */
+const HOMING_RETARGET_SECONDS = 0.25;
 
 /** One attack's values. Weapons reuse a single object, so filling it allocates nothing. */
 export interface Shot {
@@ -33,6 +39,10 @@ export interface Shot {
   returns: boolean;
   /** Stands until an enemy touches it, then explodes. */
   mine: boolean;
+  /** Above 0 it hits everything within `explosionRadius` this often, instead of exploding at the end. */
+  tick: number;
+  /** Seconds it flies before a field stops where it is. */
+  flight: number;
 }
 
 interface Projectile {
@@ -55,6 +65,13 @@ interface Projectile {
   returns: boolean;
   returning: boolean;
   mine: boolean;
+  tick: number;
+  /** Seconds until a field's next hit. */
+  tickLeft: number;
+  flight: number;
+  /** What a homing shot is turning toward; pooled, so check it is still alive. */
+  target: Enemy | null;
+  retargetLeft: number;
   /** Stops a piercing projectile hitting the same enemy every frame it overlaps. */
   hitMemory: Enemy[];
   hitCount: number;
@@ -73,7 +90,7 @@ export class ProjectileManager {
   ) {
     for (let i = 0; i < MAX_PROJECTILES; i++) {
       const sprite = scene.add.image(0, 0, ATLAS, WEAPONS.cursor.sprite).setScale(PIXEL_SCALE).setVisible(false);
-      const shadow = scene.add.image(0, 0, FX_CIRCLE).setVisible(false).setTint(0x000000).setAlpha(0.35);
+      const shadow = scene.add.image(0, 0, FX_CIRCLE).setVisible(false);
       this.projectiles.push({
         sprite,
         shadow,
@@ -93,6 +110,11 @@ export class ProjectileManager {
         returns: false,
         returning: false,
         mine: false,
+        tick: 0,
+        tickLeft: 0,
+        flight: 0,
+        target: null,
+        retargetLeft: 0,
         hitMemory: [],
         hitCount: 0,
       });
@@ -118,12 +140,20 @@ export class ProjectileManager {
     p.returns = shot.returns;
     p.returning = false;
     p.mine = shot.mine;
+    p.tick = p.tickLeft = shot.tick;
+    p.flight = shot.flight;
+    p.target = null;
+    p.retargetLeft = 0;
     p.hitCount = 0;
     p.sprite.setFrame(def.sprite).setAngle(0).setPosition(shot.x, shot.y).setVisible(true);
+    // A field shows its reach on the ground with the same image an arc uses for its shadow
+    const field = shot.tick > 0;
     p.shadow
-      .setScale(def.projectileRadius / FX_CIRCLE_RADIUS)
+      .setScale((field ? shot.explosionRadius : def.projectileRadius) / FX_CIRCLE_RADIUS)
+      .setTint(field ? def.color : 0x000000)
+      .setAlpha(field ? FIELD_ALPHA : SHADOW_ALPHA)
       .setPosition(shot.x, shot.y)
-      .setVisible(shot.arcHeight > 0);
+      .setVisible(field || shot.arcHeight > 0);
   }
 
   /** Live projectiles of one weapon; used to cap mines. */
@@ -147,8 +177,9 @@ export class ProjectileManager {
         continue;
       }
       if (p.mine && this.touchesEnemy(p)) p.life = 0;
+      if (p.tick > 0) this.burn(p, seconds);
       if (p.life <= 0) {
-        if (p.explosionRadius > 0) this.explode(p);
+        if (p.explosionRadius > 0 && p.tick === 0) this.explode(p);
         this.release(i);
         continue;
       }
@@ -161,15 +192,63 @@ export class ProjectileManager {
   private advance(p: Projectile, seconds: number): boolean {
     if (p.speed === 0) return false;
     if (p.returns && this.steerBack(p)) return true;
+    if (p.def.behavior === 'homing') this.home(p, seconds);
 
     const steps = Math.ceil((p.speed * seconds) / MAX_STEP) || 1;
     const stepTime = seconds / steps;
     for (let s = 0; s < steps; s++) {
       p.x += p.vx * stepTime;
       p.y += p.vy * stepTime;
-      if (p.hitsLeft > 0 && this.hitEnemy(p) && p.hitsLeft === 0) return true;
+      if (p.hitsLeft > 0 && this.hitEnemy(p)) {
+        if (p.hitsLeft === 0) return true;
+        if (p.def.behavior === 'ricochet' && !this.bounce(p)) return true;
+      }
     }
     return false;
+  }
+
+  /** A field flies until `flight` runs out, then stands still and hits everything in it once per tick. */
+  private burn(p: Projectile, seconds: number) {
+    if (p.flight > 0) {
+      p.flight -= seconds;
+      if (p.flight <= 0) p.speed = 0;
+      return;
+    }
+    p.tickLeft -= seconds;
+    if (p.tickLeft > 0) return;
+    p.tickLeft += p.tick;
+    this.enemies.damageInRadius(p.x, p.y, p.explosionRadius, p.damage);
+  }
+
+  /** Aims at the nearest enemy not hit yet; returns false when none is in reach. */
+  private bounce(p: Projectile): boolean {
+    const hit = Math.min(p.hitCount, MAX_HIT_MEMORY);
+    const next = this.enemies.findNearestExcept(p.x, p.y, p.def.range, p.hitMemory, hit);
+    if (next === -1) return false;
+    const { x, y } = this.enemies.enemies[next].sprite;
+    const d = Math.hypot(x - p.x, y - p.y) || 1;
+    p.vx = ((x - p.x) / d) * p.speed;
+    p.vy = ((y - p.y) / d) * p.speed;
+    p.life = p.maxLife;
+    return true;
+  }
+
+  private home(p: Projectile, seconds: number) {
+    p.retargetLeft -= seconds;
+    if (p.retargetLeft <= 0 || !p.target || p.target.hp <= 0) {
+      p.retargetLeft = HOMING_RETARGET_SECONDS;
+      const nearest = this.enemies.findNearest(p.x, p.y);
+      p.target = nearest === -1 ? null : this.enemies.enemies[nearest];
+    }
+    if (!p.target) return;
+    const { x, y } = p.target.sprite;
+    const heading = Math.atan2(p.vy, p.vx);
+    const wanted = Math.atan2(y - p.y, x - p.x) - heading;
+    const turn = Math.atan2(Math.sin(wanted), Math.cos(wanted));
+    const limit = HOMING_TURN * seconds;
+    const angle = heading + Math.max(-limit, Math.min(limit, turn));
+    p.vx = Math.cos(angle) * p.speed;
+    p.vy = Math.sin(angle) * p.speed;
   }
 
   /** Returns true once a returning projectile reaches the player. */
@@ -235,6 +314,10 @@ export class ProjectileManager {
   }
 
   private draw(p: Projectile) {
+    if (p.tick > 0) {
+      p.shadow.setPosition(p.x, p.y);
+      p.sprite.setAngle(Math.floor(p.life * SPIN_STEPS_PER_SECOND) * 90);
+    }
     if (p.arcHeight === 0) {
       p.sprite.setPosition(p.x, p.y);
       return;

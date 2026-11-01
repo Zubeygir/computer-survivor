@@ -11,8 +11,14 @@ const ORBIT_SPEED = 3; // radians per second
 const SPIN_STEPS_PER_SECOND = 12;
 const AURA_ALPHA = 0.14;
 const CHAIN_START_RANGE = 320;
-const CHAIN_LINE_WIDTH = 3;
+const CHAIN_LINE_WIDTH = 6;
+const PAGE_LINE_WIDTH = 3;
 const MAX_CHAIN = 24;
+/** Radians a sweep turns per attack. */
+const SWEEP_TURN = 0.35;
+/** Lines that draw one lash; they fan out over the half circle it hits. */
+const LASH_LINES = 7;
+const LASH_LINE_WIDTH = 3;
 
 // Shared by every weapon: nothing keeps query results between calls
 const nearby = new Int32Array(MAX_ENEMIES);
@@ -31,8 +37,11 @@ export class Weapon {
   /** Seconds this weapon has existed; orbit hit cooldowns are stored against it. */
   private clock = 0;
   private orbitAngle = 0;
+  private sweepAngle = 0;
   private fanSide = 1;
   private readonly blades: Phaser.GameObjects.Image[] = [];
+  /** By robot, on this weapon's clock. */
+  private readonly robotReadyAt: number[] = [];
   private aura: Phaser.GameObjects.Image | null = null;
   private readonly chained: Enemy[] = [];
   private readonly shot: Shot = {
@@ -48,6 +57,8 @@ export class Weapon {
     arcHeight: 0,
     returns: false,
     mine: false,
+    tick: 0,
+    flight: 0,
   };
 
   constructor(
@@ -79,6 +90,10 @@ export class Weapon {
       this.updateOrbit(seconds);
       return;
     }
+    if (this.def.behavior === 'roamer') {
+      this.updateRoamers(seconds);
+      return;
+    }
     if (this.def.behavior === 'aura') this.updateAura(seconds);
 
     // Floors at zero so waiting with no target doesn't bank shots for a burst later
@@ -91,6 +106,8 @@ export class Weapon {
   private attack(): boolean {
     switch (this.def.behavior) {
       case 'straight':
+      case 'ricochet':
+      case 'homing':
         return this.attackStraight();
       case 'arc':
         return this.attackArc();
@@ -110,7 +127,20 @@ export class Weapon {
         return this.attackBeam();
       case 'aura':
         return this.attackAura();
+      case 'field':
+        return this.attackField();
+      case 'sweep':
+        return this.attackSweep();
+      case 'lash':
+        return this.attackLash();
+      case 'page':
+        return this.attackPage();
+      case 'snipe':
+        return this.attackSnipe();
+      case 'shockwave':
+        return this.attackShockwave();
       case 'orbit':
+      case 'roamer':
         return false;
     }
   }
@@ -141,6 +171,8 @@ export class Weapon {
     shot.arcHeight = 0;
     shot.returns = false;
     shot.mine = false;
+    shot.tick = 0;
+    shot.flight = 0;
     return shot;
   }
 
@@ -285,6 +317,89 @@ export class Weapon {
     return true;
   }
 
+  private attackField(): boolean {
+    const target = this.nearestTarget();
+    if (target === -1) return false;
+    const shot = this.prepareShot();
+    shot.tick = this.def.tick;
+    const t = this.enemies.enemies[target].sprite;
+    shot.flight = Math.hypot(t.x - shot.x, t.y - shot.y) / shot.speed;
+    shot.life += shot.flight;
+    this.fireFan(shot, Math.atan2(t.y - shot.y, t.x - shot.x));
+    return true;
+  }
+
+  private attackSweep(): boolean {
+    if (this.enemies.count === 0) return false;
+    const { x, y } = this.player.sprite;
+    const length = this.def.range;
+    const halfWidth = this.area;
+    const count = this.projectileCount;
+    for (let i = 0; i < count; i++) {
+      const angle = this.sweepAngle + (i * Math.PI * 2) / count;
+      const dirX = Math.cos(angle);
+      const dirY = Math.sin(angle);
+      this.enemies.damageAlongLine(x, y, dirX, dirY, length, halfWidth, this.damage);
+      this.effects.line(x, y, x + dirX * length, y + dirY * length, halfWidth * 2, this.def.color);
+    }
+    this.sweepAngle += SWEEP_TURN;
+    return true;
+  }
+
+  private attackLash(): boolean {
+    const target = this.nearestTarget();
+    if (target === -1) return false;
+    const { x, y } = this.player.sprite;
+    const t = this.enemies.enemies[target].sprite;
+    const aim = Math.atan2(t.y - y, t.x - x);
+    const reach = this.area;
+    const count = this.projectileCount;
+    for (let i = 0; i < count; i++) {
+      const angle = aim + (i * Math.PI * 2) / count;
+      this.enemies.damageInHalfCircle(x, y, Math.cos(angle), Math.sin(angle), reach, this.damage);
+      for (let k = 0; k < LASH_LINES; k++) {
+        const line = angle + (k / (LASH_LINES - 1) - 0.5) * Math.PI;
+        this.effects.line(x, y, x + Math.cos(line) * reach, y + Math.sin(line) * reach, LASH_LINE_WIDTH, this.def.color);
+      }
+    }
+    return true;
+  }
+
+  /** Only a few random enemies at a time: hitting the whole screen is the Nuke drop's job. */
+  private attackPage(): boolean {
+    const { x, y } = this.player.sprite;
+    const count = this.projectileCount;
+    let zapped = false;
+    for (let i = 0; i < count; i++) {
+      const target = this.enemies.randomWithin(x, y, this.def.range);
+      if (target === -1) break;
+      const t = this.enemies.enemies[target].sprite;
+      this.enemies.damage(target, this.damage);
+      this.effects.line(x, y, t.x, t.y, PAGE_LINE_WIDTH, this.def.color);
+      zapped = true;
+    }
+    return zapped;
+  }
+
+  private attackSnipe(): boolean {
+    const { x, y } = this.player.sprite;
+    const target = this.enemies.strongestWithin(x, y, this.def.range);
+    if (target === -1) return false;
+    const t = this.enemies.enemies[target].sprite;
+    this.fireFan(this.prepareShot(), Math.atan2(t.y - y, t.x - x));
+    return true;
+  }
+
+  private attackShockwave(): boolean {
+    if (this.enemies.count === 0) return false;
+    const { x, y } = this.player.sprite;
+    const radius = this.area;
+    this.enemies.damageInRadius(x, y, radius, this.damage);
+    this.enemies.knockBack(x, y, radius, this.def.knockback);
+    this.effects.explosion(x, y, radius, this.def.color);
+    return true;
+  }
+
   private updateAura(seconds: number) {
     const { x, y } = this.player.sprite;
     const aura = this.aura ?? this.createAura();
@@ -320,6 +435,43 @@ export class Weapon {
       const bladeY = y + Math.sin(angle) * radius;
       this.blades[i].setPosition(bladeX, bladeY).setAngle(Math.floor(this.clock * SPIN_STEPS_PER_SECOND) * 90);
       this.hitWithBlade(bladeX, bladeY);
+    }
+  }
+
+  /**
+   * Robots use the blade list: each drives at the enemy nearest to it but can't leave the weapon's
+   * range around the player, so at the edge it slides along following that enemy instead of turning
+   * back. Each keeps its own cooldown, or robots sharing a target would count as one.
+   */
+  private updateRoamers(seconds: number) {
+    const { x, y } = this.player.sprite;
+    while (this.blades.length < this.stats.count) {
+      this.blades.push(this.scene.add.image(x, y, ATLAS, this.def.sprite).setScale(PIXEL_SCALE));
+    }
+    const step = this.def.projectileSpeed * seconds;
+    const range = this.def.range;
+    for (let i = 0; i < this.blades.length; i++) {
+      const robot = this.blades[i];
+      let robotX = robot.x;
+      let robotY = robot.y;
+      const target = this.enemies.findNearest(robotX, robotY);
+      if (target !== -1) {
+        const goal = this.enemies.enemies[target].sprite;
+        const d = Math.hypot(goal.x - robotX, goal.y - robotY);
+        if (d > step) {
+          robotX += ((goal.x - robotX) / d) * step;
+          robotY += ((goal.y - robotY) / d) * step;
+        }
+      }
+      const away = Math.hypot(robotX - x, robotY - y);
+      if (away > range) {
+        robotX = x + ((robotX - x) / away) * range;
+        robotY = y + ((robotY - y) / away) * range;
+      }
+      robot.setPosition(robotX, robotY);
+      if (this.clock < (this.robotReadyAt[i] ?? 0)) continue;
+      this.enemies.damageInRadius(robot.x, robot.y, this.def.projectileRadius, this.damage);
+      this.robotReadyAt[i] = this.clock + this.stats.cooldown * this.player.stats.cooldownMult;
     }
   }
 

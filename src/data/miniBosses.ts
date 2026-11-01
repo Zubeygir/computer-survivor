@@ -1,4 +1,4 @@
-import { BOSS_EVENTS } from './bosses';
+import { BOSS_INTERVAL } from './bosses';
 import { ENEMIES, type EnemyDef } from './enemies';
 
 const INTERVAL_SECONDS = 60;
@@ -45,6 +45,6 @@ export function miniBossHp(time: number): number {
 /** The next mini boss time after `time`, skipping the beats a boss fight already takes. */
 export function nextMiniBossTime(time: number): number {
   let next = time + INTERVAL_SECONDS;
-  if (next % BOSS_EVENTS[0].time === 0) next += INTERVAL_SECONDS;
+  if (next % BOSS_INTERVAL === 0) next += INTERVAL_SECONDS;
   return next;
 }

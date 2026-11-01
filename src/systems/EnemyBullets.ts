@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import type { Player } from '../entities/Player';
 import { ATLAS, PIXEL_SCALE } from '../art/atlas';
 
-const MAX_BULLETS = 150;
+const MAX_BULLETS = 220;
 const RADIUS = 6;
 const LIFETIME = 6;
 // Above the enemies, so a bullet is never hidden inside a crowd

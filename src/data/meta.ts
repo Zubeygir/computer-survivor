@@ -32,6 +32,15 @@ export const WEAPON_PRICES: Partial<Record<WeaponId, number>> = {
   usbStick: 600,
   satelliteDish: 700,
   dotMatrixPrinter: 800,
+  cdRom: 1000,
+  trackball: 1100,
+  faxMachine: 1200,
+  robotVacuum: 1300,
+  flatbedScanner: 1400,
+  ethernetCable: 1500,
+  pager: 1600,
+  pocketCalculator: 1700,
+  boombox: 1800,
 };
 
 export interface WorkshopDef {

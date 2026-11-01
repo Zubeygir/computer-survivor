@@ -1,12 +1,16 @@
 import Phaser from 'phaser';
 import {
+  type BlinkAttack,
   type BossAttack,
-  type BossEventDef,
+  type BossDef,
   type BossPhase,
   type DashAttack,
   type FanAttack,
+  type FrontAttack,
+  type PullAttack,
   type SpiralAttack,
   type SummonAttack,
+  type SweepAttack,
   type ZonesAttack,
 } from '../data/bosses';
 import type { Player } from '../entities/Player';
@@ -39,7 +43,7 @@ type State = 'pause' | 'tell' | 'act';
 export class BossBrain {
   private readonly aimLine: Phaser.GameObjects.Image;
   private boss!: Enemy;
-  private event!: BossEventDef;
+  private event!: BossDef;
   private cx = 0;
   private cy = 0;
   private damageMult = 1;
@@ -58,6 +62,8 @@ export class BossBrain {
   /** Filled by `predictPlayer`. */
   private aimX = 0;
   private aimY = 0;
+  private blinkX = 0;
+  private blinkY = 0;
 
   constructor(
     scene: Phaser.Scene,
@@ -76,7 +82,7 @@ export class BossBrain {
   }
 
   /** (cx, cy) is the arena center; `damageMult` scales everything this boss's attacks deal. */
-  begin(boss: Enemy, event: BossEventDef, cx: number, cy: number, damageMult: number) {
+  begin(boss: Enemy, event: BossDef, cx: number, cy: number, damageMult: number) {
     this.boss = boss;
     this.event = event;
     this.cx = cx;
@@ -114,6 +120,7 @@ export class BossBrain {
       case 'act':
         if (this.attack.kind === 'dash') return this.dash(this.attack, seconds);
         if (this.attack.kind === 'spiral') this.spin(this.attack, seconds);
+        if (this.attack.kind === 'pull') this.drag(this.attack, seconds);
         return 0;
     }
   }
@@ -140,11 +147,11 @@ export class BossBrain {
     if (d === 0) return;
     const keep = this.event.keepDistance;
     const heading = d > keep ? 1 : d < keep - BACK_OFF_MARGIN ? -1 : 0;
-    const step = heading * def.speed * seconds;
+    const step = heading * def.speed * (this.phase.speedMult ?? 1) * seconds;
     sprite.x += (dx / d) * step;
     sprite.y += (dy / d) * step;
     this.keepInside();
-    if (heading < 0) this.leaveTrail(seconds);
+    if (heading < 0 || this.event.trail?.always) this.leaveTrail(seconds);
   }
 
   private leaveTrail(seconds: number) {
@@ -181,6 +188,7 @@ export class BossBrain {
   private prepare(attack: BossAttack) {
     this.attack = attack;
     if (attack.kind === 'dash') this.dashesLeft = attack.repeats;
+    if (attack.kind === 'blink') this.markLanding(attack);
     this.state = 'tell';
     this.timer = attack.tell;
   }
@@ -217,9 +225,13 @@ export class BossBrain {
     const ahead = Math.min(seconds, MAX_LEAD_SECONDS);
     const forward = turnRate === 0 ? ahead : Math.sin(turnRate * ahead) / turnRate;
     const sideways = turnRate === 0 ? 0 : (1 - Math.cos(turnRate * ahead)) / turnRate;
-    const dx = sprite.x + velocityX * forward - velocityY * sideways - this.cx;
-    const dy = sprite.y + velocityY * forward + velocityX * sideways - this.cy;
-    const k = Math.min(1, this.wallRadius / Math.hypot(dx, dy));
+    this.setAim(sprite.x + velocityX * forward - velocityY * sideways, sprite.y + velocityY * forward + velocityX * sideways);
+  }
+
+  private setAim(x: number, y: number, inset = 0) {
+    const dx = x - this.cx;
+    const dy = y - this.cy;
+    const k = Math.min(1, (this.wallRadius - inset) / Math.hypot(dx, dy));
     this.aimX = this.cx + dx * k;
     this.aimY = this.cy + dy * k;
   }
@@ -251,14 +263,27 @@ export class BossBrain {
         this.volleyLeft = 0;
         this.spiralAngle = Math.random() * Math.PI * 2;
         return;
+      case 'pull':
+        this.state = 'act';
+        this.timer = attack.seconds;
+        return;
+      case 'blink':
+        this.boss.sprite.setPosition(this.blinkX, this.blinkY);
+        break;
       case 'ring':
         this.bullets.fireRing(x, y, attack.count, attack.speed, attack.damage * this.damageMult);
         break;
       case 'fan':
         this.fireFan(attack);
         break;
+      case 'front':
+        this.fireFront(attack);
+        break;
       case 'zones':
         this.dropZones(attack);
+        break;
+      case 'sweep':
+        this.dropSweep(attack);
         break;
       case 'summon':
         this.summon(attack);
@@ -323,6 +348,66 @@ export class BossBrain {
     for (let i = 0; i < attack.count; i++) {
       const angle = aim + (i - (attack.count - 1) / 2) * attack.spread;
       this.bullets.fire(x, y, Math.cos(angle), Math.sin(angle), attack.speed, damage);
+    }
+  }
+
+  private fireFront(attack: FrontAttack) {
+    const { x, y } = this.boss.sprite;
+    this.predictPlayer(0);
+    const dx = this.aimX - x;
+    const dy = this.aimY - y;
+    const d = Math.hypot(dx, dy) || 1;
+    const dirX = dx / d;
+    const dirY = dy / d;
+    const opening = Math.floor(Math.random() * (attack.count - attack.opening));
+    const damage = attack.damage * this.damageMult;
+    for (let i = 0; i < attack.count; i++) {
+      if (i >= opening && i < opening + attack.opening) continue;
+      const side = (i - (attack.count - 1) / 2) * attack.spacing;
+      this.bullets.fire(x - dirY * side, y + dirX * side, dirX, dirY, attack.speed, damage);
+    }
+  }
+
+  /** Picks the landing spot when the tell starts, so its mark can warn of it and go off as the boss lands. */
+  private markLanding(attack: BlinkAttack) {
+    this.predictPlayer(attack.ahead ? attack.tell : 0);
+    const angle = Math.random() * Math.PI * 2;
+    const { radius } = this.boss.def;
+    this.setAim(this.aimX + Math.cos(angle) * attack.distance, this.aimY + Math.sin(angle) * attack.distance, radius);
+    this.blinkX = this.aimX;
+    this.blinkY = this.aimY;
+    this.zones.spawn(this.blinkX, this.blinkY, attack.radius, attack.tell, attack.damage * this.damageMult);
+  }
+
+  private drag(attack: PullAttack, seconds: number) {
+    const { sprite: boss } = this.boss;
+    const { sprite } = this.player;
+    const dx = boss.x - sprite.x;
+    const dy = boss.y - sprite.y;
+    const d = Math.hypot(dx, dy) || 1;
+    sprite.x += (dx / d) * attack.strength * seconds;
+    sprite.y += (dy / d) * attack.strength * seconds;
+    this.aimLine
+      .setPosition(boss.x, boss.y)
+      .setRotation(Math.atan2(-dy, -dx))
+      .setScale(d, AIM_LINE_WIDTH)
+      .setVisible(this.timer > 0);
+    if (this.timer <= 0) this.finish();
+  }
+
+  private dropSweep(attack: SweepAttack) {
+    const { x, y } = this.boss.sprite;
+    this.predictPlayer(0);
+    const aim = Math.atan2(this.aimY - y, this.aimX - x);
+    const turn = (Math.PI * 2) / attack.lines;
+    const damage = attack.damage * this.damageMult;
+    for (let line = 0; line < attack.lines; line++) {
+      const dirX = Math.cos(aim + line * turn);
+      const dirY = Math.sin(aim + line * turn);
+      for (let i = 0; i < attack.count; i++) {
+        const dist = (i + 1) * attack.spacing;
+        this.zones.spawn(x + dirX * dist, y + dirY * dist, attack.radius, attack.fuse + i * attack.stagger, damage);
+      }
     }
   }
 

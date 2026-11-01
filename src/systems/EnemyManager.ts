@@ -14,6 +14,8 @@ const CONTACT_MARGIN = 2;
 const BACK_OFF_MARGIN = 40;
 /** A ranged enemy holds fire beyond this much past its keep distance, so off-screen ones stay quiet. */
 const FIRE_MARGIN = 120;
+/** How long a knockback lasts; during it an enemy neither walks nor attacks from range. */
+const PUSH_SECONDS = 0.25;
 /** All enemies step in sync; one shared clock is much cheaper than one per enemy. */
 const ANIMATION_FRAME_MS = 220;
 
@@ -35,6 +37,10 @@ export interface Enemy {
   timer: number;
   /** Orbit blades can't hit again before this time on the weapon's clock. */
   orbitReadyAt: number;
+  /** Seconds left of being thrown back, moving at (pushX, pushY) pixels per second. */
+  pushLeft: number;
+  pushX: number;
+  pushY: number;
 }
 
 export class EnemyManager {
@@ -67,6 +73,9 @@ export class EnemyManager {
         phase: 'approach',
         timer: 0,
         orbitReadyAt: 0,
+        pushLeft: 0,
+        pushX: 0,
+        pushY: 0,
       });
     }
   }
@@ -99,6 +108,7 @@ export class EnemyManager {
     enemy.phase = 'approach';
     enemy.timer = def.ranged?.fireInterval ?? 0;
     enemy.orbitReadyAt = 0;
+    enemy.pushLeft = 0;
     enemy.sprite
       .setFrame(def.frames[this.animationStep % def.frames.length])
       .setScale(PIXEL_SCALE * (def.scale ?? 1))
@@ -208,6 +218,50 @@ export class EnemyManager {
     }
   }
 
+  /** Everything in the half circle facing the unit vector (dirX, dirY). Scans like `damageInRadius`. */
+  damageInHalfCircle(x: number, y: number, dirX: number, dirY: number, radius: number, amount: number) {
+    for (let i = 0; i < this.aliveCount; i++) {
+      const enemy = this.enemies[i];
+      if (enemy.hp <= 0) continue;
+      const reach = radius + enemy.def.radius;
+      const dx = enemy.sprite.x - x;
+      const dy = enemy.sprite.y - y;
+      if (dx * dirX + dy * dirY >= 0 && dx * dx + dy * dy < reach * reach) enemy.hp -= hitDamage(enemy.def, amount);
+    }
+  }
+
+  /** Throws everything within `radius` away from (x, y), except props and bosses. */
+  knockBack(x: number, y: number, radius: number, speed: number) {
+    for (let i = 0; i < this.aliveCount; i++) {
+      const enemy = this.enemies[i];
+      if (enemy.scripted || enemy.def.prop) continue;
+      const dx = enemy.sprite.x - x;
+      const dy = enemy.sprite.y - y;
+      const d = Math.hypot(dx, dy);
+      if (d === 0 || d >= radius + enemy.def.radius) continue;
+      enemy.pushX = (dx / d) * speed;
+      enemy.pushY = (dy / d) * speed;
+      enemy.pushLeft = PUSH_SECONDS;
+    }
+  }
+
+  /** Index of the living enemy with the most HP within `radius`, props aside, or -1 if there is none. */
+  strongestWithin(x: number, y: number, radius: number): number {
+    const r2 = radius * radius;
+    let best = -1;
+    let bestHp = 0;
+    for (let i = 0; i < this.aliveCount; i++) {
+      const enemy = this.enemies[i];
+      if (enemy.hp <= bestHp || enemy.def.prop) continue;
+      const dx = enemy.sprite.x - x;
+      const dy = enemy.sprite.y - y;
+      if (dx * dx + dy * dy > r2) continue;
+      bestHp = enemy.hp;
+      best = i;
+    }
+    return best;
+  }
+
   /** Kills everything in the rectangle around (x, y) except props and bosses, on the next `removeDead`. */
   killInView(x: number, y: number, halfWidth: number, halfHeight: number) {
     for (let i = 0; i < this.aliveCount; i++) {
@@ -315,6 +369,12 @@ export class EnemyManager {
       const enemy = this.enemies[i];
       const { def, sprite } = enemy;
       if (def.prop) continue;
+      if (enemy.pushLeft > 0) {
+        enemy.pushLeft -= seconds;
+        sprite.x += enemy.pushX * seconds;
+        sprite.y += enemy.pushY * seconds;
+        continue;
+      }
       if (enemy.crossing) {
         step(sprite, enemy.dirX, enemy.dirY, def.speed, seconds);
         continue;

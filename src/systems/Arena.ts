@@ -3,11 +3,13 @@ import { ATLAS, PIXEL_SCALE } from '../art/atlas';
 import {
   ARENA_RADIUS,
   ARENA_WALL_DPS,
-  BOSS_EVENTS,
   BOSS_FIRST_HP,
+  BOSS_GROUPS,
   BOSS_HP_GROWTH,
+  BOSS_INTERVAL,
   BOSS_LOOP_DAMAGE_MULT,
-  type BossEventDef,
+  BOSS_TEST,
+  type BossDef,
   type ClosingWall,
 } from '../data/bosses';
 import type { EnemyDef } from '../data/enemies';
@@ -23,6 +25,7 @@ const WALL_SPACING = 24;
 const WALL_TOUCH_MARGIN = 4;
 // Keeps the boss from appearing on top of the wall
 const BOSS_INSET = 80;
+const ALL_BOSSES = BOSS_GROUPS.flatMap((group) => group.bosses);
 
 /**
  * Boss fights: on each boss event a firewall ring closes around the player, enemies outside it
@@ -38,9 +41,12 @@ export class Arena {
   private bossesStarted = 0;
   /** How many bosses came before this one in the run. */
   private fightOrder = 0;
-  /** How many times the boss list had started over when the current fight began. */
+  /** How many times the boss groups had started over when the current fight began. */
   private fightRound = 0;
-  private current: BossEventDef | null = null;
+  private fightMilestone = false;
+  private current: BossDef | null = null;
+  /** The boss each group sent last, by group. */
+  private readonly lastPicks: (BossDef | undefined)[] = [];
   private boss: Enemy | null = null;
   private bossMaxHp = 0;
   private cx = 0;
@@ -54,6 +60,8 @@ export class Arena {
     private readonly player: Player,
     bullets: EnemyBullets,
     private readonly zones: DangerZones,
+    /** Shows every boss in turn; see `BOSS_TEST`. */
+    private readonly bossTest = false,
   ) {
     const count = Math.round((2 * Math.PI * ARENA_RADIUS) / WALL_SPACING);
     for (let i = 0; i < count; i++) {
@@ -90,10 +98,8 @@ export class Arena {
    */
   update(time: number, delta: number): number {
     if (!this.current) {
-      const event = BOSS_EVENTS[this.bossesStarted % BOSS_EVENTS.length];
-      // Each round of the list takes as long as the list itself, measured to its last boss
-      const roundLength = BOSS_EVENTS[BOSS_EVENTS.length - 1].time;
-      if (time >= event.time + this.round * roundLength) this.start(event);
+      const interval = this.bossTest ? BOSS_TEST.seconds : BOSS_INTERVAL;
+      if (time >= interval * (this.bossesStarted + 1)) this.start();
       return 0;
     }
     // The pool can be full when the ring closes; retry until a dying enemy frees a slot
@@ -109,7 +115,7 @@ export class Arena {
     // Bosses only exist during their own fight, so the def identifies the current boss
     if (!this.current || def !== this.current.boss) return false;
     this.bossKills++;
-    if (this.current.milestone) this.milestoneKills++;
+    if (this.fightMilestone) this.milestoneKills++;
     this.brain.stop();
     this.zones.clear();
     this.current = null;
@@ -118,14 +124,21 @@ export class Arena {
     return true;
   }
 
-  private get round(): number {
-    return Math.floor(this.bossesStarted / BOSS_EVENTS.length);
+  /** One boss from the group whose turn it is, never the one that group sent last round. */
+  private pickBoss(groupIndex: number): BossDef {
+    const options = BOSS_GROUPS[groupIndex].bosses.filter((boss) => boss !== this.lastPicks[groupIndex]);
+    const pick = options[Math.floor(Math.random() * options.length)];
+    this.lastPicks[groupIndex] = pick;
+    return pick;
   }
 
-  private start(event: BossEventDef) {
+  private start() {
+    const groupIndex = this.bossesStarted % BOSS_GROUPS.length;
+    const event = this.bossTest ? ALL_BOSSES[this.bossesStarted % ALL_BOSSES.length] : this.pickBoss(groupIndex);
     this.current = event;
     this.fightOrder = this.bossesStarted;
-    this.fightRound = this.round;
+    this.fightRound = this.bossTest ? 0 : Math.floor(this.bossesStarted / BOSS_GROUPS.length);
+    this.fightMilestone = BOSS_GROUPS[groupIndex].milestone;
     this.bossesStarted++;
     this.cx = this.player.sprite.x;
     this.cy = this.player.sprite.y;
@@ -151,10 +164,10 @@ export class Arena {
     this.placeWalls();
   }
 
-  private spawnBoss(event: BossEventDef) {
+  private spawnBoss(event: BossDef) {
     const angle = Math.random() * Math.PI * 2;
     const dist = this.radius - BOSS_INSET;
-    this.bossMaxHp = BOSS_FIRST_HP * BOSS_HP_GROWTH ** this.fightOrder * event.hpMult;
+    this.bossMaxHp = this.bossTest ? BOSS_TEST.hp : BOSS_FIRST_HP * BOSS_HP_GROWTH ** this.fightOrder * event.hpMult;
     this.boss = this.enemies.spawn(
       event.boss,
       this.cx + Math.cos(angle) * dist,

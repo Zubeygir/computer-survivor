@@ -107,50 +107,50 @@ const brickPhone = weapon('Brick Phone', 'brickPhone', 'Thrown in an arc, hits 2
 ]);
 
 const computer8bit = weapon('8-Bit Computer', 'computer8bit', 'Fires pixels in every direction', [
-  damage(2),
+  damage(3),
   more(2, 'pixels'),
   faster(0.2),
-  damage(2),
+  damage(3),
   more(2, 'pixels'),
   faster(0.2),
-  damage(2),
+  damage(3),
   more(2, 'pixels'),
   faster(0.2),
 ]);
 
 const floppyDisk = weapon('Floppy Disk', 'floppyDisk', 'Flies out and comes back', [
-  damage(3),
-  hits(2),
+  damage(4),
+  hits(3),
   faster(0.2),
-  damage(3),
+  damage(4),
   faster(0.2),
-  damage(3),
-  hits(2),
+  damage(4),
+  hits(3),
   faster(0.2),
-  damage(3),
+  damage(4),
 ]);
 
 const crtMonitor = weapon('CRT Monitor', 'crtMonitor', 'Burns enemies around you', [
   damage(1),
-  wider(10),
+  wider(5),
   faster(0.1),
   damage(1),
-  wider(10),
+  wider(5),
   damage(1),
   faster(0.1),
-  wider(10),
+  wider(5),
   damage(1),
 ]);
 
 const dialUpModem = weapon('Dial-Up Modem', 'dialUpModem', 'Signal jumps between enemies', [
-  more(1, 'jump'),
-  damage(3),
+  more(2, 'jumps'),
+  damage(4),
   faster(0.2),
-  more(1, 'jump'),
-  damage(3),
+  more(2, 'jumps'),
+  damage(4),
   faster(0.2),
-  more(1, 'jump'),
-  damage(3),
+  more(2, 'jumps'),
+  damage(4),
   faster(0.2),
 ]);
 
@@ -167,15 +167,15 @@ const coolingFan = weapon('Cooling Fan', 'coolingFan', 'Blades circle around you
 ]);
 
 const dotMatrixPrinter = weapon('Dot Matrix Printer', 'dotMatrixPrinter', 'Prints paper where you face', [
-  damage(1),
+  damage(2),
   faster(0.05),
-  damage(1),
+  damage(2),
   faster(0.05),
-  damage(1),
+  damage(2),
   faster(0.05),
-  damage(1),
+  damage(2),
   faster(0.05),
-  damage(1),
+  damage(2),
 ]);
 
 const usbStick = weapon('USB Stick', 'usbStick', 'Drops exploding mines', [
@@ -191,22 +191,130 @@ const usbStick = weapon('USB Stick', 'usbStick', 'Drops exploding mines', [
 ]);
 
 const satelliteDish = weapon('Satellite Dish', 'satelliteDish', 'Strikes a random enemy', [
-  damage(6),
+  damage(4),
   faster(0.3),
   more(1, 'strike'),
-  damage(6),
+  damage(4),
   faster(0.3),
-  damage(6),
+  damage(4),
   more(1, 'strike'),
   faster(0.4),
-  damage(6),
+  damage(4),
+]);
+
+const cdRom = weapon('CD-ROM', 'cdRom', 'Flies to an enemy and spins there', [
+  damage(1),
+  wider(4),
+  faster(0.3),
+  damage(1),
+  more(1, 'disc'),
+  wider(4),
+  damage(1),
+  faster(0.3),
+  damage(1),
+]);
+
+const trackball = weapon('Trackball', 'trackball', 'Bounces between enemies', [
+  damage(2),
+  hits(2),
+  faster(0.15),
+  damage(2),
+  more(1, 'ball'),
+  hits(2),
+  damage(2),
+  faster(0.15),
+  damage(2),
+]);
+
+const faxMachine = weapon('Fax Machine', 'faxMachine', 'Paper planes chase enemies', [
+  damage(3),
+  more(1, 'plane'),
+  faster(0.12),
+  damage(3),
+  hits(1),
+  faster(0.12),
+  more(1, 'plane'),
+  damage(3),
+  faster(0.12),
+]);
+
+const robotVacuum = weapon('Robot Vacuum', 'robotVacuum', 'Drives around hitting enemies', [
+  damage(2),
+  faster(0.05),
+  damage(2),
+  more(1, 'robot'),
+  faster(0.05),
+  damage(2),
+  faster(0.05),
+  more(1, 'robot'),
+  damage(2),
+]);
+
+const flatbedScanner = weapon('Flatbed Scanner', 'flatbedScanner', 'A beam sweeps around you', [
+  damage(1),
+  wider(3),
+  wider(2),
+  damage(1),
+  more(1, 'beam'),
+  wider(3),
+  damage(1),
+  wider(2),
+  damage(1),
+]);
+
+const ethernetCable = weapon('Ethernet Cable', 'ethernetCable', 'Whips everything near an enemy', [
+  damage(2),
+  wider(6),
+  faster(0.1),
+  damage(2),
+  more(1, 'lash'),
+  wider(6),
+  damage(2),
+  faster(0.1),
+  damage(2),
+]);
+
+const pager = weapon('Pager', 'pager', 'Zaps random enemies on screen', [
+  more(1, 'target'),
+  faster(0.2),
+  damage(3),
+  faster(0.2),
+  damage(3),
+  faster(0.2),
+  damage(3),
+  faster(0.2),
+  damage(3),
+]);
+
+const pocketCalculator = weapon('Pocket Calculator', 'pocketCalculator', 'Heavy shot at the toughest enemy', [
+  damage(12),
+  faster(0.2),
+  damage(12),
+  more(1, 'shot'),
+  faster(0.2),
+  damage(12),
+  faster(0.2),
+  damage(12),
+  faster(0.2),
+]);
+
+const boombox = weapon('Boombox', 'boombox', 'Blasts enemies back', [
+  damage(3),
+  wider(12),
+  faster(0.25),
+  damage(3),
+  wider(12),
+  damage(3),
+  faster(0.25),
+  wider(12),
+  damage(3),
 ]);
 
 const overclock = passive('Overclock', 'icon-overclock', 5, '-8% weapon cooldown', { cooldownMult: -0.08 });
 const powerSupply = passive('Power Supply', 'icon-power', 5, '+10% damage', { damageMult: 0.1 });
 const ramUpgrade = passive('RAM Upgrade', 'icon-ram', 5, '+20 max HP', { maxHp: 20 });
 const magnet = passive('Magnet', 'icon-magnet', 5, '+5% pickup range', { pickupRadius: 4 });
-const widescreen = passive('Widescreen', 'icon-widescreen', 5, '+10% area', { areaMult: 0.1 });
+const widescreen = passive('Widescreen', 'icon-widescreen', 5, '+6% area', { areaMult: 0.06 });
 const fiberCable = passive('Fiber Cable', 'icon-fiber', 5, '+10% projectile speed', { projectileSpeedMult: 0.1 });
 const heatSink = passive('Heat Sink', 'icon-heatsink', 5, '-6% contact damage', { damageTakenMult: -0.06 });
 const multithreading = passive('Multithreading', 'icon-threads', 2, '+1 projectile', { bonusProjectiles: 1 });
@@ -225,6 +333,15 @@ export const UPGRADES: (WeaponUpgrade | PassiveUpgrade)[] = [
   dotMatrixPrinter,
   usbStick,
   satelliteDish,
+  cdRom,
+  trackball,
+  faxMachine,
+  robotVacuum,
+  flatbedScanner,
+  ethernetCable,
+  pager,
+  pocketCalculator,
+  boombox,
   overclock,
   powerSupply,
   ramUpgrade,
@@ -249,6 +366,15 @@ export const EVOLUTIONS: EvolutionUpgrade[] = [
   evolution('Laser Printer', dotMatrixPrinter, multithreading, 'laserPrinter', 'A beam that hits the whole line'),
   evolution('Logic Bomb', usbStick, longLifeBattery, 'logicBomb', 'Bigger blasts, 8 mines'),
   evolution('Orbital Uplink', satelliteDish, wifiRoaming, 'orbitalUplink', '4 strikes at once'),
+  evolution('DVD Burner', cdRom, widescreen, 'dvdBurner', '2 huge discs at once'),
+  evolution('Pinball Table', trackball, fiberCable, 'pinballTable', '2 balls with 12 bounces'),
+  evolution('Mass Mailer', faxMachine, multithreading, 'massMailer', 'A flock of 4 planes'),
+  evolution('Cleaning Swarm', robotVacuum, antivirus, 'cleaningSwarm', '3 fast robots'),
+  evolution('3D Scanner', flatbedScanner, overclock, 'scanner3d', '2 long, wide beams'),
+  evolution('Surge Cable', ethernetCable, heatSink, 'surgeCable', 'Whips both sides at once'),
+  evolution('Emergency Broadcast', pager, wifiRoaming, 'emergencyBroadcast', 'Zaps 12 enemies, much more often'),
+  evolution('Supercomputer', pocketCalculator, powerSupply, 'supercomputer', '2 fast shots that hit 2 enemies'),
+  evolution('Subwoofer', boombox, ramUpgrade, 'subwoofer', 'A huge blast that throws enemies far'),
 ];
 
 export const REPAIR: RepairUpgrade = {

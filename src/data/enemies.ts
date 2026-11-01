@@ -115,11 +115,27 @@ export const ENEMIES = {
   /** Lies around the map; see `Breakables`. */
   computer: { id: 'computer', speed: 0, radius: 16, hp: 30, contactDps: 0, xp: 0, frames: ['junk-crt'], prop: true },
 
-  // Bosses only spawn through boss events and never coexist, so the radius limit is boss + largest
+  // Bosses only spawn in their own fights and never coexist, so the radius limit is boss + largest
   // regular enemy; ransomware + trojan slightly exceeds it, which allows a few pixels of overlap.
-  // What bosses do and how much HP they have lives in their boss events; these are only their bodies.
+  // What bosses do and how much HP they have lives in `bosses.ts`; these are only their bodies.
   rootkit: { id: 'rootkit', speed: 70, radius: 34, hp: 1, contactDps: 20, xp: 30, alwaysPurple: true, frames: ['rootkit'] },
+  keylogger: { id: 'keylogger', speed: 85, radius: 30, hp: 1, contactDps: 14, xp: 30, alwaysPurple: true, frames: ['keylogger'] },
+  backdoor: { id: 'backdoor', speed: 60, radius: 26, hp: 1, contactDps: 18, xp: 30, alwaysPurple: true, frames: ['backdoor'] },
   spyware: { id: 'spyware', speed: 85, radius: 30, hp: 1, contactDps: 14, xp: 30, alwaysPurple: true, frames: ['spyware'] },
+  netWorm: { id: 'netWorm', speed: 95, radius: 28, hp: 1, contactDps: 16, xp: 30, alwaysPurple: true, frames: ['net-worm'] },
+  cryptominer: { id: 'cryptominer', speed: 50, radius: 30, hp: 1, contactDps: 18, xp: 30, alwaysPurple: true, frames: ['cryptominer'] },
   forkBomb: { id: 'forkBomb', speed: 60, radius: 32, hp: 1, contactDps: 16, xp: 30, alwaysPurple: true, frames: ['fork-bomb'] },
+  logicBomb: { id: 'logicBomb', speed: 55, radius: 30, hp: 1, contactDps: 16, xp: 30, alwaysPurple: true, frames: ['logic-bomb'] },
+  spearPhish: { id: 'spearPhish', speed: 80, radius: 30, hp: 1, contactDps: 16, xp: 30, alwaysPurple: true, frames: ['spear-phish'] },
   ransomware: { id: 'ransomware', speed: 75, radius: 40, hp: 1, contactDps: 30, xp: 30, alwaysPurple: true, frames: ['ransomware'] },
+  botmaster: { id: 'botmaster', speed: 70, radius: 30, hp: 1, contactDps: 20, xp: 30, alwaysPurple: true, frames: ['botmaster'] },
+  bufferOverflow: { id: 'bufferOverflow', speed: 65, radius: 30, hp: 1, contactDps: 24, xp: 30, alwaysPurple: true, frames: ['buffer-overflow'] },
+  memoryLeak: { id: 'memoryLeak', speed: 45, radius: 30, hp: 1, contactDps: 26, xp: 30, alwaysPurple: true, frames: ['memory-leak'] },
+  polymorph: { id: 'polymorph', speed: 80, radius: 30, hp: 1, contactDps: 24, xp: 30, alwaysPurple: true, frames: ['polymorph'] },
+  ddos: { id: 'ddos', speed: 70, radius: 32, hp: 1, contactDps: 24, xp: 30, alwaysPurple: true, frames: ['ddos'] },
+  interceptor: { id: 'interceptor', speed: 105, radius: 30, hp: 1, contactDps: 24, xp: 30, alwaysPurple: true, frames: ['interceptor'] },
+  zeroDay: { id: 'zeroDay', speed: 110, radius: 28, hp: 1, contactDps: 30, xp: 30, alwaysPurple: true, frames: ['zero-day'] },
+  overclock: { id: 'overclock', speed: 80, radius: 30, hp: 1, contactDps: 30, xp: 30, alwaysPurple: true, frames: ['overclock'] },
+  kernelPanic: { id: 'kernelPanic', speed: 70, radius: 34, hp: 1, contactDps: 36, xp: 30, alwaysPurple: true, frames: ['kernel-panic'] },
+  deadlock: { id: 'deadlock', speed: 65, radius: 32, hp: 1, contactDps: 36, xp: 30, alwaysPurple: true, frames: ['deadlock'] },
 } satisfies Record<string, EnemyDef>;

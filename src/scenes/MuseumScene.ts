@@ -11,14 +11,22 @@ const GAP = 10;
 const WIDE_LAYOUT_WIDTH = 640;
 /** Shorter cells drop the icon so the name and status still fit. */
 const MIN_ICON_CELL_H = 104;
+const CELLS_PER_PAGE = 10;
+const FOOTER_H = 52;
+const PAGE_BUTTON_W = 88;
+const PAGE_BUTTON_H = 40;
+const PAGE_BUTTON_OFFSET = 100;
 
 /** The device collection: unlocks weapons and shows which evolutions were reached. */
 export class MuseumScene extends Phaser.Scene {
+  private page = 0;
+
   constructor() {
     super('MuseumScene');
   }
 
   create() {
+    this.page = 0;
     this.layout();
     this.scale.on('resize', this.layout, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.scale.off('resize', this.layout, this));
@@ -40,11 +48,36 @@ export class MuseumScene extends Phaser.Scene {
 
     const columns = width >= WIDE_LAYOUT_WIDTH ? 5 : 2;
     const top = HEADER_H + MARGIN;
-    const area = { x: MARGIN, y: top, width: width - MARGIN * 2, height: height - top - MARGIN - 4 };
-    const grid = gridCells(EVOLUTIONS.length, columns, area, GAP);
-    EVOLUTIONS.forEach((evolution, i) => {
+    const area = { x: MARGIN, y: top, width: width - MARGIN * 2, height: height - top - FOOTER_H - MARGIN };
+    const grid = gridCells(CELLS_PER_PAGE, columns, area, GAP);
+    const first = this.page * CELLS_PER_PAGE;
+    EVOLUTIONS.slice(first, first + CELLS_PER_PAGE).forEach((evolution, i) => {
       const { x, y } = grid.centers[i];
       this.addCell(evolution, x, y, grid.width, grid.height);
+    });
+    this.addPager(width / 2, height - FOOTER_H / 2);
+  }
+
+  private addPager(x: number, y: number) {
+    const pages = Math.ceil(EVOLUTIONS.length / CELLS_PER_PAGE);
+    pixelText(this, x, y, `${this.page + 1}/${pages}`, { color: COLOR.text });
+    const turn = (step: number) => {
+      this.page += step;
+      this.layout();
+    };
+    createButton(this, x - PAGE_BUTTON_OFFSET, y, {
+      width: PAGE_BUTTON_W,
+      height: PAGE_BUTTON_H,
+      label: 'Prev',
+      disabled: this.page === 0,
+      onClick: () => turn(-1),
+    });
+    createButton(this, x + PAGE_BUTTON_OFFSET, y, {
+      width: PAGE_BUTTON_W,
+      height: PAGE_BUTTON_H,
+      label: 'Next',
+      disabled: this.page === pages - 1,
+      onClick: () => turn(1),
     });
   }
 

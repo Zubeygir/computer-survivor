@@ -3,7 +3,7 @@ import type { Player } from '../entities/Player';
 import { createPixelDisc } from '../textures';
 import { FX_CIRCLE, FX_CIRCLE_RADIUS } from './Effects';
 
-const MAX_ZONES = 24;
+const MAX_ZONES = 60;
 const COLOR = 0xff3b30;
 const WARN_ALPHA_START = 0.12;
 const WARN_ALPHA_END = 0.5;
