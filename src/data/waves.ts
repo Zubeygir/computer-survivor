@@ -24,15 +24,18 @@ function mix(...entries: [EnemyDef, number][]): EnemyDef[] {
 export const WAVES: WaveDef[] = [
   { enemies: mix([ENEMIES.bug, 1]), minimum: 20, interval: 0.7, hpMult: 1 },
   { enemies: mix([ENEMIES.bug, 2], [ENEMIES.spam, 1]), minimum: 40, interval: 0.45, hpMult: 1.1 },
-  { enemies: mix([ENEMIES.spam, 3], [ENEMIES.bug, 1]), minimum: 65, interval: 0.2, hpMult: 1.3 },
-  { enemies: mix([ENEMIES.bug, 8], [ENEMIES.worm, 3], [ENEMIES.popUp, 1]), minimum: 90, interval: 0.3, hpMult: 1.6 },
-  { enemies: mix([ENEMIES.spam, 8], [ENEMIES.worm, 3], [ENEMIES.phisher, 1]), minimum: 120, interval: 0.2, hpMult: 2 },
-  { enemies: mix([ENEMIES.bug, 12], [ENEMIES.trojan, 1], [ENEMIES.popUp, 1]), minimum: 150, interval: 0.2, hpMult: 2.5 },
-  { enemies: mix([ENEMIES.spam, 10], [ENEMIES.bug, 6], [ENEMIES.adware, 2]), minimum: 190, interval: 0.12, hpMult: 3.1 },
-  { enemies: mix([ENEMIES.worm, 8], [ENEMIES.phisher, 3], [ENEMIES.trojan, 1]), minimum: 220, interval: 0.25, hpMult: 3.8 },
-  { enemies: mix([ENEMIES.spam, 8], [ENEMIES.worm, 6], [ENEMIES.adware, 3]), minimum: 280, interval: 0.14, hpMult: 4.6 },
-  { enemies: mix([ENEMIES.spam, 12], [ENEMIES.worm, 6], [ENEMIES.trojan, 1], [ENEMIES.popUp, 1]), minimum: 340, interval: 0.1, hpMult: 5.5 },
+  { enemies: mix([ENEMIES.spam, 3], [ENEMIES.bug, 1]), minimum: 60, interval: 0.2, hpMult: 1.3 },
+  { enemies: mix([ENEMIES.bug, 8], [ENEMIES.worm, 3], [ENEMIES.popUp, 1]), minimum: 85, interval: 0.3, hpMult: 1.5 },
+  { enemies: mix([ENEMIES.spam, 8], [ENEMIES.worm, 3], [ENEMIES.phisher, 1]), minimum: 110, interval: 0.2, hpMult: 1.8 },
+  { enemies: mix([ENEMIES.bug, 12], [ENEMIES.trojan, 1], [ENEMIES.popUp, 1]), minimum: 135, interval: 0.2, hpMult: 2.1 },
+  { enemies: mix([ENEMIES.spam, 10], [ENEMIES.bug, 6], [ENEMIES.adware, 2]), minimum: 160, interval: 0.12, hpMult: 2.4 },
+  { enemies: mix([ENEMIES.bug, 16], [ENEMIES.worm, 3], [ENEMIES.phisher, 4], [ENEMIES.trojan, 1]), minimum: 185, interval: 0.25, hpMult: 2.8 },
+  { enemies: mix([ENEMIES.spam, 8], [ENEMIES.worm, 6], [ENEMIES.adware, 3]), minimum: 210, interval: 0.14, hpMult: 3.2 },
+  { enemies: mix([ENEMIES.spam, 12], [ENEMIES.worm, 6], [ENEMIES.trojan, 1], [ENEMIES.popUp, 1]), minimum: 240, interval: 0.1, hpMult: 3.6 },
 ];
+
+/** Interval spawns stop once the crowd passes `minimum` times this, so kill speed decides how big it gets. */
+export const CROWD_OVERFLOW = 1.25;
 
 /** Anything spawned this early dies in one hit, so a run opens with a burst of easy kills. */
 export const EASY_START = { seconds: 15, hp: 1 };

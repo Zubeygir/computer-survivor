@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { miniBossFor, miniBossHp, nextMiniBossTime } from '../data/miniBosses';
-import { BOTNET_EVENTS, EASY_START, OVERTIME, WAVES, type BotnetEventDef, type WaveDef } from '../data/waves';
+import { BOTNET_EVENTS, CROWD_OVERFLOW, EASY_START, OVERTIME, WAVES, type BotnetEventDef, type WaveDef } from '../data/waves';
 import type { Player } from '../entities/Player';
 import type { EnemyManager } from './EnemyManager';
 
@@ -49,14 +49,15 @@ export class Spawner {
     // Half the screen diagonal reaches the corners in any orientation
     const ring = Math.hypot(this.camera.width, this.camera.height) / 2 + SPAWN_MARGIN;
 
+    const minimum = Math.min(wave.minimum + this.overtime * OVERTIME.extraEnemies, OVERTIME.maxEnemies);
+
     this.intervalLeft -= seconds;
     if (this.intervalLeft <= 0) {
       // Carrying the overshoot keeps short intervals accurate; the clamp stops a long frame from bursting
       this.intervalLeft = Math.max(this.intervalLeft + wave.interval, 0);
-      this.spawnFrom(wave, ring);
+      if (this.enemies.hostileCount < Math.min(minimum * CROWD_OVERFLOW, OVERTIME.maxEnemies)) this.spawnFrom(wave, ring);
     }
 
-    const minimum = Math.min(wave.minimum + this.overtime * OVERTIME.extraEnemies, OVERTIME.maxEnemies);
     for (let i = 0; i < MAX_REFILL_PER_FRAME && this.enemies.hostileCount < minimum; i++) {
       this.spawnFrom(wave, ring);
     }
