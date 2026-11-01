@@ -10,28 +10,19 @@ Everything below is committed and pushed to `main`, which Vercel deploys. `main`
 
 The game is an **endless** survivors-like: a run only ends in death. It has a first-run tutorial, 4 distinct bosses, mini bosses, slot machines, breakable computers and three colors of XP gems.
 
-**The next job is 20 bosses in a random pool** (job 1 below). Show its plan in short form and get the user's go-ahead first, since their rule is that each job's plan comes right before that job.
+**The next job is the Workshop** (job 1 below). Show its plan in short form and get the user's go-ahead first, since their rule is that each job's plan comes right before that job.
 
 The game design doc is at https://claude.ai/artifact/8yApVH6VuMDwYmPwAqVosy (Turkish, read with the docs tools). It predates the endless run, bosses, slots and drops, so `src/data/*.ts` and this file win where they differ.
 
 ## What is left, in order
 
-### Job 1: 20 bosses in a random pool
+### Job 1: Workshop
 
-The user wants about 20 bosses so the endless run stays fresh; after 20 they come back much harder. There are 4 now, so **16 more**, each with its own sprite and attacks, added in **batches of five**. New bosses should use the deeper attack options (`lead`, `ahead`, `encircle`, `then`, `trail`, `closingWall`) and every attack keeps a tell. `BossBrain` passes `damageMult` to everything, so new attacks must multiply their damage by it.
+The user was firm that the endless run needs far more content: "kesinlikle artması gerekiyor, çok fazla". Bosses and weapons are done, so what is left of that is:
+- **Workshop:** from 5 upgrades to about 15-20, with more levels each. Today it is shallow: the Workshop costs 6,000 Data in total, and the core idea is that a player cannot get further without improving. The Museum now costs 16,300.
+- More passives only if needed. Evolutions share them today (`magnet` has one, most have two).
 
-Decided: a **random pool**. The bosses are split into difficulty groups and each run picks one from each group, so a run sees 8-10 bosses and different runs see different ones. A fixed order was rejected because a boss every 2:30 would put the 20th at 50 minutes, which nobody reaches on a phone.
-
-Needs: replacing the fixed `BOSS_EVENTS` list with groups, deciding which bosses are milestones (they pay `milestoneBoss` Data), keeping HP on the `BOSS_FIRST_HP * BOSS_HP_GROWTH ** order` curve, and repeating the groups harder afterwards. Boss sprites are text grids using `mirror()`, like `spyware` and `fork-bomb`. Keep two of the largest radii around the 64 px hash cell. No real brand names.
-
-### Job 2: New content
-
-The user was firm that the endless run needs far more of this: "kesinlikle artması gerekiyor, çok fazla".
-- **Weapons:** from 10 to about 20, each with an evolution and an unlock price.
-- **Workshop:** from 5 upgrades to about 15-20, with more levels each. Today it is shallow: the Workshop costs 6,000 Data in total and the Museum 3,300, so 15-25 runs finish it, and the core idea is that a player cannot get further without improving.
-- More passives if needed. The in-run pool is about 60 picks today (4 weapons x 9 levels, 4 passives x 5, 4 evolutions).
-
-### Job 3: Economy and final balance
+### Job 2: Economy and final balance
 
 Everything is tuned here in one go, through the user's playthroughs, with a simulation only if they ask for one. Prices come last, and they should really push the player. All numbers in "Current numbers" are provisional until this job.
 
@@ -69,6 +60,9 @@ Latest real data from the user: 8+ minutes on an account with 3-4 Workshop stars
 - Mini bosses and pixel art slot machine.
 - Live Data counter.
 - Deeper bosses, because simply running in circles beat them. ROOTKIT follows a dash with a light lead shot and below half HP sometimes rings Bugs around the player. SPYWARE's fans lead and it leaves delayed marks while backing away. FORK BOMB's first mark lands on the player's path and below half HP its Spam ring the player. RANSOMWARE's wall closes in and its last phase chains attacks. Not judged yet: RANSOMWARE may be too harsh in the small ring (first knob: `minRadius` 220), FORK BOMB's marks can overlap, and Bugs may lengthen ROOTKIT for players who keep their distance.
+- 20 bosses in 8 random groups, designed by Claude on the user's request. New attack kinds: `front` (wall of bullets with an opening), `sweep` (lines of marks), `blink` (teleport with a warning mark), `pull` (drags the player), plus `speedMult` on phases and `always` on trails. The user okayed most of them; the numbers are first guesses.
+- 19 weapons, with Cassette Tape cut after the user tried it. New: CD-ROM, Trackball, Fax Machine, Robot Vacuum, Flatbed Scanner, Ethernet Cable, Pager, Pocket Calculator, Boombox, each with an evolution. Museum splits over pages.
+- A balance pass over every weapon on real waves. CRT and Degausser shrank and Widescreen dropped to +6% per level, after the user said CRT grew too big.
 
 ## Current numbers (all in `src/data`, all provisional)
 
@@ -77,7 +71,7 @@ Latest real data from the user: 8+ minutes on an account with 3-4 Workshop stars
 - **Overtime (past the last wave, per full minute):** +40 quota up to 450, +6% HP, +4% contact damage. The user wants difficulty to come from numbers, with HP and damage rising only a little. The 450 cap is for phones.
 - **XP (`progression.ts`):** `5 + 6(L-1) + L²/2`. Hand-set faster first levels were tried and cancelled by the user because they brought the evolve too early.
 - **Gems (`gems.ts`):** blue x1, green x2, purple x4. Worm 30% green, Pop-Up 40%, Phisher 40% and 10% purple, Adware 30%, Trojan 50% and 30% purple. Purple from regular enemies starts at 6:00. Mini bosses drop green or purple, purple at 10% and +10% per minute. Bosses always drop purple, 30 x 4 = 120 XP.
-- **Bosses (`bosses.ts`):** at 2:30 steps, repeating every 10:00. HP = 3000 x 1.7^order x `hpMult` (Spyware 1.2, Ransomware 2), so 3,000, 6,100, 8,700, 29,500, then 25,100, 51,100 in the second round. Attack damage x1.5 per round. Wall 25 DPS; RANSOMWARE's closes from 320 to 180 at 3 px/s. A kill heals 50 HP and always drops a slot machine.
+- **Bosses (`bosses.ts`):** 20 bosses in 8 groups, one random boss per group, one every 2:30 from 2:30 to 20:00. Then the groups start over, never sending the boss they sent last round. HP = 3000 x 1.7^order x `hpMult`, so about 246,000 at 20:00, which nobody has tested. Attack damage x1.5 per round. Wall 25 DPS; RANSOMWARE's closes from 320 to 180 at 3 px/s. A kill heals 50 HP and always drops a slot machine.
 - **Mini bosses (`miniBosses.ts`):** every 60 s from 1:00, skipping boss beats (5:00, 10:00). 1.5x size, purple outline, 5x XP. Bug, then Worm from 2:00, Phisher from 4:00, Trojan from 6:00. HP = 60 x (t/30)^1.6.
 - **Slots (`slots.ts`):** mini bosses drop one 40% of the time. Odds of 2 and 3 upgrades: mini boss 7% and 1%, boss 16% and 4%. A slot only upgrades what is already owned, 20% weapon and 80% passive. With no passives owned it heals 30 HP instead of the 80%, because falling back on a weapon rewarded piling into one weapon and pulled the evolve to 3:04. Once passives are full it moves on to weapons. Slots never evolve.
 - **Computers (`drops.ts`, `Breakables.ts`):** 20% chance per 640x640 chunk (the user asked twice for fewer), at least 320 px apart, 30 HP, always at least 2 hits. Drops: Heal 25 (35%), 5 Data (35%), 15 Data (15%), 40 Data (4%), Magnet (7%), Nuke (4%).
@@ -86,11 +80,13 @@ Latest real data from the user: 8+ minutes on an account with 3-4 Workshop stars
 
 ## Measuring balance
 
-**Do not run bot simulations unless the user asks.** On 2026-10-31 they stopped one and said simulations take far too long and burn all the tokens. Make the change, say it is unmeasured and let them judge it by playing.
+**Do not run bot simulations unless the user asks.** On 2026-10-31 they stopped one and said simulations take far too long and burn all the tokens. Make the change, say it is unmeasured and let them judge it by playing. They allow simulations for real balance work, as they did on 2026-11-01 for the weapons.
 
-`npm run sim -- <runs> <sections>`, for example `npm run sim -- 8 new,maxed`. Sections: `still`, `solo`, `build`, `random`, `late`, `new`, `maxed`, `boss`. `tools/balance-sim/game.js` copies the frame order of `GameScene.update`, so keep the two in step.
+`npm run sim -- <runs> <sections>`, for example `npm run sim -- 8 new,maxed`. Sections: `still`, `solo`, `build`, `random`, `late`, `new`, `maxed`, `boss`, `weapons`. `tools/balance-sim/game.js` copies the frame order of `GameScene.update`, so keep the two in step.
 
-The fresh-save bot now dies in the ROOTKIT fight, so only `boss` reaches later bosses: an unkillable `circle` bot runs steady circles and reports boss attack damage per fight. Strafing bot numbers are swamped by swarm contact, so they cannot judge a boss. The last `boss` run predates the cap on how far bosses lead, so its numbers are no longer current.
+The fresh-save bot now dies in the first boss fight, so only `boss` reaches later bosses: an unkillable `circle` bot runs steady circles and reports boss attack damage per fight. Strafing bot numbers are swamped by swarm contact, so they cannot judge a boss. The last `boss` run predates the cap on how far bosses lead and the random pool, so its numbers are no longer current.
+
+`npm run sim -- 3 weapons <clock> [ids]` puts every weapon form alone on one point of the waves and reports kills per minute, contact damage and boss damage. Read level 1 and max level at 300, evolutions at 600. **Never compare weapons on a small fixed target set:** area weapons scale with enemy count, so a 24-target check hid level 1 weapons beating evolved ones. Level 1 area weapons read high at 600 only because an unkillable bot sits buried in the crowd. The Printer's boss 0 is the bot's facing, not the weapon. Last bands at 5:00: level 1 up to about 60, max level 44-487, evolved 228-780, at 10:00 evolved up to about 1,040.
 
 **Never present bot survival times as what a player will reach.** The bot does not chase bosses, cannot really dodge (it takes 40% of dodgeable damage to stand in for that) and is far weaker: its fresh-save median was about 5 minutes while the user, with no upgrades and dying on purpose, reached 12:56, and did about 1,800 DPS against the bot's 276. Use the bot to compare options. Use an unkillable bot (`damageTaken: 0`) for power curves. Calibrate boss HP on the user's real fights.
 
@@ -101,8 +97,8 @@ A throwaway measurement can bundle the real code with Vite outside the repo and 
 ## Decisions
 
 Endless run:
-- No win: a run only ends in death, and the result screen has a best-time record. Ransomware at 10:00 is a milestone that pays 100 Data and drops a slot.
-- After 10:00 waves keep going and bosses repeat harder. A wall appears by itself, since upgrades run out while enemies keep growing.
+- No win: a run only ends in death, and the result screen has a best-time record. The bosses at 10:00 and 20:00 are milestones that pay 100 Data and drop a slot.
+- After 10:00 waves keep going, and after 20:00 bosses repeat harder. A wall appears by itself, since upgrades run out while enemies keep growing.
 - When upgrades run out, cards and slots give HP. No endless bonus cards for now; they would wear the wall down.
 
 Mini bosses are the purple-outlined elites from the waves; **"normal boss" means the arena bosses**, in the user's words too. In code `RUN_REWARDS.boss` is the arena boss reward.
@@ -112,6 +108,8 @@ Tutorial: plays only on the first run, as part of that run, with no skip button.
 Computers: they sit in the enemy pool as `prop` enemies while near the screen, so all weapons target and hit them with no extra code. They block the player (who can get stuck on them), enemies walk through them, they never count as kills or against the wave quota, and Nuke ignores them. Items drop exactly where the computer stood and are collected by walking over them. Weapons shoot one when it is the nearest target; if that annoys the user, an "enemies first" rule is easy.
 
 Bosses: every attack has a tell (blink, aim line that locks 0.25 s before a dash, ground fuse). Attacks are random with no immediate repeat. The wall burns on touch, and standing right against it counts, so the edge is never safe. Computers outside the ring hide during a fight.
+
+Weapons: nothing but the Nuke drop may clear the screen, and the user called a Pager that did it unacceptable, so Pager zaps a few random enemies. Some builds may be stronger, but not by multiples. Robot Vacuum never turns back: it drives at the enemy nearest to it and stops at the edge of its range, sliding along it with that enemy, because a robot that returned to the player looked bad.
 
 Lead aim: `predictPlayer` follows the curve the player is on (`Player.turnRate`), because a straight guess misses anyone running in circles. It looks at most `MAX_LEAD_SECONDS` (0.6) ahead, because the user found longer leads absurd: shots and marks landed 360+ px away, off a portrait screen. Only the first mark goes on the path; the rest scatter around the player. A closing wall goes by time, not boss HP, so hurting the boss faster is never punished. Weapons shoot the nearest target, so summons shield the boss: ROOTKIT's ring is only 8 Bugs and its dash is listed twice to keep the ring occasional.
 
@@ -129,7 +127,7 @@ Older decisions still in force:
 
 ## Traps
 
-- **The user tests on Vercel.** Unpushed work is invisible to them, which once looked like "mini bosses never come". After a job, say plainly whether it is live.
+- **Never check, poll or report on Vercel deployments.** The user got angry about this; a push is the end of the job. They test locally too.
 - **The Vite dev server once missed a change to `Arena.ts`** and served the old file next to new ones, which made HP `NaN` (no HP bar, no red flash, no death) and stopped the boss attacking. If behavior makes no sense, fetch `http://localhost:5173/src/...` and compare, then touch the file or restart `npm run dev`. Compiled output differs from source (`0.7` becomes `.7`, `24000` becomes `24e3`, types vanish), so a failed text match is not proof by itself.
 - A `damage` of `NaN` in one frame poisons HP for the whole run.
 - `pixelText` uppercases; `BitmapText.setText` does not, so uppercase the string yourself.
@@ -145,7 +143,8 @@ Older decisions still in force:
 - Late waves: temporarily start `elapsed` in `src/systems/Spawner.ts` at e.g. `8 * 60`, and `nextMiniBoss` to match.
 - Bosses: start `elapsed` a few seconds before an event (e.g. `145`). To reach a later boss, also start `bossesStarted` in `src/systems/Arena.ts`.
 - Fast level-ups: temporarily lower `xpToNext`.
-- Try one weapon: temporarily add `this.addWeapon('usbStick');` after the `cursor` line in `GameScene.create`. Evolved ids work too.
+- Try one weapon: open the game with `?weapon=usbStick`, next to the Cursor. Evolved ids work too.
+- See every boss: open the game with `?bosstest`. They come in turn with 400 HP and the player has 100,000 HP. Data earned there counts.
 - Replay the tutorial: open the game in a private window, or remove `computer-survivor-save` from `localStorage`.
 - To let the user judge a visual, publish a temporary Artifact page that runs the real scene with Phaser from jsDelivr, keep its files in the scratchpad, and delete it after their decision. This worked well for the slot machine.
 
@@ -214,5 +213,5 @@ Overlays pause `GameScene` with `scene.pause()` and reset the joystick first, si
 - If an approved approach turns out not to work, stop and report; do not silently switch. This happened with the slot fallback rule.
 - The user does all visual testing: never run browser or visual tests. Say plainly what was not seen on screen. Do not claim a sim number is what a player will experience.
 - Verify with `npx tsc --noEmit`. No bot simulations unless asked, see "Measuring balance". After changes, check the dev server serves the new code.
-- Commit and push only when asked. When asked: run `npm run build`, commit on `playtest-feedback-fixes`, fast-forward `main` with `git merge --ff-only`, `git push origin main`, then read the Vercel result from `https://api.github.com/repos/Zubeygir/computer-survivor/commits/<sha>/status`, since `gh` is not installed.
+- Commit and push only when asked. When asked: run `npm run build`, commit on `playtest-feedback-fixes`, fast-forward `main` with `git merge --ff-only`, `git push origin main`, and stop there.
 - Keep diffs minimal, no new dependencies without asking, and no documentation files unless asked.
