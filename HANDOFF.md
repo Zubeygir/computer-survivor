@@ -1,12 +1,12 @@
 # Handoff — Computer Survivor
 
-Son güncelleme: 2026-11-04. Teknoloji ve mimari kuralları için önce `CLAUDE.md` dosyasını oku. Bu dosya güncel durumu, şimdiye kadar alınan bütün kararları ve kalan bütün işleri içerir.
+Son güncelleme: 2026-11-05. Teknoloji ve mimari kuralları için önce `CLAUDE.md` dosyasını oku. Bu dosya güncel durumu, şimdiye kadar alınan bütün kararları ve kalan bütün işleri içerir.
 
 Kullanıcı Türkçe yazar ve **yalnızca Türkçe**, sade yanıt almalıdır. Kod, kod yorumları ve commit mesajları İngilizce kalır; bu dosya kullanıcının isteğiyle Türkçedir. Bir şey yapmadan önce sondaki "Çalışma anlaşması" bölümüne bak.
 
 ## Neredeyiz
 
-Aşağıdaki her şey commit edildi ve Vercel'in yayınladığı `main` dalına gönderildi. `playtest-feedback-fixes` dalı artık `main`'in gerisinde.
+Aşağıdaki her şey commit edildi ve Vercel'in yayınladığı `main` dalına gönderildi (son commit 2026-11-05, `0b2bbf3`: 8 pasif, Atölye, kalabalık artışı, simülatör). Commit'ler artık doğrudan `main` üzerinde; `playtest-feedback-fixes` dalı geride kaldı, kullanılmıyor.
 
 Oyun **sonsuz** bir survivors-like: bir oyun yalnızca ölünce biter. İlk oyuna özel eğitim, 20 boss, mini bosslar, slot makineleri, kırılabilir bilgisayarlar, 19 silah ve üç renk XP gem'i var.
 
@@ -18,11 +18,10 @@ Oyun tasarım dokümanı https://claude.ai/artifact/8yApVH6VuMDwYmPwAqVosy adres
 
 ### İş 1: Atölye
 
-Kullanıcı sonsuz oyunun çok daha fazla içeriğe ihtiyacı olduğu konusunda kesindi: "kesinlikle artması gerekiyor, çok fazla". Bosslar ve silahlar bitti, geriye şunlar kaldı:
-Temel fikir oyuncunun kendini geliştirmeden ilerleyememesi. Plan 2026-11-04'te onaylandı, fiyat sayıları İş 2'ye kalır. **İki parça da aynı gün yapıldı:** 18 yükseltme, 3 sayfa, `prices` üreticisi; yer tutucu fiyatlarla toplam yaklaşık 96.000 Data (istatistikler 67.260, mekanikler 28.960), eskiden 6.000. Kullanıcı henüz denemedi.
+Kullanıcı sonsuz oyunun çok daha fazla içeriğe ihtiyacı olduğu konusunda kesindi: "kesinlikle artması gerekiyor, çok fazla". Bosslar, silahlar ve Atölye bitti. Temel fikir oyuncunun kendini geliştirmeden ilerleyememesi. Plan 2026-11-04'te onaylandı, fiyat sayıları İş 2'ye kalır. **İki parça da aynı gün yapıldı:** 18 yükseltme, 3 sayfa, `prices` üreticisi; yer tutucu fiyatlarla toplam yaklaşık 96.000 Data (istatistikler 67.260, mekanikler 28.960), eskiden 6.000. Kullanıcı henüz denemedi.
 - **1. parça (saf veri ve ekran):** 12 istatistik yükseltmesi, her biri 10 seviye (Dual Core 1): Armor Plate +10 can, Firmware +%3 hasar, Overdrive +%2 hız, Long Cable +%5 çekim, Cache +%3 XP, Turbo Clock −%2 bekleme, Big Screen +%3 alan, Spare Battery +%4 süre, Fiber Line +%4 mermi hızı, Thermal Paste −%2 alınan hasar, Antivirus Sub +0,2 can/sn, Dual Core +1 mermi (en pahalı). Mevcut beşinin seviye başı değeri küçülür, kayıtlı seviyeler zayıflar (test aşamasında kabul edildi). Müze'deki sayfalama `Button.ts`'e taşınıp burada da kullanılır: telefonda sayfa başına 6 hücre tek sütun, genişte 3 sütun. Fiyatlar `prices(başlangıç, seviye, çarpan)` üreticisiyle, yer tutucu `prices(50, 10, 1.5)`.
 - **2. parça (mekanikler, her biri ayrı küçük iş):** Lucky Coin (slotta 2 ve 3 vuruş +%2, 5 seviye, `rollHits`'e `luck` stat'ı; kullanıcı "bayağı mantıklı" dedi, kalır), Data Miner (oyun sonu Data +%5, 10 seviye, `settleRun`), Reroll (seviye kartlarını oyun başına 1 kez yenile, 3 seviye, UpgradeScene düğmesi), Wide Menu (3 yerine 4 kart, 1 seviye), Scrap Radar (bilgisayar ihtimali +%3, 5 seviye), Expansion Bay (5. silah yuvası, 1 seviye, `MAX_WEAPONS` stat olur, envanter çubuğu).
-- Dirilme Atölye'de yok, ödüllü reklama saklandı. Bu iskeletle Atölye toplamı 80.000 Data'ya yakın çıkar; İş 2'de ya ödüller artar ya çarpan iner.
+- Dirilme Atölye'de yok, ödüllü reklama saklandı. Atölye toplamı 96.000, Müze 16.300 Data; simülasyonda iyi oyuncu 20 oyunda 15-18.000 harcıyor, yani tamamı 80-100 oyun. Kullanıcı "fiyatlar oyuncuyu gerçekten zorlamalı" dedi; İş 2'de gerçek oyunlara göre karar verilecek.
 
 ### İş 2: Ekonomi ve son denge
 
@@ -37,7 +36,7 @@ Claude'un önerdiği, ayrıntıları henüz onaylanmamış süre hedefleri (oyun
 | Yaklaşık 30 oyundan sonra | 13-15 dakika |
 | Atölye büyük ölçüde dolu | 20+ dakika |
 
-Kullanıcıdan gelen son gerçek veri: 3-4 Atölye yıldızlı hesapta 8+ dakika, yeni oyuncu için tahminen en fazla 3-5 dakika. Bu hedefe yakın olduğu için bir şey değiştirilmedi.
+Kullanıcıdan gelen son gerçek veri eski dalgalara ait: 3-4 Atölye yıldızlı hesapta 8+ dakika, yeni oyuncu için tahminen en fazla 3-5 dakika; 2026-11-05'te botun kalibrasyon çapası olarak kullanıldı. Kullanıcı 2026-11-05'te bu tablonun "üzerinden geçildiğini" (eski ölçümler geçersiz) söyledi ve bugünkü oyunlarından veri vermedi ("elimde yok"); tablo hedef olarak kullanıldı ama onaylanmış değil, ilk sohbette sor.
 
 ### Bilerek sonraya bırakılanlar
 
@@ -67,6 +66,10 @@ Kullanıcıdan gelen son gerçek veri: 3-4 Atölye yıldızlı hesapta 8+ dakika
 - Bütün silahların gerçek dalgalarda dengelenmesi. Kullanıcı CRT'nin fazla büyüdüğünü söyleyince CRT ve Degausser küçültüldü, Widescreen seviye başına +%6'ya indi.
 - Dalga zorluğu düşürüldü, çünkü kullanıcı 5:00'ten sonra kalabalığın çok arttığını, 7:00'den sonra hiçbir şeyin kesilemediğini söyledi. Kotalar ve can çarpanları azaldı, 7. dakika Worm ağırlıklı olmaktan çıktı, aralıklı doğuma tavan geldi. Kullanıcının isteğiyle 5. dakikanın karışımına dokunulmadı.
 - 8 yeni pasif (2026-11-04), çünkü kullanıcı oyun içi seçimi az buldu ve sonradan eklenen 9 silah eski pasifleri anahtar olarak paylaşıyordu: Memory Card (+%8 XP, Fax), Antenna (+%10 menzil, Pager), Debugger (boss ve mini bosslara +%10 hasar, Calculator), Spiked Case (değen düşmanlara 5 DPS, Boombox), Repair Kit (öldürme başına +0,3 can, Ethernet), Ball Bearings (+1 delme, 2 seviye, Trackball), Calibration (+%5 kritik, 2 kat, Scanner), Lens Cleaner (+%10 mermi boyutu, CD-ROM). Yeni stat'lar `player.ts` içinde. Slot ihtimali veren Lucky Dongle önerildi ve reddedildi: oyun içinde hissedilmeyen pasif istenmiyor. Kritik sessizdir, görseli yok. İkonlar `sprites.ts` içinde; ızgaralar palete göre PNG'ye dökülüp sohbette gösterildi, kullanıcı onayladı. Görsel işlerde hep böyle yap: kullanıcı "göremiyorum" cevabını kabul etmiyor, PNG ister.
+- Atölye 5'ten 18 yükseltmeye (2026-11-04), ayrıntısı İş 1'de. Müze pager'ı `Button.ts`'e taşındı, UpgradeScene'e Reroll düğmesi ve 4 kart için dikey 2x2 düzen geldi, envanter çubuğu yuva sayısını GameScene'den alıyor.
+- Zorluk (2026-11-04): temas tavanı A denendi ve kaldırıldı, nefes aldıran kota eğrisi C ve dolum bütçesi B kaldı, ayrıntısı "Güncel sayılar"da.
+- Simülatör (2026-11-05): insan gibi bot, kariyer ve ekonomi döngüsü, eski dalga tabloları, aday değişiklikler; ayrıntısı "Denge ölçümü"nde. Kullanıcı paralel ajan kullanmaya da izin verdi ("daha hızlı bitireceksen, kaliteden ödün verme"); kariyer ve eski dalga modülleri öyle yazıldı.
+- Kalabalık artışı (2026-11-05): 4. dakikadan itibaren %20, uzatma +35; boss eğrisi kullanıcının kararıyla eski halinde.
 
 ## Güncel sayılar (hepsi `src/data` içinde, hepsi geçici)
 
@@ -102,21 +105,21 @@ Testten sonra bakılacaklar: 5. dakikadaki Trojan oranı (önerilen karışım 2
 
 ## Denge ölçümü
 
-**Kullanıcı istemedikçe bot simülasyonu çalıştırmak için her zaman sor.** 2026-10-31'de kullanıcı birini durdurdu ve simülasyonların çok uzun sürdüğünü, bütün token'ları bitirdiğini söyledi. Değişikliği yap, ölçülmediğini söyle ve oynayarak değerlendirmesine bırak. Gerçek denge işi için izin veriyor, 2026-11-01'de silahlar için verdiği gibi.
+**Kullanıcı istemedikçe bot simülasyonu çalıştırmak için her zaman sor.** 2026-10-31'de kullanıcı birini durdurdu ve simülasyonların çok uzun sürdüğünü, bütün token'ları bitirdiğini söyledi. Değişikliği yap, ölçülmediğini söyle ve oynayarak değerlendirmesine bırak. Gerçek denge işi için izin veriyor: 2026-11-01'de silahlar için, 2026-11-05'te İş 2 (ekonomi ve zorluk) için sınırsız. O izin o işe aittir, başka işlerde yine sor.
 
 `npm run sim -- <runs> <sections>`, örneğin `npm run sim -- 8 new,maxed`. Bölümler: `still`, `solo`, `build`, `random`, `late`, `new`, `maxed`, `boss`, `weapons`, ve 2026-11-05'ten beri `human`, `crowd`, `calibrate`, `career`, `tune`, `fight1`. `tools/balance-sim/game.js`, `GameScene.update` kare sırasını kopyalar, ikisini uyumlu tut. Simülatör hızlıdır: 10 dakikalık bir oyun bir saniyeden az sürer, 10 koşuluk bir bölüm bir iki dakikada biter; uzunları arka planda, çıktıyı dosyaya yazarak koştur.
 
-**İnsan gibi bot (`human.js`, 2026-11-05):** Kullanıcı ekonomi işi için (İş 2) sınırsız simülasyon izni verdi, şartı botların insan gibi oynamasıydı. Bot 16 yöne bakıp en açık yönü seçer, ekranın tamamına (520 px) bakarak kalabalık büyüdükçe boş alana kıvrılır, yavaş düşmanları gem çekim yarıçapının içinde tutar (`engage`), gem'leri havuz olarak görür, canı %60'ın altındayken iyileşme eşyasına baskı altında bile gider, kartları planla seçer (ana silah maksa, anahtar pasif, can düşükken savunma). Boss kavgasında arena merkezinde daire çizer ve yalnızca gerçek bir isabet yaklaşınca ters döner; uyarı işaretlerini göremediği için `dodge` payı boss mermilerinin bir kısmını da (`ARENA_BULLET_READ`) okur. İki profil: `NEWBIE` (0,6 sn tepki, dar görüş, rastgele kart) ve `GOOD` (0,15 sn, geniş görüş, planlı kart). `SIM_VERBOSE=1` koşu başına satır (can ve temas hasarı dakika dakika, kartlar, kavga süresi/hasarı), `SIM_TRACE=1` ölümden önceki 15 saniye, `SIM_WAVES=softened,hard` eski dalga tabloları (`legacy.js`), `SIM_TWEAK=bossSoft,crowdUp` aday değişiklikler (`tweaks.js`, veri dosyalarına dokunmadan yerinde uygular). `career.js` art arda oyunları, Data kazancını, günlük görevleri ve Atölye ile Müze alımını simüle eder (`human` alım politikası: %60 Atölye, en ucuzdan).
+**İnsan gibi bot (`human.js`, 2026-11-05):** Kullanıcı ekonomi işi için (İş 2) sınırsız simülasyon izni verdi, şartı botların insan gibi oynamasıydı. Bot 16 yöne bakıp en açık yönü seçer, ekranın tamamına (520 px) bakarak kalabalık büyüdükçe boş alana kıvrılır, yavaş düşmanları gem çekim yarıçapının içinde tutar (`engage`), gem'leri havuz olarak görür, canı %60'ın altındayken iyileşme eşyasına baskı altında bile gider, kartları planla seçer (ana silah maksa, anahtar pasif, can düşükken savunma). Boss kavgasında arena merkezinde daire çizer ve yalnızca gerçek bir isabet yaklaşınca ters döner; uyarı işaretlerini göremediği için `dodge` payı boss mermilerinin bir kısmını da (`ARENA_BULLET_READ`) okur. İki profil: `NEWBIE` (0,6 sn tepki, dar görüş, rastgele kart) ve `GOOD` (0,15 sn, geniş görüş, planlı kart). `SIM_VERBOSE=1` koşu başına satır (can ve temas hasarı dakika dakika, kartlar, kavga süresi/hasarı), `SIM_TRACE=1` ölümden önceki 15 saniye, `SIM_WAVES=softened,hard` eski dalga tabloları (`legacy.js`), `SIM_TWEAK=bossSofter,crowdUp10` aday değişiklikler (`tweaks.js`, veri dosyalarına dokunmadan yerinde uygular; veri dosyasına giren bir aday listeden çıkarılır, yoksa üst üste biner). `career.js` art arda oyunları, Data kazancını, günlük görevleri ve Atölye ile Müze alımını simüle eder (`human` alım politikası: %60 Atölye, en ucuzdan).
 
 **Kalibrasyon (2026-11-05, eski dalgalarda, yeni kayıt):** `GOOD` + 4 eski Atölye yıldızı yumuşatılmış dalgalarda ortanca 9:53 (kullanıcı 3-4 yıldızla 8+ dakika demişti), yıldızsız 6:07; `NEWBIE` 2:30-5:00 (kullanıcı tahmini 3-5). Bilinen zayıflık: bot 2:30'da daire botundan 1-2 seviye geride kalır ve 5:00 bossunu insandan sık kaybeder; sayıları karşılaştırma olarak oku, mutlak değil. Daire botu (`circle`) ilk bossu 90-130 saniyede keser, insan botu ortanca 140.
 
-Yeni hesaptaki bot artık ilk boss kavgasında ölüyor, bu yüzden sonraki bosslara yalnızca `boss` bölümü ulaşır: ölümsüz `circle` botu sabit daireler çizer ve kavga başına boss saldırı hasarını raporlar. Yana kayan botun sayıları sürü temasına boğulur, boss değerlendiremez. Son `boss` ölçümü ileri nişan sınırından ve rastgele havuzdan öncedir, sayıları artık geçerli değil.
+Eski `strafe` botu yeni hesapta ilk boss kavgasında ölür ve sürüye sıkışınca titrer; hayatta kalma ölçümü için artık `human` kullan. `boss` bölümü ölümsüz `circle` botuyla kavga başına boss saldırı hasarını verir ve hâlâ işe yarar. 2026-11-05 ölçümü (süre / ham saldırı hasarı): yeni kayıt #1 108 s / 29, #2 61 s / 108, #3 94 s / 223, #4 206 s / 1.337, #5 191 s / 689, #6 355 s / 3.331, #7-8 bitiremedi; maks build #1 22 s / 5, #2 12 s / 18, #3 16 s / 0, #4 41 s / 247, #5 39 s / 149, #6 55 s / 547, #7 66 s / 539, #8 142 s / 2.384. Yani 10:00 ve 20:00 bossları DPS sınavı: kavga uzadıkça mermi hasarı oyuncuyu bitirir.
 
 `npm run sim -- 3 weapons <clock> [ids]` her silah halini tek başına dalgaların bir noktasına koyar, dakikada öldürme, temas hasarı ve boss hasarını raporlar. Birinci ve son seviyeyi 300'de, evrimleri 600'de oku. **Silahları asla küçük sabit hedef kümesinde karşılaştırma:** alan silahları düşman sayısıyla güçlenir, 24 hedefli bir kontrol birinci seviye silahların evrimlileri geçtiğini gizlemişti. Birinci seviye alan silahlarının 600'de yüksek görünmesi yalnızca ölümsüz botun kalabalığa gömülmesindendir. Printer'ın boss hasarının 0 çıkması silahtan değil, botun baktığı yöndendir. 5:00'teki son aralıklar: birinci seviye en fazla yaklaşık 60, son seviye 44-487, evrimli 228-780; 10:00'da evrimli en fazla yaklaşık 1.040.
 
-**Bot sürelerini asla oyuncunun ulaşacağı süre gibi sunma.** Bot bossları kovalamaz, gerçekten kaçamaz (bunun yerine kaçınılabilir hasarın %40'ını alır) ve çok daha zayıftır: yeni hesapta ortalaması yaklaşık 5 dakikayken kullanıcı yükseltmesiz, bilerek ölerek 12:56'ya ulaştı ve botun 276'sına karşı yaklaşık 1.800 DPS yaptı. Botu seçenekleri karşılaştırmak için kullan. Güç eğrileri için ölümsüz bot (`damageTaken: 0`) kullan. Boss canını kullanıcının gerçek kavgalarına göre ayarla.
+**Bot sürelerini asla oyuncunun ulaşacağı süre gibi sunma.** Eski `strafe` botu bossları kovalamaz, gerçekten kaçamaz (kaçınılabilir hasarın %40'ını alır) ve çok zayıftır: yeni hesapta ortalaması yaklaşık 5 dakikayken kullanıcı yükseltmesiz, bilerek ölerek 12:56'ya ulaşmıştı. O 12:56 artık kalibrasyon çapası değil: 10-31'in sert dalgalarında, 30 canlık Repair spam'iyle ve 4 düşük canlı bossla oynandı, bugünkü oyunla kıyaslanamaz. İnsan botunun çapası yukarıdaki "Kalibrasyon" paragrafı. Botu seçenekleri karşılaştırmak için kullan. Güç eğrileri için ölümsüz bot (`damageTaken: 0`) kullan. Boss canını kullanıcının gerçek kavgalarına göre ayarla.
 
-Son ölümsüz bot, Cursor odaklı, yeni hesap, mor boss gem'lerinden önce: 1:00'de seviye 3, 2:00'de 6, 3:00'te 10, 5:00'te 12, 10:00'da 27, ilk evrim yaklaşık 5:00. Hedef, 2:30 boss'undan önce evrim olmamasıdır.
+Son ölümsüz bot, Cursor odaklı, yeni hesap, mor boss gem'lerinden önce: 1:00'de seviye 3, 2:00'de 6, 3:00'te 10, 5:00'te 12, 10:00'da 27, ilk evrim yaklaşık 5:00. İnsan botu (`GOOD`, yeni kayıt, bugünkü dalgalar): 2:30'da 5-7, 5:00'te 10, 10:00'da 17-19, ilk evrim yaklaşık 6:30. Hedef, 2:30 boss'undan önce evrim olmamasıdır.
 
 Geçici bir ölçüm için gerçek kod Vite ile repo dışında paketlenip prototipler yamalanabilir (`Arena.prototype.start`, `Upgrades.prototype.spin`, ...). `Arena.update` yamasının değerini döndürmesi gerekir.
 
@@ -162,6 +165,9 @@ Hâlâ geçerli eski kararlar:
 - Havuzdaki görseller renk ve ölçeğini korur: `BossBrain.stop` rengi temizler, `EnemyManager.spawn` ölçeği ayarlar.
 - `Arena.update` hasar döndürür, her çağıran bunu eklemelidir.
 - Oyuncu bossları iter (`pushOutOf`), bu yüzden `BossBrain.update` onları dururken bile her karede duvarın içinde tutar. Bu olmazsa boss duvardan dışarı itilir ve dışarıdan ateş eder.
+- Simülasyonları arka planda paralel koştururken çıktı klasörü değişkenini `&` zincirinin dışında, kendi satırında tanımla; zincir içindeki atama sonraki komuta geçmez ve çıktı kök dizine düşer. İki batch bu yüzden yarım kaldı.
+- `tweaks.js`'deki bir aday veri dosyasına girince listeden silinir; kalırsa `SIM_TWEAK` onu bir daha üstüne uygular.
+- Kabuk içinde `node -e` ile backtick içeren metin düzenleme bozulur; düzenleme betiğini dosyaya yazıp çalıştır.
 
 ## Test ipuçları
 
@@ -174,6 +180,8 @@ Hâlâ geçerli eski kararlar:
 - Bütün bossları görme: Oyunu `?bosstest` ile aç. Sırayla 400 canla gelirler, oyuncunun 100.000 canı olur. Burada kazanılan Data kayda geçer.
 - Eğitimi tekrar oynama: Oyunu gizli pencerede aç veya `localStorage` içinden `computer-survivor-save` kaydını sil.
 - Kullanıcının bir görseli değerlendirmesi için gerçek sahneyi jsDelivr'den gelen Phaser ile çalıştıran geçici bir Artifact sayfası yayınla, dosyalarını scratchpad'de tut ve kararından sonra sil. Bu slot makinesinde işe yaradı.
+- Piksel ızgaralarını (ikonlar) kontrol etmek için 60 satırlık bir node betiği yeter: vite ile paketle (`@art` takma adı `src/art`'a, `phaser` `tools/balance-sim/phaser-stub.js`'e, `ssr.noExternal: true`), `PALETTE` harflerini RGBA'ya çevir, 8 kat büyüt, `zlib.deflateSync` ile elle IHDR/IDAT/IEND yazıp PNG üret, kart zemini `0x2a2f3a`; sonra görseli sohbete gönder ve önce kendin bak. 2026-11-04'te 8 ikon böyle onaylandı; betik scratchpad'deydi, yeniden yaz.
+- Pasifler için adres kısayolu yok; kartlardan seçilir, sahip olunan silahın anahtarı 2 kat sık gelir. Atölye mekaniklerini (Reroll, Wide Menu, Expansion Bay) denemek Data ister; istenirse `?perfect` benzeri "bütün Atölye maks" test adresi kolay.
 
 ## Kod haritası
 
@@ -181,7 +189,7 @@ Hâlâ geçerli eski kararlar:
 |---|---|
 | `src/main.ts` | Phaser ayarları (`RESIZE`), sahne listesi |
 | `src/scenes/GameScene.ts` | Her şeyi bağlar; kare sırası burada |
-| `src/scenes/UpgradeScene.ts` | Seviye atlama katmanı; `guided` eğitim elini ekler |
+| `src/scenes/UpgradeScene.ts` | Seviye atlama katmanı; `guided` eğitim elini ekler, Reroll düğmesi, 4 kartta dikey 2x2 |
 | `src/scenes/SlotScene.ts` | Slot makinesi katmanı: makaralar, kol, paralar, sonuç satırları |
 | `src/scenes/SpotlightScene.ts` | Tek nokta dışını grileştiren eğitim katmanı |
 | `src/scenes/MenuScene.ts` | Açılış ekranı: Play, Müze, Atölye, günlük görevler, en iyi süre |
@@ -231,6 +239,9 @@ Katmanlar `GameScene` sahnesini `scene.pause()` ile duraklatır ve önce joystic
 - Ses: ne zaman ve nasıl.
 - Farklı oyuncu karakterleri (kullanıcı şu an önemli olmadığını söyledi).
 - İlerlemeyi yeni telefona taşıma (kullanıcı çok sonranın işi olduğunu söyledi).
+- İyi oyuncunun ilk oyunu 6-7 dakikada bitmeli mi? Simülasyonda 7:30-12:30; bunun için ya düşman hızı kuralı (kullanıcı istemiyor) ya 5:00 ve 7:30 bossları sertleşmeli. Kullanıcı karar vermedi.
+- 10:00 bossu duvar kalsın mı? Kullanıcı 2026-11-05'te boss eğrisini bilerek eski halinde bıraktı; ölçüm maks build dışında herkesin orada öldüğünü söylüyor. Kullanıcı açmadıkça tekrar önerme, açarsa `bossSoft` sayıları "Ölçüm"de.
+- Fiyat ve ödül eğrisi (İş 2'nin kalanı), kullanıcının gerçek oyunlarından sonra.
 
 ## Çalışma anlaşması
 
@@ -239,6 +250,7 @@ Katmanlar `GameScene` sahnesini `scene.pause()` ile duraklatır ve önce joystic
 - **Her işin planını o işten hemen önce sun ve kullanıcının düzeltmelerini bekle.** Tasarımı sık sık değiştirir, bir onay sonraki işleri kapsamaz. Küçük doğrudan istekler hemen yapılabilir.
 - Onaylanan yaklaşım çalışmazsa dur ve bildir, sessizce başka yola geçme. Slot geri dönüş kuralında bu oldu.
 - Bütün görsel testleri kullanıcı yapar: tarayıcı veya görsel test çalıştırma. Ekranda neyin görülmediğini açıkça söyle. Bir simülasyon sayısını oyuncunun yaşayacağı şey gibi sunma.
-- `npx tsc --noEmit` ile doğrula. İstenmedikçe bot simülasyonu yok, "Denge ölçümü" bölümüne bak. Değişikliklerden sonra dev sunucusunun yeni kodu sunduğunu kontrol et.
-- Yalnızca istenince commit ve push yap. İstenince: `npm run build`, `playtest-feedback-fixes` dalında commit, `git merge --ff-only` ile `main` ileri al, `git push origin main`, orada dur.
+- `npx tsc --noEmit` ile doğrula. İstenmedikçe bot simülasyonu yok, "Denge ölçümü" bölümüne bak; İş 2 için izin var. Değişikliklerden sonra dev sunucusunun yeni kodu sunduğunu kontrol et.
+- Yalnızca istenince commit ve push yap. İstenince: `npm run build`, doğrudan `main` üzerinde commit (Co-Authored-By satırıyla), `git push origin main`, orada dur. Push'u sen teklif etme, kullanıcı ister.
+- Kullanıcı paralel ajanlara izin verdi; bağımsız modülleri ajana ver, tasarım ağırlıklı işi kendin yap, ajanların dosyalarıyla seninkiler çakışmasın.
 - Değişiklikleri küçük tut, sormadan yeni bağımlılık ekleme, istenmedikçe doküman dosyası oluşturma.
