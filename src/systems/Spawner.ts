@@ -1,10 +1,10 @@
 import Phaser from 'phaser';
 import { miniBossFor, miniBossHp, nextMiniBossTime } from '../data/miniBosses';
-import { BOTNET_EVENTS, CROWD_OVERFLOW, EASY_START, OVERTIME, WAVES, type BotnetEventDef, type WaveDef } from '../data/waves';
+import { BOTNET_EVENTS, CROWD_OVERFLOW, EASY_START, OVERTIME, REFILL, WAVES, type BotnetEventDef, type WaveDef } from '../data/waves';
 import type { Player } from '../entities/Player';
 import type { EnemyManager } from './EnemyManager';
 
-// Caps quota refills (e.g. after a big area kill) so they spread over a few frames instead of spiking one
+// Safety cap on quota refills per frame; the paced budget in `REFILL` normally stays far below it
 const MAX_REFILL_PER_FRAME = 20;
 /** Pixels past the screen corner, so enemies never pop in on screen. */
 const SPAWN_MARGIN = 48;
@@ -18,6 +18,9 @@ export class Spawner {
   private intervalLeft = 0;
   private nextBotnet: number;
   private nextMiniBoss: number;
+  /** Quota refills already paid for; fractions carry over between frames. */
+  private refillBudget = 0;
+  private primed = false;
   private readonly point = new Phaser.Math.Vector2();
 
   constructor(
@@ -63,8 +66,17 @@ export class Spawner {
       if (this.enemies.hostileCount < Math.min(minimum * CROWD_OVERFLOW, OVERTIME.maxEnemies)) this.spawnFrom(wave, ring);
     }
 
-    for (let i = 0; i < MAX_REFILL_PER_FRAME && this.enemies.hostileCount < minimum; i++) {
+    // A full crowd has nothing to pay for, and a budget that banked up would refill a big kill at once.
+    // The first frame pays for the whole quota at once, so a run still opens with its burst of easy kills.
+    const firstFrame = !this.primed;
+    this.primed = true;
+    if (this.enemies.hostileCount >= minimum) this.refillBudget = 0;
+    else if (firstFrame) this.refillBudget = minimum;
+    else this.refillBudget += seconds * Math.max(REFILL.minPerSecond, minimum / REFILL.seconds);
+    const cap = firstFrame ? minimum : MAX_REFILL_PER_FRAME;
+    for (let i = 0; i < cap && this.refillBudget >= 1 && this.enemies.hostileCount < minimum; i++) {
       this.spawnFrom(wave, ring);
+      this.refillBudget--;
     }
 
     if (this.nextBotnet < BOTNET_EVENTS.length && this.elapsed >= BOTNET_EVENTS[this.nextBotnet].time) {

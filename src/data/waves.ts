@@ -18,21 +18,28 @@ function mix(...entries: [EnemyDef, number][]): EnemyDef[] {
 
 /**
  * Wave `i` runs during minute `i` of the run; the last one keeps running past the end.
- * Numbers rise every minute, and the mix alternates weak crowds with tough enemies.
- * Keep ranged enemies rare: they stack up and never come close.
+ * Crowd minutes (many weak enemies, short interval) alternate with tank minutes (few tough ones,
+ * long interval), so the screen can clear every other minute. HP creeps up slowly; the pressure
+ * comes from numbers. Keep ranged enemies rare: they stack up and never come close.
  */
 export const WAVES: WaveDef[] = [
   { enemies: mix([ENEMIES.bug, 1]), minimum: 20, interval: 0.7, hpMult: 1 },
-  { enemies: mix([ENEMIES.bug, 2], [ENEMIES.spam, 1]), minimum: 40, interval: 0.45, hpMult: 1.1 },
-  { enemies: mix([ENEMIES.spam, 3], [ENEMIES.bug, 1]), minimum: 60, interval: 0.2, hpMult: 1.3 },
-  { enemies: mix([ENEMIES.bug, 8], [ENEMIES.worm, 3], [ENEMIES.popUp, 1]), minimum: 85, interval: 0.3, hpMult: 1.5 },
-  { enemies: mix([ENEMIES.spam, 8], [ENEMIES.worm, 3], [ENEMIES.phisher, 1]), minimum: 110, interval: 0.2, hpMult: 1.8 },
-  { enemies: mix([ENEMIES.bug, 12], [ENEMIES.trojan, 1], [ENEMIES.popUp, 1]), minimum: 135, interval: 0.2, hpMult: 2.1 },
-  { enemies: mix([ENEMIES.spam, 10], [ENEMIES.bug, 6], [ENEMIES.adware, 2]), minimum: 160, interval: 0.12, hpMult: 2.4 },
-  { enemies: mix([ENEMIES.bug, 16], [ENEMIES.worm, 3], [ENEMIES.phisher, 4], [ENEMIES.trojan, 1]), minimum: 185, interval: 0.25, hpMult: 2.8 },
-  { enemies: mix([ENEMIES.spam, 8], [ENEMIES.worm, 6], [ENEMIES.adware, 3]), minimum: 210, interval: 0.14, hpMult: 3.2 },
-  { enemies: mix([ENEMIES.spam, 12], [ENEMIES.worm, 6], [ENEMIES.trojan, 1], [ENEMIES.popUp, 1]), minimum: 240, interval: 0.1, hpMult: 3.6 },
+  { enemies: mix([ENEMIES.bug, 2], [ENEMIES.spam, 1]), minimum: 35, interval: 0.45, hpMult: 1 },
+  { enemies: mix([ENEMIES.spam, 3], [ENEMIES.bug, 1]), minimum: 55, interval: 0.2, hpMult: 1.1 },
+  { enemies: mix([ENEMIES.bug, 4], [ENEMIES.worm, 3], [ENEMIES.popUp, 1]), minimum: 50, interval: 0.5, hpMult: 1.3 },
+  { enemies: mix([ENEMIES.spam, 8], [ENEMIES.bug, 4], [ENEMIES.phisher, 1]), minimum: 100, interval: 0.2, hpMult: 1.4 },
+  { enemies: mix([ENEMIES.bug, 12], [ENEMIES.trojan, 1], [ENEMIES.popUp, 1]), minimum: 65, interval: 0.5, hpMult: 1.6 },
+  { enemies: mix([ENEMIES.spam, 10], [ENEMIES.bug, 6], [ENEMIES.adware, 2]), minimum: 135, interval: 0.12, hpMult: 1.7 },
+  { enemies: mix([ENEMIES.bug, 4], [ENEMIES.worm, 4], [ENEMIES.phisher, 3], [ENEMIES.trojan, 1]), minimum: 75, interval: 0.4, hpMult: 1.9 },
+  { enemies: mix([ENEMIES.spam, 10], [ENEMIES.bug, 6], [ENEMIES.adware, 3]), minimum: 170, interval: 0.14, hpMult: 2 },
+  { enemies: mix([ENEMIES.spam, 6], [ENEMIES.worm, 6], [ENEMIES.trojan, 1], [ENEMIES.popUp, 1]), minimum: 100, interval: 0.3, hpMult: 2.2 },
 ];
+
+/**
+ * Quota refills are paced instead of instant: an empty field fills in about `seconds`, never slower
+ * than `minPerSecond`, so a big area kill or a boss fight leaves a gap the player can feel.
+ */
+export const REFILL = { seconds: 12, minPerSecond: 3 };
 
 /** Interval spawns stop once the crowd passes `minimum` times this, so kill speed decides how big it gets. */
 export const CROWD_OVERFLOW = 1.25;
@@ -45,7 +52,7 @@ export const EASY_START = { seconds: 15, hp: 1 };
  * `maxEnemies` while HP and damage only creep up. Rates are per full minute past the last wave.
  */
 export const OVERTIME = {
-  extraEnemies: 40,
+  extraEnemies: 30,
   /** Under the enemy pool size, which leaves room for props, summons and bosses. */
   maxEnemies: 450,
   hp: 0.06,

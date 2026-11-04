@@ -1,6 +1,6 @@
 # Handoff — Computer Survivor
 
-Son güncelleme: 2026-11-01. Teknoloji ve mimari kuralları için önce `CLAUDE.md` dosyasını oku. Bu dosya güncel durumu, şimdiye kadar alınan bütün kararları ve kalan bütün işleri içerir.
+Son güncelleme: 2026-11-04. Teknoloji ve mimari kuralları için önce `CLAUDE.md` dosyasını oku. Bu dosya güncel durumu, şimdiye kadar alınan bütün kararları ve kalan bütün işleri içerir.
 
 Kullanıcı Türkçe yazar ve **yalnızca Türkçe**, sade yanıt almalıdır. Kod, kod yorumları ve commit mesajları İngilizce kalır; bu dosya kullanıcının isteğiyle Türkçedir. Bir şey yapmadan önce sondaki "Çalışma anlaşması" bölümüne bak.
 
@@ -10,7 +10,7 @@ Aşağıdaki her şey commit edildi ve Vercel'in yayınladığı `main` dalına 
 
 Oyun **sonsuz** bir survivors-like: bir oyun yalnızca ölünce biter. İlk oyuna özel eğitim, 20 boss, mini bosslar, slot makineleri, kırılabilir bilgisayarlar, 19 silah ve üç renk XP gem'i var.
 
-**Sıradaki iş Atölye (Workshop)** (aşağıda İş 1). Önce planını kısaca göster ve kullanıcının onayını al, çünkü kuralı her işin planının o işten hemen önce sunulmasıdır. Dalga zorluğu 2026-11-01'de düşürüldü ve kullanıcı bunu oynayarak test ediyor, sonucu "Zorluk karşılaştırması" bölümünü değiştirebilir.
+**Sıradaki iş Atölye (Workshop)** (aşağıda İş 1). Önce planını kısaca göster ve kullanıcının onayını al, çünkü kuralı her işin planının o işten hemen önce sunulmasıdır. **2026-11-04'te zorluk işleri Atölye'nin önüne alındı:** kullanıcı oyuncuların 100-200 düşmanlık orduyla bütün oyun kaçtığını gördü. Yapılanlar: C nefes aldıran kota eğrisi ve B kota dolumunu bütçeye bağlama, ikisi de kullanıcı oynarken ayarlanıyor; ilk oyundan sonra kotalar 3. dakikadan itibaren yaklaşık %25 artırıldı. A (temas hasarına tavan: en sert düşman tam, diğerleri %25) denendi ve aynı gün kaldırıldı, çünkü kullanıcı "asla ölünmüyor" dedi; temas hasarı tamamen toplanır, tavan veya dokunulmazlık tekrar önerilmez. Ayrıntılar "Zorluk karşılaştırması" bölümünde.
 
 Oyun tasarım dokümanı https://claude.ai/artifact/8yApVH6VuMDwYmPwAqVosy adresinde (Türkçe, docs araçlarıyla okunur). Sonsuz oyun, bosslar, slotlar ve düşenlerden önce yazıldı, bu yüzden farklı oldukları yerde `src/data/*.ts` ve bu dosya geçerlidir.
 
@@ -67,9 +67,10 @@ Kullanıcıdan gelen son gerçek veri: 3-4 Atölye yıldızlı hesapta 8+ dakika
 
 ## Güncel sayılar (hepsi `src/data` içinde, hepsi geçici)
 
-- **Dalgalar (`waves.ts`):** Dakikaya göre kotalar 20, 40, 60, 85, 110, 135, 160, 185, 210, 240. Can çarpanları 1, 1.1, 1.3, 1.5, 1.8, 2.1, 2.4, 2.8, 3.2, 3.6. Aralıklar 0.7, 0.45, 0.2, 0.3, 0.2, 0.2, 0.12, 0.25, 0.14, 0.1. Aralıklı doğanlar kotanın üstüne birikir, ama canlı sayısı kotanın `CROWD_OVERFLOW` (1.25) katını veya 450'yi geçince durur. Kota dolumları tavandan etkilenmez.
+- **Dalgalar (`waves.ts`, 2026-11-04):** Kalabalık dakikalar (2, 4, 6, 8) çok ama zayıf düşman ve kısa aralık, tank dakikalar (3, 5, 7, 9) az ama sert düşman ve uzun aralık; VS'nin iniş çıkışlı kotasından alındı. Dakikaya göre kotalar 20, 35, 55, 50, 100, 65, 135, 75, 170, 100. Can çarpanları 1, 1, 1.1, 1.3, 1.4, 1.6, 1.7, 1.9, 2, 2.2. Aralıklar 0.7, 0.45, 0.2, 0.5, 0.2, 0.5, 0.12, 0.4, 0.14, 0.3. Aralıklı doğanlar kotanın üstüne birikir, ama canlı sayısı kotanın `CROWD_OVERFLOW` (1.25) katını veya 450'yi geçince durur. Kota dolumları tavandan etkilenmez.
+- **Kota dolumu (`REFILL`, 2026-11-04):** Anında değil bütçeyle: saniyede kota/12, en az 3; boş saha yaklaşık 12 saniyede dolar. Oyunun ilk karesi kotayı anında doldurur (kolay başlangıç patlaması), saha doluyken bütçe birikmez. Büyük alan vuruşu, Nuke ve boss kavgası sonrası 10 saniyelik boşluk bırakır; fazla sakinse 12'yi 8'e çek.
 - **Kolay başlangıç:** İlk 15 saniyede doğan her şeyin canı 1'dir.
-- **Uzatma (son dalgadan sonra, her tam dakikada):** 450'ye kadar +40 kota, +%6 can, +%4 temas hasarı. Kullanıcı zorluğun sayıdan gelmesini, can ve hasarın az artmasını istiyor. 450 sınırı telefonlar içindir.
+- **Uzatma (son dalgadan sonra, her tam dakikada):** 450'ye kadar +30 kota (tavana 21. dakika civarında ulaşılır), +%6 can, +%4 temas hasarı. Kullanıcı zorluğun sayıdan gelmesini, can ve hasarın az artmasını istiyor. 450 sınırı telefonlar içindir.
 - **XP (`progression.ts`):** `5 + 6(L-1) + L²/2`. Elle ayarlanmış daha hızlı ilk seviyeler denendi, evrimi çok erkene çektiği için kullanıcı iptal etti.
 - **Gem'ler (`gems.ts`):** Mavi x1, yeşil x2, mor x4. Worm %30 yeşil, Pop-Up %40, Phisher %40 ve %10 mor, Adware %30, Trojan %50 ve %30 mor. Normal düşmanlardan mor 6:00'da başlar. Mini bosslar yeşil veya mor düşürür, mor %10'dan başlar ve dakikada +%10 artar. Bosslar her zaman mor düşürür, 30 x 4 = 120 XP.
 - **Bosslar (`bosses.ts`):** 8 grupta 20 boss. Her gruptan rastgele bir boss, 2:30'dan 20:00'ye kadar 2:30'da bir. Sonra gruplar baştan başlar ve bir önceki turda gönderdikleri boss'u göndermezler. Can = 3000 x 1.7^sıra x `hpMult`, yani 20:00'de yaklaşık 246.000, bu hiç test edilmedi. Saldırı hasarı tur başına x1.5. Duvar 25 DPS; RANSOMWARE'inki saniyede 3 pikselle 320'den 180'e kapanır. Öldürünce 50 can gelir ve her zaman slot makinesi düşer.
@@ -81,15 +82,16 @@ Kullanıcıdan gelen son gerçek veri: 3-4 Atölye yıldızlı hesapta 8+ dakika
 
 ## Zorluk karşılaştırması (2026-11-01)
 
-Yalnızca veri dosyalarından hesaplandı, oyunda ölçülmedi. Sahadaki toplam can (kota x ortalama can) dakikaya göre: 3:00'te 2.444, 4:00'te 3.086, 5:00'te 7.088, 6:00'da 4.267, 7:00'de 13.380, 8:00'de 16.680, 9:00'da 22.378, 10:00'da yaklaşık 27.700, 15:00'te yaklaşık 57.000. 7:00'den önceki eski değer 43.500'dü.
+Yalnızca veri dosyalarından hesaplandı, oyunda ölçülmedi. Sahadaki toplam can (kota x ortalama can) dakikaya göre, 2026-11-04 C sonrası: 3:00'te 1.544, 4:00'te 1.152, 5:00'te 2.600, 6:00'da 2.550, 7:00'de 5.997, 8:00'de 4.474, 9:00'da 7.763, 10:00'da 10.697, 15:00'te 29.561, 20:00'de 55.411. Bu VS'nin 1,4-4,5 katı; VS'nin 10-20 düşmanlık nefes dakikalarında (10:00, 12:00) 10-13 kat. C'den önce 3:00'te 2.444, 5:00'te 7.088, 8:00'de 16.681, 15:00'te 57.063 idi.
 
 Vampire Survivors'ın Mad Forest haritasıyla (vampire.survivors.wiki) kıyas:
 - Bizim normal silahlarımız onlarınkine yakın: Cursor 1. seviyede 11,4, son seviyede 133 DPS; Magic Wand 8,3 ve 120. Evrimli tarafta Holy Wand 240, Auto-Clicker 93 DPS, yani orada gerideyiz.
 - VS'nin bilinen dakikalarıyla kıyaslayınca, silah gücü hesaba katılmış halde bizim oyun ortalama 7-8 kat ağır. Kalan farkı VS'nin canı bulunamayan dakikalar, alan silahları ve 6 silah yuvası etkiler, kesin sayı gibi kullanma.
 - VS'de normal modda genel can çarpanı yok, kota iniş çıkışlı (100, 30, 10, 300, 20), 300 canlıda normal doğum duruyor ve 300'lük dakikada düşmanlar 15 canlı. Bizde sayı, can çarpanı ve düşman türü aynı anda ve hep yukarı gidiyor.
-- Bizde temas hasarı birikir ve dokunulmazlık yoktur, 8 Worm oyuncuyu 1,25 saniyede öldürür. VS'de 240 ms dokunulmazlık var, wiki bunun temas hasarına uygulandığını açıkça söylemiyor.
+- Bizde dokunulmazlık yoktur ve temas hasarı tamamen birikir: 6 Bug dolu canı 2,8 saniyede, 8 Worm 1,25 saniyede bitirir. 2026-11-04'te "en sert düşman tam, diğerleri %25" kuralı denendi ve kaldırıldı, oyuncu hiç ölmüyordu. VS'de her vuruştan sonra kısa bir dokunulmazlık penceresi var (süresi wiki'de yok, kaynaklar 0,25-0,5 sn diyor), kalabalığın büyüklüğü hasarı artırmaz.
+- 2026-11-04 analizi: asıl fark miktar değil yapı. Bizde her düşman oyuncudan yavaş (200'e karşı en hızlısı Spam 140), kota anında dolan ve hiç inmeyen bir taban (20'den 450'ye tek yönlü), can çarpanı, sayı ve tür aynı anda büyüyor. VS'nin kotası iniş çıkışlı (15, 30, 50, 40, 30, 10, 20, 80, 100, 30, 10, 300...), kalabalık dakikalarda düşmanlar zayıf, tank dakikalarda az, Normal modda can çarpanı 1. Sahadaki toplam can dakikaya göre bizde VS'nin 2-30 katı, ortanca 5 kat; silah DPS'leri ise eşit (Cursor 11,4-133, Magic Wand 8,3-120).
 
-Testten sonra bakılacaklar: 5. dakikadaki Trojan oranı (önerilen karışım 24 Bug, 1 Trojan, 2 Pop-Up), nefes aldıran iniş çıkışlı kotalar, evrimli silah gücü, 10:00 sonrası 450 düşman.
+Testten sonra bakılacaklar: 5. dakikadaki Trojan oranı (önerilen karışım 24 Bug, 1 Trojan, 2 Pop-Up), tank dakikalarının (3, 5, 7, 9) fazla boş kalması, dolum bütçesinin seviye atlamayı yavaşlatması (daha az öldürme, daha az gem), evrimli silah gücü, uzatmada 450 düşman.
 
 ## Denge ölçümü
 
@@ -132,7 +134,7 @@ Hâlâ geçerli eski kararlar:
 - **Her şey piksel sanatı.** Eski elektronik hurdalığı ve Teknisyen oyuncu. Görseller `src/art/sprites.ts` içinde metin ızgaralarıdır, `src/art/atlas.ts` tek atlasa paketler, yeni bağımlılık yok. Büyük görseller `src/art/slotMachine.ts` içinde kodla çizilir. Yazı tipi elle yapılmış 5x7 bitmap'tir, boyutlar 6'nın katı olmalıdır. Oyun içi metinler İngilizce kalır.
 - **Gelir modeli:** Ödüllü reklamlarla ücretsiz, ayrıca bu ödülleri reklamsız veren tek seferlik satın alma. Güç veya Data satışı yok, zorunlu reklam yok.
 - **İlerleme cihazda durur**, hesap veya sunucu yok.
-- **Temas hasarı:** Saniye başına, değen her düşman için toplanır, dokunulmazlık karesi yok.
+- **Temas hasarı:** Saniye başına, değen her düşman için toplanır, dokunulmazlık karesi yok. 2026-11-04'te tavan denendi (en sert tam, diğerleri %25) ve kullanıcı kaldırttı: kimse ölmüyordu.
 - **Kartlar ve katmanlar:** Seçim yalnızca basış aynı kartta başlayıp bitiyorsa sayılır. Katman açıldıktan sonraki 0,4 saniye dokunuşlar yok sayılır, çünkü parmak genelde joystick üzerindedir.
 - **Boss arenası:** Oyuncunun etrafında halka kapanır, dışarıdaki düşmanlar gem veya öldürme vermeden yok olur, kavga boyunca dalgalar ve oyun saati durur.
 - **Evrim:** Son seviyede silah ve herhangi bir seviyede eşi olan pasif gerekir; bir sonraki seviye atlamada altın kart olarak çıkar.
@@ -178,7 +180,7 @@ Hâlâ geçerli eski kararlar:
 | `src/entities/Player.ts` | Hareket, `radius`, `velocity` ve `turnRate`, değişken `stats` ve `hp` |
 | `src/systems/SpatialHash.ts` | Bellek ayırmayan ızgara, her karede yeniden kurulur |
 | `src/systems/EnemyManager.ts` | Düşman havuzu, hareket, ayrılma, temas, prop'lar, ertelenmiş ölüm (`removeDead`) |
-| `src/systems/Spawner.ts` | Dalgalar, uzatma, Botnet hatları, mini bosslar, geri dönüşüm; oyun saati burada |
+| `src/systems/Spawner.ts` | Dalgalar, kota dolum bütçesi, uzatma, Botnet hatları, mini bosslar, geri dönüşüm; oyun saati burada |
 | `src/systems/Arena.ts` | Boss kavgaları: duvar, sıra, can, boss döngüsü, oyuncuyu tutma ve yakma |
 | `src/systems/BossBrain.ts` | Kavgadaki tek boss: yürüme, uyarı, saldırı, fazlar |
 | `src/systems/DangerZones.ts` | Fitilden sonra patlayan havuzlu yer işaretleri |
