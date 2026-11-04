@@ -1,6 +1,8 @@
 import { SLOT_WEAPON_CHANCE } from '../data/slots';
 import {
+  CARD_CHOICES,
   EVOLUTIONS,
+  KEY_PASSIVE_WEIGHT,
   MAX_PASSIVES,
   MAX_WEAPONS,
   OWNED_CARD_WEIGHT,
@@ -26,6 +28,8 @@ export interface SlotPick {
 export class Upgrades {
   private readonly taken = new Map<UpgradeDef, number>();
   private passiveCount = 0;
+  /** Card rerolls left this run; the Workshop grants them. */
+  rerollsLeft = 0;
 
   constructor(
     private readonly player: Player,
@@ -37,6 +41,18 @@ export class Upgrades {
     for (const def of UPGRADES) {
       if (def.kind === 'weapon' && this.weaponFor(def)) this.taken.set(def, 1);
     }
+    this.rerollsLeft = player.stats.rerolls;
+  }
+
+  /** Cards offered on a level-up. */
+  get choiceCount(): number {
+    return CARD_CHOICES + this.player.stats.bonusCards;
+  }
+
+  /** Spends a reroll on a fresh set of cards. */
+  reroll(): UpgradeDef[] {
+    this.rerollsLeft--;
+    return this.roll(this.choiceCount);
   }
 
   levelOf(def: UpgradeDef): number {
@@ -56,11 +72,20 @@ export class Upgrades {
   roll(count: number): UpgradeDef[] {
     const evolutions = EVOLUTIONS.filter((def) => this.canEvolve(def));
     const open = UPGRADES.filter((def) => this.isOpen(def))
-      .map((def) => ({ def, score: Math.random() * (this.levelOf(def) > 0 ? OWNED_CARD_WEIGHT : 1) }))
+      .map((def) => ({ def, score: Math.random() * this.cardWeight(def) }))
       .sort((a, b) => b.score - a.score)
       .map((entry) => entry.def);
     const picks = [...evolutions, ...open].slice(0, count);
     return picks.length > 0 ? picks : [REPAIR];
+  }
+
+  /** Owned cards come up more, and so does the key passive of an owned weapon, or builds would rarely reach an evolution. */
+  private cardWeight(def: WeaponUpgrade | PassiveUpgrade): number {
+    if (this.levelOf(def) > 0) return OWNED_CARD_WEIGHT;
+    if (def.kind === 'passive' && EVOLUTIONS.some((evolution) => evolution.passive === def && this.levelOf(evolution.base) > 0)) {
+      return KEY_PASSIVE_WEIGHT;
+    }
+    return 1;
   }
 
   /** A slot machine pull: applies `hits` upgrades of things already owned and returns them. */
@@ -128,7 +153,7 @@ export class Upgrades {
     const level = this.levelOf(def);
     if (level >= def.levels.length) return false;
     if (level > 0) return true;
-    if (def.kind === 'weapon') return this.isUnlocked(def.weapon) && this.weapons.length < MAX_WEAPONS;
+    if (def.kind === 'weapon') return this.isUnlocked(def.weapon) && this.weapons.length < MAX_WEAPONS + this.player.stats.bonusWeaponSlots;
     return this.passiveCount < MAX_PASSIVES;
   }
 

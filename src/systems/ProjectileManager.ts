@@ -133,7 +133,8 @@ export class ProjectileManager {
     p.speed = shot.speed;
     p.life = p.maxLife = shot.life;
     p.damage = shot.damage;
-    p.radius = def.projectileRadius;
+    const size = this.player.stats.projectileSizeMult;
+    p.radius = def.projectileRadius * size;
     p.hitsLeft = shot.hits;
     p.explosionRadius = shot.explosionRadius;
     p.arcHeight = shot.arcHeight;
@@ -145,11 +146,12 @@ export class ProjectileManager {
     p.target = null;
     p.retargetLeft = 0;
     p.hitCount = 0;
-    p.sprite.setFrame(def.sprite).setAngle(0).setPosition(shot.x, shot.y).setVisible(true);
+    // Pooled sprites keep their scale, so the size is set on every shot
+    p.sprite.setFrame(def.sprite).setAngle(0).setScale(PIXEL_SCALE * size).setPosition(shot.x, shot.y).setVisible(true);
     // A field shows its reach on the ground with the same image an arc uses for its shadow
     const field = shot.tick > 0;
     p.shadow
-      .setScale((field ? shot.explosionRadius : def.projectileRadius) / FX_CIRCLE_RADIUS)
+      .setScale((field ? shot.explosionRadius : p.radius) / FX_CIRCLE_RADIUS)
       .setTint(field ? def.color : 0x000000)
       .setAlpha(field ? FIELD_ALPHA : SHADOW_ALPHA)
       .setPosition(shot.x, shot.y)
@@ -223,7 +225,7 @@ export class ProjectileManager {
   /** Aims at the nearest enemy not hit yet; returns false when none is in reach. */
   private bounce(p: Projectile): boolean {
     const hit = Math.min(p.hitCount, MAX_HIT_MEMORY);
-    const next = this.enemies.findNearestExcept(p.x, p.y, p.def.range, p.hitMemory, hit);
+    const next = this.enemies.findNearestExcept(p.x, p.y, p.def.range * this.player.stats.rangeMult, p.hitMemory, hit);
     if (next === -1) return false;
     const { x, y } = this.enemies.enemies[next].sprite;
     const d = Math.hypot(x - p.x, y - p.y) || 1;

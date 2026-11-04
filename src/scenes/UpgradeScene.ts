@@ -3,7 +3,7 @@ import { ATLAS, PIXEL_SCALE } from '../art/atlas';
 import { EVOLUTIONS, type UpgradeDef } from '../data/upgrades';
 import { WEAPONS } from '../data/weapons';
 import type { Upgrades } from '../systems/Upgrades';
-import { COLOR, panel, pixelText, starRows, TEXT_SIZE, TITLE_SIZE } from '../ui/Button';
+import { COLOR, createButton, panel, pixelText, starRows, TEXT_SIZE, TITLE_SIZE } from '../ui/Button';
 import { createHand } from '../ui/Hand';
 
 export interface UpgradeSceneData {
@@ -14,7 +14,6 @@ export interface UpgradeSceneData {
   guided: boolean;
 }
 
-const CHOICES = 3;
 // Ignores taps right after the cards appear: the player is usually mid-swipe on the joystick
 const INPUT_LOCK_MS = 400;
 // Tight, so three tall cards keep as much text width as a phone allows
@@ -23,6 +22,10 @@ const GAP = 6;
 const TITLE_SPACE_PORTRAIT = 72;
 const TITLE_SPACE_LANDSCAPE = 48;
 const BOTTOM_MARGIN = 12;
+/** Taken from the cards while a reroll is available. */
+const REROLL_SPACE = 48;
+const REROLL_BUTTON_W = 120;
+const REROLL_BUTTON_H = 36;
 const MAX_CARD_W = 170;
 const MAX_CARD_H = 250;
 const TEXT_PADDING = 8;
@@ -73,8 +76,8 @@ export class UpgradeScene extends Phaser.Scene {
     this.showNext();
   }
 
-  private showNext() {
-    this.choices = this.upgrades.roll(CHOICES);
+  private showNext(rerolled = false) {
+    this.choices = rerolled ? this.upgrades.reroll() : this.upgrades.roll(this.upgrades.choiceCount);
     // Game loop time rather than this.time.now: the scene clock is not synced yet during create
     this.readyAt = this.game.loop.time + INPUT_LOCK_MS;
     this.layout();
@@ -95,7 +98,7 @@ export class UpgradeScene extends Phaser.Scene {
     this.scene.stop();
   }
 
-  /** Three tall cards side by side in every orientation; only runs on a new choice or a resize. */
+  /** Tall cards side by side, or two rows for four cards in portrait; only runs on a new choice or a resize. */
   private layout() {
     for (const card of this.cards) card.destroy();
     this.cards.length = 0;
@@ -107,17 +110,37 @@ export class UpgradeScene extends Phaser.Scene {
     this.title.setPosition(width / 2, titleSpace / 2);
 
     const n = this.choices.length;
-    const availH = height - titleSpace - BOTTOM_MARGIN;
-    const cardW = Math.min((width - SIDE_MARGIN * 2 - GAP * (n - 1)) / n, MAX_CARD_W);
-    const cardH = Math.min(availH, MAX_CARD_H);
-    const totalW = n * cardW + (n - 1) * GAP;
+    const canReroll = !this.guided && this.upgrades.rerollsLeft > 0;
+    const availH = height - titleSpace - BOTTOM_MARGIN - (canReroll ? REROLL_SPACE : 0);
+    // Four cards side by side would be too narrow on a phone, so portrait folds them into two rows
+    const columns = n > 3 && height > width ? 2 : n;
+    const rows = Math.ceil(n / columns);
+    const cardW = Math.min((width - SIDE_MARGIN * 2 - GAP * (columns - 1)) / columns, MAX_CARD_W);
+    const cardH = Math.min((availH - GAP * (rows - 1)) / rows, MAX_CARD_H);
+    const totalW = columns * cardW + (columns - 1) * GAP;
+    const totalH = rows * cardH + (rows - 1) * GAP;
     const firstX = (width - totalW) / 2 + cardW / 2;
-    const y = titleSpace + (availH - cardH) / 2 + cardH / 2;
+    const firstY = titleSpace + (availH - totalH) / 2 + cardH / 2;
+    const cardX = (i: number) => firstX + (i % columns) * (cardW + GAP);
+    const cardY = (i: number) => firstY + Math.floor(i / columns) * (cardH + GAP);
 
     for (let i = 0; i < n; i++) {
-      this.cards.push(this.createCard(this.choices[i], firstX + i * (cardW + GAP), y, cardW, cardH));
+      this.cards.push(this.createCard(this.choices[i], cardX(i), cardY(i), cardW, cardH));
     }
-    this.handSpot?.setPosition(firstX + Math.floor(n / 2) * (cardW + GAP), y + cardH * HAND_CARD_Y);
+    const middle = Math.floor(n / 2);
+    this.handSpot?.setPosition(cardX(middle), cardY(middle) + cardH * HAND_CARD_Y);
+
+    if (canReroll) {
+      this.cards.push(
+        createButton(this, width / 2, height - BOTTOM_MARGIN - REROLL_SPACE / 2, {
+          width: REROLL_BUTTON_W,
+          height: REROLL_BUTTON_H,
+          label: `Reroll ${this.upgrades.rerollsLeft}`,
+          readyAt: this.readyAt,
+          onClick: () => this.showNext(true),
+        }),
+      );
+    }
   }
 
   private createGuideHand(): Phaser.GameObjects.Container {

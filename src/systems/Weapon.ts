@@ -145,12 +145,20 @@ export class Weapon {
     }
   }
 
+  /** Rolled once per call, so a volley crits as a whole. */
   private get damage(): number {
-    return this.stats.damage * this.player.stats.damageMult;
+    const { damageMult, critChance } = this.player.stats;
+    const crit = critChance > 0 && Math.random() < critChance ? 2 : 1;
+    return this.stats.damage * damageMult * crit;
   }
 
   private get area(): number {
     return this.stats.radius * this.player.stats.areaMult;
+  }
+
+  /** Reach of beams, strikes, pages, snipes, sweeps and robots. */
+  private get range(): number {
+    return this.def.range * this.player.stats.rangeMult;
   }
 
   private get projectileCount(): number {
@@ -166,7 +174,8 @@ export class Weapon {
     shot.speed = this.def.projectileSpeed * playerStats.projectileSpeedMult;
     shot.life = this.def.projectileLifetime * playerStats.durationMult;
     shot.damage = this.damage;
-    shot.hits = this.stats.hits;
+    // Pierce bonuses leave "explodes" (0) and "hits everything" (Infinity) alone
+    shot.hits = this.stats.hits > 0 && this.stats.hits !== Infinity ? this.stats.hits + playerStats.bonusHits : this.stats.hits;
     shot.explosionRadius = this.area;
     shot.arcHeight = 0;
     shot.returns = false;
@@ -270,7 +279,7 @@ export class Weapon {
     const count = this.projectileCount;
     let fired = false;
     for (let i = 0; i < count; i++) {
-      const target = this.enemies.randomWithin(x, y, this.def.range);
+      const target = this.enemies.randomWithin(x, y, this.range);
       if (target === -1) break;
       const t = this.enemies.enemies[target].sprite;
       shot.x = t.x;
@@ -303,7 +312,7 @@ export class Weapon {
 
   private attackBeam(): boolean {
     const { facingX, facingY, sprite } = this.player;
-    const length = this.def.range;
+    const length = this.range;
     const halfWidth = this.area;
     this.enemies.damageAlongLine(sprite.x, sprite.y, facingX, facingY, length, halfWidth, this.damage);
     const endX = sprite.x + facingX * length;
@@ -332,7 +341,7 @@ export class Weapon {
   private attackSweep(): boolean {
     if (this.enemies.count === 0) return false;
     const { x, y } = this.player.sprite;
-    const length = this.def.range;
+    const length = this.range;
     const halfWidth = this.area;
     const count = this.projectileCount;
     for (let i = 0; i < count; i++) {
@@ -371,7 +380,7 @@ export class Weapon {
     const count = this.projectileCount;
     let zapped = false;
     for (let i = 0; i < count; i++) {
-      const target = this.enemies.randomWithin(x, y, this.def.range);
+      const target = this.enemies.randomWithin(x, y, this.range);
       if (target === -1) break;
       const t = this.enemies.enemies[target].sprite;
       this.enemies.damage(target, this.damage);
@@ -383,7 +392,7 @@ export class Weapon {
 
   private attackSnipe(): boolean {
     const { x, y } = this.player.sprite;
-    const target = this.enemies.strongestWithin(x, y, this.def.range);
+    const target = this.enemies.strongestWithin(x, y, this.range);
     if (target === -1) return false;
     const t = this.enemies.enemies[target].sprite;
     this.fireFan(this.prepareShot(), Math.atan2(t.y - y, t.x - x));
@@ -449,7 +458,7 @@ export class Weapon {
       this.blades.push(this.scene.add.image(x, y, ATLAS, this.def.sprite).setScale(PIXEL_SCALE));
     }
     const step = this.def.projectileSpeed * seconds;
-    const range = this.def.range;
+    const range = this.range;
     for (let i = 0; i < this.blades.length; i++) {
       const robot = this.blades[i];
       let robotX = robot.x;

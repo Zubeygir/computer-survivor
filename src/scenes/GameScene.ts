@@ -4,8 +4,8 @@ import { BOSS_KILL_HEAL, BOSS_TEST } from '../data/bosses';
 import { BOSS_DROP, MINI_BOSS_DROP } from '../data/drops';
 import { rollGem } from '../data/gems';
 import { runData } from '../data/meta';
-import { MINI_BOSS_SLOT_CHANCE, type SlotOdds } from '../data/slots';
-import { PERFECT_TEST } from '../data/upgrades';
+import { MINI_BOSS_SLOT_CHANCE, withLuck, type SlotOdds } from '../data/slots';
+import { MAX_WEAPONS, PERFECT_TEST } from '../data/upgrades';
 import { WEAPONS, type WeaponId } from '../data/weapons';
 import { Player } from '../entities/Player';
 import { VirtualJoystick } from '../input/VirtualJoystick';
@@ -91,6 +91,7 @@ export class GameScene extends Phaser.Scene {
         this.breakables.onBroken(x, y);
         return;
       }
+      this.player.heal(this.player.stats.healOnKill);
       const gem = rollGem(def, this.spawner.time);
       this.gems.spawn(x, y, def.xp * gem.xpMult, gem.sprite);
       if (def.miniBoss && Math.random() < MINI_BOSS_SLOT_CHANCE) this.pickups.spawn(x, y, MINI_BOSS_DROP);
@@ -132,7 +133,7 @@ export class GameScene extends Phaser.Scene {
     if (this.perfectTest) PERFECT_TEST.evolutions.forEach((id) => this.upgrades.maxOut(id));
     this.xpBar = new XpBar(this);
     this.xpBar.set(this.experience.level, 0, this.experience.xpNeeded);
-    this.inventory = new InventoryBar(this);
+    this.inventory = new InventoryBar(this, MAX_WEAPONS + this.player.stats.bonusWeaponSlots);
     this.refreshInventory();
     this.runTimer = new RunTimer(this);
     this.bossBar = new BossBar(this);
@@ -197,7 +198,14 @@ export class GameScene extends Phaser.Scene {
 
     this.pickups.update();
     this.dataCounter.set(
-      runData(this.spawner.time, this.enemies.kills, this.arena.bossKills, this.arena.milestoneKills, this.pickups.dataFound),
+      runData(
+        this.spawner.time,
+        this.enemies.kills,
+        this.arena.bossKills,
+        this.arena.milestoneKills,
+        this.pickups.dataFound,
+        this.player.stats.dataMult,
+      ),
     );
     // Held back during the tutorial, or the first shots would go to a computer instead of its bug
     if (!this.tutorial) this.breakables.update(delta);
@@ -242,7 +250,7 @@ export class GameScene extends Phaser.Scene {
   private openSlot(odds: SlotOdds) {
     this.joystick.reset();
     this.scene.pause();
-    const data: SlotSceneData = { upgrades: this.upgrades, odds };
+    const data: SlotSceneData = { upgrades: this.upgrades, odds: withLuck(odds, this.player.stats.luck) };
     this.scene.launch('SlotScene', data);
   }
 
@@ -271,6 +279,7 @@ export class GameScene extends Phaser.Scene {
           milestoneKills: this.arena.milestoneKills,
           weapons: this.weapons.map((weapon) => weapon.def.id),
           dataFound: this.pickups.dataFound,
+          dataMult: this.player.stats.dataMult,
         });
     const data: GameOverSceneData = { ...run, reward };
     this.scene.launch('GameOverScene', data);

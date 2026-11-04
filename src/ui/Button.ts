@@ -80,7 +80,9 @@ export function createButton(scene: Phaser.Scene, x: number, y: number, options:
   if (icon) parts.push(scene.add.image(0, -height / 2 + 22, ATLAS, icon).setScale(PIXEL_SCALE));
   parts.push(pixelText(scene, 0, textY, label, { size, color, maxWidth: width - 16 }).setOrigin(0.5));
   if (stars) {
-    parts.push(...starRows(scene, 0, height / 2 - 14, stars.owned, stars.total));
+    // Rows stack upward, so the last row keeps its distance from the bottom edge
+    const rows = Math.ceil(stars.total / STARS_PER_ROW);
+    parts.push(...starRows(scene, 0, height / 2 - 14 - (rows - 1) * STAR_STEP * PIXEL_SCALE, stars.owned, stars.total));
   }
   const button = scene.add.container(x, y, parts);
   if (disabled) return button.setAlpha(0.45);
@@ -98,6 +100,29 @@ export function createButton(scene: Phaser.Scene, x: number, y: number, options:
     pressed = false;
   });
   return button;
+}
+
+const PAGE_BUTTON_W = 88;
+const PAGE_BUTTON_H = 40;
+const PAGE_BUTTON_OFFSET = 100;
+
+/** Prev and Next around a page counter; `onTurn` gets the new page and rebuilds the screen. */
+export function addPager(scene: Phaser.Scene, x: number, y: number, page: number, pages: number, onTurn: (page: number) => void) {
+  pixelText(scene, x, y, `${page + 1}/${pages}`, { color: COLOR.text });
+  createButton(scene, x - PAGE_BUTTON_OFFSET, y, {
+    width: PAGE_BUTTON_W,
+    height: PAGE_BUTTON_H,
+    label: 'Prev',
+    disabled: page === 0,
+    onClick: () => onTurn(page - 1),
+  });
+  createButton(scene, x + PAGE_BUTTON_OFFSET, y, {
+    width: PAGE_BUTTON_W,
+    height: PAGE_BUTTON_H,
+    label: 'Next',
+    disabled: page === pages - 1,
+    onClick: () => onTurn(page + 1),
+  });
 }
 
 /** Destroys everything on screen, for scenes that rebuild themselves on resize. */

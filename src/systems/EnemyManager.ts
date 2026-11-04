@@ -51,6 +51,8 @@ export class EnemyManager {
   private killCount = 0;
   private animationTime = 0;
   private animationStep = 0;
+  /** Copied from the player each frame; weapons deal damage after `update`. */
+  private bossDamageMult = 1;
   private readonly hash = new SpatialHash(CELL_SIZE, MAX_ENEMIES);
   private readonly neighbors = new Int32Array(MAX_ENEMIES);
 
@@ -133,7 +135,13 @@ export class EnemyManager {
   /** Dead enemies keep their index until `removeDead`, so hash query results stay valid all frame. */
   damage(i: number, amount: number) {
     const enemy = this.enemies[i];
-    enemy.hp -= hitDamage(enemy.def, amount);
+    enemy.hp -= this.hitDamage(enemy, amount);
+  }
+
+  /** Props never lose more than half their HP to one hit; bosses and mini bosses take the player's bonus. */
+  private hitDamage(enemy: Enemy, amount: number): number {
+    if (enemy.def.prop) return Math.min(amount, enemy.def.hp / 2);
+    return enemy.scripted || enemy.def.miniBoss ? amount * this.bossDamageMult : amount;
   }
 
   /** Index of the closest living enemy, or -1 if there is none. */
@@ -200,7 +208,7 @@ export class EnemyManager {
       const reach = radius + enemy.def.radius;
       const dx = enemy.sprite.x - x;
       const dy = enemy.sprite.y - y;
-      if (dx * dx + dy * dy < reach * reach) enemy.hp -= hitDamage(enemy.def, amount);
+      if (dx * dx + dy * dy < reach * reach) enemy.hp -= this.hitDamage(enemy, amount);
     }
   }
 
@@ -214,7 +222,7 @@ export class EnemyManager {
       const along = dx * dirX + dy * dirY;
       if (along < 0 || along > length) continue;
       const across = Math.abs(dx * dirY - dy * dirX);
-      if (across < halfWidth + enemy.def.radius) enemy.hp -= hitDamage(enemy.def, amount);
+      if (across < halfWidth + enemy.def.radius) enemy.hp -= this.hitDamage(enemy, amount);
     }
   }
 
@@ -226,7 +234,7 @@ export class EnemyManager {
       const reach = radius + enemy.def.radius;
       const dx = enemy.sprite.x - x;
       const dy = enemy.sprite.y - y;
-      if (dx * dirX + dy * dirY >= 0 && dx * dx + dy * dy < reach * reach) enemy.hp -= hitDamage(enemy.def, amount);
+      if (dx * dirX + dy * dirY >= 0 && dx * dx + dy * dy < reach * reach) enemy.hp -= this.hitDamage(enemy, amount);
     }
   }
 
@@ -279,10 +287,11 @@ export class EnemyManager {
 
   /** Returns the contact damage the player takes this frame. */
   update(delta: number, player: Player): number {
+    this.bossDamageMult = player.stats.bossDamageMult;
     this.animate(delta);
     this.moveAll(player, delta);
     this.separate();
-    return (this.pushOutOf(player) * delta) / 1000;
+    return (this.pushOutOf(player, delta / 1000) * delta) / 1000;
   }
 
   /** Call at the end of the frame, after everything that holds enemy indices is done. */
@@ -453,11 +462,13 @@ export class EnemyManager {
 
   /**
    * Enemies can't overlap the player, and only props push the player back, since they block the way.
-   * Shares the distance math with contact detection; returns the summed DPS of touching enemies.
+   * Shares the distance math with contact detection; returns the summed DPS of touching enemies,
+   * and hurts them back when the player has thorns.
    */
-  private pushOutOf(player: Player): number {
+  private pushOutOf(player: Player, seconds: number): number {
     const px = player.sprite.x;
     const py = player.sprite.y;
+    const thorns = player.stats.thornsDps;
     let dps = 0;
     for (let i = 0; i < this.aliveCount; i++) {
       const enemy = this.enemies[i];
@@ -469,6 +480,7 @@ export class EnemyManager {
       const d2 = dx * dx + dy * dy;
       if (d2 >= contactDist * contactDist) continue;
       dps += enemy.def.contactDps;
+      if (thorns > 0 && !enemy.def.prop) enemy.hp -= thorns * seconds;
       if (d2 >= minDist * minDist || d2 === 0) continue;
       const k = minDist / Math.sqrt(d2);
       if (enemy.def.prop) {
@@ -483,9 +495,6 @@ export class EnemyManager {
   }
 }
 
-function hitDamage(def: EnemyDef, amount: number): number {
-  return def.prop ? Math.min(amount, def.hp / 2) : amount;
-}
 
 function step(sprite: Phaser.GameObjects.Image, dirX: number, dirY: number, speed: number, seconds: number) {
   sprite.x += dirX * speed * seconds;

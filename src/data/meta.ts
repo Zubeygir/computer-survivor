@@ -11,14 +11,15 @@ export const RUN_REWARDS = {
   firstEvolution: 100,
 };
 
-/** Data a run has earned so far, before the one-off evolution and daily task bonuses. */
-export function runData(time: number, kills: number, bossKills: number, milestoneKills: number, dataFound: number): number {
-  return (
-    Math.floor(kills / RUN_REWARDS.killsPerData) +
-    Math.floor(time / 60) * RUN_REWARDS.perMinute +
-    (bossKills - milestoneKills) * RUN_REWARDS.boss +
-    milestoneKills * RUN_REWARDS.milestoneBoss +
-    dataFound
+/** Data a run has earned so far, before the one-off evolution and daily task bonuses; `dataMult` is the Workshop's Data Miner. */
+export function runData(time: number, kills: number, bossKills: number, milestoneKills: number, dataFound: number, dataMult = 1): number {
+  return Math.floor(
+    (Math.floor(kills / RUN_REWARDS.killsPerData) +
+      Math.floor(time / 60) * RUN_REWARDS.perMinute +
+      (bossKills - milestoneKills) * RUN_REWARDS.boss +
+      milestoneKills * RUN_REWARDS.milestoneBoss +
+      dataFound) *
+      dataMult,
   );
 }
 
@@ -53,14 +54,33 @@ export interface WorkshopDef {
   prices: number[];
 }
 
-const PRICES = [50, 100, 200, 350, 500];
+/** Level prices that grow by `growth` each level, rounded to tens; the economy pass sets the real numbers. */
+export function prices(start: number, levels: number, growth: number): number[] {
+  return Array.from({ length: levels }, (_, i) => Math.round((start * growth ** i) / 10) * 10);
+}
 
+const STAT_PRICES = prices(50, 10, 1.5);
+
+/** Percentages are of the base stats in `player.ts`: 200 move speed, 80 pickup radius. */
 export const WORKSHOP: WorkshopDef[] = [
-  { id: 'armorPlate', name: 'Armor Plate', text: '+20 max HP', stats: { maxHp: 20 }, prices: PRICES },
-  { id: 'firmware', name: 'Firmware', text: '+5% damage', stats: { damageMult: 0.05 }, prices: PRICES },
-  { id: 'overdrive', name: 'Overdrive', text: '+3% move speed', stats: { moveSpeed: 6 }, prices: PRICES },
-  { id: 'longCable', name: 'Long Cable', text: '+8% pickup range', stats: { pickupRadius: 6 }, prices: PRICES },
-  { id: 'cache', name: 'Cache', text: '+4% XP', stats: { xpMult: 0.04 }, prices: PRICES },
+  { id: 'armorPlate', name: 'Armor Plate', text: '+10 max HP', stats: { maxHp: 10 }, prices: STAT_PRICES },
+  { id: 'firmware', name: 'Firmware', text: '+3% damage', stats: { damageMult: 0.03 }, prices: STAT_PRICES },
+  { id: 'overdrive', name: 'Overdrive', text: '+2% move speed', stats: { moveSpeed: 4 }, prices: STAT_PRICES },
+  { id: 'longCable', name: 'Long Cable', text: '+5% pickup range', stats: { pickupRadius: 4 }, prices: STAT_PRICES },
+  { id: 'cache', name: 'Cache', text: '+3% XP', stats: { xpMult: 0.03 }, prices: STAT_PRICES },
+  { id: 'turboClock', name: 'Turbo Clock', text: '-2% cooldown', stats: { cooldownMult: -0.02 }, prices: STAT_PRICES },
+  { id: 'bigScreen', name: 'Big Screen', text: '+3% area', stats: { areaMult: 0.03 }, prices: STAT_PRICES },
+  { id: 'spareBattery', name: 'Spare Battery', text: '+4% duration', stats: { durationMult: 0.04 }, prices: STAT_PRICES },
+  { id: 'fiberLine', name: 'Fiber Line', text: '+4% projectile speed', stats: { projectileSpeedMult: 0.04 }, prices: STAT_PRICES },
+  { id: 'thermalPaste', name: 'Thermal Paste', text: '-2% damage taken', stats: { damageTakenMult: -0.02 }, prices: STAT_PRICES },
+  { id: 'antivirusSub', name: 'Antivirus Sub', text: '+0.2 HP per second', stats: { regen: 0.2 }, prices: STAT_PRICES },
+  { id: 'dualCore', name: 'Dual Core', text: '+1 projectile', stats: { bonusProjectiles: 1 }, prices: prices(5000, 1, 1) },
+  { id: 'luckyCoin', name: 'Lucky Coin', text: '+2% double and triple slot hits', stats: { luck: 0.02 }, prices: prices(200, 5, 1.6) },
+  { id: 'dataMiner', name: 'Data Miner', text: '+5% Data at run end', stats: { dataMult: 0.05 }, prices: prices(100, 10, 1.5) },
+  { id: 'reroll', name: 'Reroll', text: '+1 card reroll per run', stats: { rerolls: 1 }, prices: prices(300, 3, 2) },
+  { id: 'wideMenu', name: 'Wide Menu', text: '4 cards to pick from', stats: { bonusCards: 1 }, prices: prices(2000, 1, 1) },
+  { id: 'scrapRadar', name: 'Scrap Radar', text: '+3% computer chance', stats: { computerChance: 3 }, prices: prices(150, 5, 1.6) },
+  { id: 'expansionBay', name: 'Expansion Bay', text: '+1 weapon slot', stats: { bonusWeaponSlots: 1 }, prices: prices(8000, 1, 1) },
 ];
 
 /** Sums the bought Workshop levels into one set of stat bonuses. */

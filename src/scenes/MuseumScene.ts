@@ -3,7 +3,7 @@ import { WEAPON_PRICES } from '../data/meta';
 import { EVOLUTIONS, type EvolutionUpgrade } from '../data/upgrades';
 import { WEAPONS } from '../data/weapons';
 import { progress } from '../systems/Progress';
-import { addBackdrop, clearScene, COLOR, createButton, gridCells, pixelText } from '../ui/Button';
+import { addBackdrop, addPager, clearScene, COLOR, createButton, gridCells, pixelText } from '../ui/Button';
 
 const MARGIN = 12;
 const HEADER_H = 64;
@@ -13,9 +13,6 @@ const WIDE_LAYOUT_WIDTH = 640;
 const MIN_ICON_CELL_H = 104;
 const CELLS_PER_PAGE = 10;
 const FOOTER_H = 52;
-const PAGE_BUTTON_W = 88;
-const PAGE_BUTTON_H = 40;
-const PAGE_BUTTON_OFFSET = 100;
 
 /** The device collection: unlocks weapons and shows which evolutions were reached. */
 export class MuseumScene extends Phaser.Scene {
@@ -55,29 +52,9 @@ export class MuseumScene extends Phaser.Scene {
       const { x, y } = grid.centers[i];
       this.addCell(evolution, x, y, grid.width, grid.height);
     });
-    this.addPager(width / 2, height - FOOTER_H / 2);
-  }
-
-  private addPager(x: number, y: number) {
-    const pages = Math.ceil(EVOLUTIONS.length / CELLS_PER_PAGE);
-    pixelText(this, x, y, `${this.page + 1}/${pages}`, { color: COLOR.text });
-    const turn = (step: number) => {
-      this.page += step;
+    addPager(this, width / 2, height - FOOTER_H / 2, this.page, Math.ceil(EVOLUTIONS.length / CELLS_PER_PAGE), (page) => {
+      this.page = page;
       this.layout();
-    };
-    createButton(this, x - PAGE_BUTTON_OFFSET, y, {
-      width: PAGE_BUTTON_W,
-      height: PAGE_BUTTON_H,
-      label: 'Prev',
-      disabled: this.page === 0,
-      onClick: () => turn(-1),
-    });
-    createButton(this, x + PAGE_BUTTON_OFFSET, y, {
-      width: PAGE_BUTTON_W,
-      height: PAGE_BUTTON_H,
-      label: 'Next',
-      disabled: this.page === pages - 1,
-      onClick: () => turn(1),
     });
   }
 

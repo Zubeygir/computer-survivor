@@ -3,8 +3,12 @@ import type { WeaponId, WeaponStats } from './weapons';
 
 export const MAX_WEAPONS = 4;
 export const MAX_PASSIVES = 4;
+/** Cards offered on a level-up before the Workshop adds any. */
+export const CARD_CHOICES = 3;
 /** How much likelier a card is when its weapon or passive is already owned; builds need it to reach evolutions. */
 export const OWNED_CARD_WEIGHT = 3;
+/** How much likelier the key passive of an owned weapon is before it is owned, so a build can find its evolution. */
+export const KEY_PASSIVE_WEIGHT = 2;
 
 /** One pick of an upgrade: `stats` are added to the current values. */
 export interface UpgradeLevel<S> {
@@ -321,6 +325,14 @@ const multithreading = passive('Multithreading', 'icon-threads', 2, '+1 projecti
 const longLifeBattery = passive('Long-Life Battery', 'icon-battery', 5, '+10% duration', { durationMult: 0.1 });
 const wifiRoaming = passive('Wi-Fi Roaming', 'icon-wifi', 5, '+10% move speed', { moveSpeed: 20 });
 const antivirus = passive('Antivirus', 'icon-antivirus', 5, '+0.5 HP per second', { regen: 0.5 });
+const memoryCard = passive('Memory Card', 'icon-memory', 5, '+8% XP', { xpMult: 0.08 });
+const antenna = passive('Antenna', 'icon-antenna', 5, '+10% range', { rangeMult: 0.1 });
+const debuggerTool = passive('Debugger', 'icon-debugger', 5, '+10% damage to bosses', { bossDamageMult: 0.1 });
+const spikedCase = passive('Spiked Case', 'icon-spikes', 5, 'Enemies touching you take 5 DPS', { thornsDps: 5 });
+const repairKit = passive('Repair Kit', 'icon-repairkit', 5, '+0.3 HP per kill', { healOnKill: 0.3 });
+const ballBearings = passive('Ball Bearings', 'icon-bearings', 2, '+1 pierce', { bonusHits: 1 });
+const calibration = passive('Calibration', 'icon-calibration', 5, '+5% crit chance, crits hit twice', { critChance: 0.05 });
+const lensCleaner = passive('Lens Cleaner', 'icon-lens', 5, '+10% projectile size', { projectileSizeMult: 0.1 });
 
 export const UPGRADES: (WeaponUpgrade | PassiveUpgrade)[] = [
   cursor,
@@ -353,6 +365,14 @@ export const UPGRADES: (WeaponUpgrade | PassiveUpgrade)[] = [
   longLifeBattery,
   wifiRoaming,
   antivirus,
+  memoryCard,
+  antenna,
+  debuggerTool,
+  spikedCase,
+  repairKit,
+  ballBearings,
+  calibration,
+  lensCleaner,
 ];
 
 export const EVOLUTIONS: EvolutionUpgrade[] = [
@@ -366,15 +386,15 @@ export const EVOLUTIONS: EvolutionUpgrade[] = [
   evolution('Laser Printer', dotMatrixPrinter, multithreading, 'laserPrinter', 'A beam that hits the whole line'),
   evolution('Logic Bomb', usbStick, longLifeBattery, 'logicBomb', 'Bigger blasts, 8 mines'),
   evolution('Orbital Uplink', satelliteDish, wifiRoaming, 'orbitalUplink', '4 strikes at once'),
-  evolution('DVD Burner', cdRom, widescreen, 'dvdBurner', '2 huge discs at once'),
-  evolution('Pinball Table', trackball, fiberCable, 'pinballTable', '2 balls with 12 bounces'),
-  evolution('Mass Mailer', faxMachine, multithreading, 'massMailer', 'A flock of 4 planes'),
+  evolution('DVD Burner', cdRom, lensCleaner, 'dvdBurner', '2 huge discs at once'),
+  evolution('Pinball Table', trackball, ballBearings, 'pinballTable', '2 balls with 12 bounces'),
+  evolution('Mass Mailer', faxMachine, memoryCard, 'massMailer', 'A flock of 4 planes'),
   evolution('Cleaning Swarm', robotVacuum, antivirus, 'cleaningSwarm', '3 fast robots'),
-  evolution('3D Scanner', flatbedScanner, overclock, 'scanner3d', '2 long, wide beams'),
-  evolution('Surge Cable', ethernetCable, heatSink, 'surgeCable', 'Whips both sides at once'),
-  evolution('Emergency Broadcast', pager, wifiRoaming, 'emergencyBroadcast', 'Zaps 12 enemies, much more often'),
-  evolution('Supercomputer', pocketCalculator, powerSupply, 'supercomputer', '2 fast shots that hit 2 enemies'),
-  evolution('Subwoofer', boombox, ramUpgrade, 'subwoofer', 'A huge blast that throws enemies far'),
+  evolution('3D Scanner', flatbedScanner, calibration, 'scanner3d', '2 long, wide beams'),
+  evolution('Surge Cable', ethernetCable, repairKit, 'surgeCable', 'Whips both sides at once'),
+  evolution('Emergency Broadcast', pager, antenna, 'emergencyBroadcast', 'Zaps 12 enemies, much more often'),
+  evolution('Supercomputer', pocketCalculator, debuggerTool, 'supercomputer', '2 fast shots that hit 2 enemies'),
+  evolution('Subwoofer', boombox, spikedCase, 'subwoofer', 'A huge blast that throws enemies far'),
 ];
 
 /** The `?perfect` address starts deep in a run with these maxed evolutions and saves nothing. */

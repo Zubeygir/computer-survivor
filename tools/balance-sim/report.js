@@ -1,9 +1,17 @@
 // npm run sim -- [runs per scenario] [comma-separated sections]
-// Sections: still, solo, build, random, late, new, maxed, boss, weapons. Example: npm run sim -- 8 new,maxed
+// Sections: still, solo, build, random, late, new, maxed, boss, weapons, human. Example: npm run sim -- 8 new,maxed
+// The human section takes an optional skill name as the fifth argument: npm run sim -- 6 human 0 good
 // The weapons section also takes the run clock of the waves it tests on and a comma-separated weapon list
 import { BOSS_FIRST_HP, BOSS_GROUPS } from '../../src/data/bosses';
 import { EVOLUTIONS } from '../../src/data/upgrades';
 import { focused, maxedPlayer, newPlayer, noPick, randomPick, run, startingWeapons, weaponIds } from './game.js';
+import { GOOD, NEWBIE, pickHuman } from './human.js';
+import { useWaves } from './legacy.js';
+import { printCareer, simulateCareer } from './career.js';
+import { applyTweaks } from './tweaks.js';
+
+/** SIM_VERBOSE=1 prints one line per run under each scenario. */
+const verbose = Boolean(process.env.SIM_VERBOSE);
 
 const LATE_DAMAGE_TAKEN = 0.15;
 
@@ -14,6 +22,8 @@ const onlyWeapons = process.argv[5]?.split(',');
 /** Just before the first boss, so nearly no crowd has formed when it arrives. */
 const BOSS_TEST_CLOCK = 149.9;
 const WEAPON_TEST_SECONDS = 60;
+/** Runs per career in the tune section; the first argument stays the per-scenario run count. */
+const CAREER_RUNS = 20;
 
 const clock = (seconds) => {
   const minutes = String(Math.floor(seconds / 60)).padStart(2, '0');
@@ -44,7 +54,37 @@ function scenario(label, config) {
     `bosses ${average(results, (r) => r.bossesKilled).toFixed(1)} [${[0, 1, 2, 3].map((boss) => fightTime(results, boss)).join(' ')}]`,
     `evolved ${evolved.length}/${runs}${evolved.length > 0 ? ` at ${clock(average(evolved, (r) => r.evolvedAt))}` : ''}`,
   ];
+  if (results[0].deathBy !== undefined) columns.push(humanColumns(results));
   console.log(columns.join('  '));
+  if (verbose) {
+    for (const r of results) {
+      const fights = r.fights.map((seconds, i) => `${Math.round(seconds)}s${r.fightDamage[i] !== undefined ? `/${Math.round(r.fightDamage[i])}` : ''}`).join(' ');
+      const damage = r.damageBy ? `dmg c${Math.round(r.damageBy.contact)} b${Math.round(r.damageBy.bullets)} a${Math.round(r.damageBy.arena)}` : '';
+      console.log(`    ${clock(r.clock)} lvl ${r.level} kills ${r.kills} ${r.deathBy ?? r.outcome} fights [${fights}] ${damage} ${r.weapons.join(',')}`);
+      if (r.hpAtMinute) {
+        const minutes = Object.keys(r.hpAtMinute);
+        const hp = minutes.map((m) => `${m}:${r.hpAtMinute[m]}`).join(' ');
+        const contact = minutes.map((m) => `${m}:${Math.round(r.contactAtMinute[m] ?? 0)}`).join(' ');
+        const counts = {};
+        for (const name of r.picks) counts[name] = (counts[name] ?? 0) + 1;
+        const picks = Object.entries(counts).map(([name, n]) => (n > 1 ? `${name} x${n}` : name)).join(', ');
+        console.log(`      hp@min ${hp}\n      contact@min ${contact}\n      picks ${picks}`);
+      }
+    }
+  }
+  return results;
+}
+
+/** What killed the bot, how big the crowd was and how often it was being touched. */
+function humanColumns(results) {
+  const deaths = ['contact', 'bullets', 'arena'].map((source) => `${source[0]}${results.filter((r) => r.deathBy === source).length}`);
+  const crowd = [3, 6, 9]
+    .map((minute) => {
+      const seen = results.filter((r) => r.crowdAtMinute[minute] !== undefined);
+      return seen.length > 0 ? Math.round(average(seen, (r) => r.crowdAtMinute[minute])) : '-';
+    })
+    .join('/');
+  return `died ${deaths.join(' ')}  crowd@3/6/9m ${crowd}  touched ${(average(results, (r) => r.contactShare) * 100).toFixed(0)}%`;
 }
 
 /** An unkillable bot runs circles through every boss once; damage per second shows how well that still works. */
@@ -146,3 +186,59 @@ if (sections.includes('boss')) {
   bossFights('maxed', { start: 'cursor', pick: focused('cursor'), ...maxedPlayer });
 }
 if (sections.includes('weapons')) weaponTable();
+if (sections.includes('calibrate')) {
+  // Real players' results exist for these tables: a fresh save, no Workshop. See HANDOFF.md, "Denge ölçümü".
+  const waveSets = process.env.SIM_WAVES ? process.env.SIM_WAVES.split(',') : ['softened', 'hard'];
+  for (const set of waveSets) {
+    const restore = useWaves(set);
+    console.log(`--- Human-like bots on the ${set} waves (${set === 'hard' ? '2026-10-31' : '2026-11-01'}), fresh save ---`);
+    const skills = [NEWBIE, GOOD].filter((skill) => !onlyWeapons || onlyWeapons.includes(skill.name));
+    for (const skill of skills) scenario(skill.name, { bot: 'human', skill, start: 'cursor', pick: pickHuman, ...newPlayer });
+    // The user's own data point: 8+ minutes on the softened waves with 3-4 Workshop stars of the old +20 HP / +5% / +3% kind
+    if (set === 'softened' && skills.includes(GOOD)) {
+      const stars = { maxHp: 40, damageMult: 0.05, moveSpeed: 6 };
+      scenario('good, 4 stars', { bot: 'human', skill: GOOD, start: 'cursor', pick: pickHuman, unlocked: newPlayer.unlocked, bonus: stars });
+    }
+    restore();
+  }
+}
+if (sections.includes('career')) {
+  // Run after run on a fresh save, spending between runs; the run count is the first argument
+  console.log('--- Careers on the current waves: fresh save, buying in the Workshop and Museum between runs ---');
+  const skills = [NEWBIE, GOOD].filter((skill) => !onlyWeapons || onlyWeapons.includes(skill.name));
+  for (const skill of skills) {
+    printCareer(skill.name, simulateCareer({ runs, config: { bot: 'human', skill, start: 'cursor', pick: pickHuman } }));
+  }
+}
+if (sections.includes('crowd')) {
+  // Waves alone: no boss fights, so survival measures the crowd and nothing else
+  console.log('--- Human-like bots on the current waves with no bosses: fresh save, then maxed ---');
+  const skills = [NEWBIE, GOOD].filter((skill) => !onlyWeapons || onlyWeapons.includes(skill.name));
+  for (const skill of skills) scenario(skill.name, { bot: 'human', skill, start: 'cursor', pick: pickHuman, noBosses: true, ...newPlayer });
+  for (const skill of skills) scenario(`${skill.name} maxed`, { bot: 'human', skill, start: 'cursor', pick: pickHuman, noBosses: true, ...maxedPlayer });
+}
+if (sections.includes('fight1')) {
+  // The first boss alone, same focused Cursor build for both bots: how much the human bot's orbit costs in hits
+  console.log('--- First boss only, focused Cursor picks: circling bot vs human bot ---');
+  scenario('circle', { bot: 'circle', start: 'cursor', pick: focused('cursor'), stopAfterFights: 1, ...newPlayer });
+  scenario('human good', { bot: 'human', skill: GOOD, start: 'cursor', pick: focused('cursor'), stopAfterFights: 1, ...newPlayer });
+  scenario('human builder', { bot: 'human', skill: GOOD, start: 'cursor', pick: pickHuman, stopAfterFights: 1, ...newPlayer });
+}
+if (sections.includes('tune')) {
+  // Candidate changes from tweaks.js, named in SIM_TWEAK as a comma-separated list, measured like the human and career sections
+  const names = (process.env.SIM_TWEAK ?? '').split(',').filter(Boolean);
+  const restore = applyTweaks(names);
+  console.log(`--- Tweaks [${names.join(', ') || 'none'}]: fresh save with bosses, then ${CAREER_RUNS}-run careers ---`);
+  const skills = [NEWBIE, GOOD].filter((skill) => !onlyWeapons || onlyWeapons.includes(skill.name));
+  for (const skill of skills) scenario(skill.name, { bot: 'human', skill, start: 'cursor', pick: pickHuman, ...newPlayer });
+  for (const skill of skills) {
+    printCareer(skill.name, simulateCareer({ runs: CAREER_RUNS, config: { bot: 'human', skill, start: 'cursor', pick: pickHuman } }));
+  }
+  restore();
+}
+if (sections.includes('human')) {
+  const skills = [NEWBIE, GOOD].filter((skill) => !onlyWeapons || onlyWeapons.includes(skill.name));
+  console.log('--- Human-like bots on the current waves: fresh save, then everything maxed ---');
+  for (const skill of skills) scenario(skill.name, { bot: 'human', skill, start: 'cursor', pick: pickHuman, ...newPlayer });
+  for (const skill of skills) scenario(`${skill.name} maxed`, { bot: 'human', skill, start: 'cursor', pick: pickHuman, ...maxedPlayer });
+}

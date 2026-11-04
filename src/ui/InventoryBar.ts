@@ -15,8 +15,8 @@ export class InventoryBar {
   private readonly weaponIcons: Phaser.GameObjects.Image[];
   private readonly passiveIcons: Phaser.GameObjects.Image[];
 
-  constructor(scene: Phaser.Scene) {
-    this.weaponIcons = this.createRow(scene, MAX_WEAPONS, Y);
+  constructor(scene: Phaser.Scene, weaponSlots = MAX_WEAPONS) {
+    this.weaponIcons = this.createRow(scene, weaponSlots, Y);
     this.passiveIcons = this.createRow(scene, MAX_PASSIVES, Y + SLOT + GAP);
   }
 

@@ -2,7 +2,7 @@ import { BOSS_KILL_HEAL } from '../../src/data/bosses';
 import { BOSS_DROP, MINI_BOSS_DROP } from '../../src/data/drops';
 import { rollGem } from '../../src/data/gems';
 import { nextMiniBossTime } from '../../src/data/miniBosses';
-import { MINI_BOSS_SLOT_CHANCE, rollHits } from '../../src/data/slots';
+import { MINI_BOSS_SLOT_CHANCE, rollHits, withLuck } from '../../src/data/slots';
 import { runData, STARTING_WEAPONS, WORKSHOP, workshopBonus } from '../../src/data/meta';
 import { EVOLUTIONS, UPGRADES } from '../../src/data/upgrades';
 import { BOTNET_EVENTS } from '../../src/data/waves';
@@ -21,11 +21,20 @@ import { ProjectileManager } from '../../src/systems/ProjectileManager';
 import { Spawner } from '../../src/systems/Spawner';
 import { Upgrades } from '../../src/systems/Upgrades';
 import { Weapon } from '../../src/systems/Weapon';
+import { GOOD, createHumanState, steerHuman } from './human.js';
 
 const DELTA = 1000 / 30;
+/** SIM_TRACE=1 keeps one sample per second and prints the last ones when the bot dies. */
+const TRACE = Boolean(process.env.SIM_TRACE);
+const TRACE_KEEP = 15;
 const MAX_SECONDS = 2400;
 /** The bots don't try to dodge bullets, dashes or ground marks; a human sidesteps most of them. */
 const DODGEABLE_DAMAGE_TAKEN = 0.4;
+/**
+ * Share of the human bot's  that also applies to boss bullets: the bot sidesteps bullets it can see,
+ * but a person reads the tell before the volley and reverses, which the bot cannot see at all.
+ */
+const ARENA_BULLET_READ = 0.6;
 /** How far the bot looks for enemies and for gems, in pixels. */
 const THREAT_RANGE = 220;
 const GEM_RANGE = 260;
@@ -58,7 +67,8 @@ const camera = { width: 390, height: 844, flash() {} };
 
 /**
  * Plays one run, following the frame order of `GameScene.update`.
- * `bot` is 'still', 'strafe', 'circle' or 'duel', `start` a weapon id, `pick(options)` returns a card or null to skip.
+ * `bot` is 'still', 'strafe', 'circle', 'duel' or 'human' (see human.js; `skill` is its profile), `start` a weapon id,
+ * `pick(options, context)` returns a card or null to skip.
  * `damageTaken` scales everything that hurts the player, to test late waves with a sturdier bot.
  * `unlocked(id)` and `bonus` stand in for saved progress.
  * `stopAfterFights` ends the run once that many boss fights are over.
@@ -77,6 +87,7 @@ export function run({
   maxSeconds = MAX_SECONDS,
   noBosses = false,
   prepare = () => {},
+  skill = GOOD,
 }) {
   const player = new Player(scene, 0, 0);
   player.applyBonus(bonus);
@@ -91,6 +102,7 @@ export function run({
       breakables.onBroken(x, y);
       return;
     }
+    player.heal(player.stats.healOnKill);
     const gem = rollGem(def, spawner.time);
     gems.spawn(x, y, def.xp * gem.xpMult, gem.sprite);
     if (def.miniBoss && Math.random() < MINI_BOSS_SLOT_CHANCE) pickups.spawn(x, y, MINI_BOSS_DROP);
@@ -111,7 +123,7 @@ export function run({
   if (noBosses) arena.bossesStarted = Infinity;
   const effects = new Effects(scene);
   // The bot pulls the lever straight away; the upgrades land the same way as in the real overlay
-  const pickups = new Pickups(scene, camera, player, gems, enemies, (odds) => upgrades.spin(rollHits(odds)));
+  const pickups = new Pickups(scene, camera, player, gems, enemies, (odds) => upgrades.spin(rollHits(withLuck(odds, player.stats.luck))));
   breakables = new Breakables(camera, player, enemies, pickups, effects, (x, y) => arena.contains(x, y));
   const projectiles = new ProjectileManager(scene, enemies, player, effects);
   const weapons = [];
@@ -123,8 +135,23 @@ export function run({
   prepare(addWeapon(start));
   const upgrades = new Upgrades(player, weapons, addWeapon, unlocked);
   const experience = new Experience();
+  const human = bot === 'human' ? createHumanState() : null;
+  const world = { player, enemies, gems, pickups, bullets, arena };
+  const pickContext = { upgrades, player, weapons, time: 0, skill };
 
   const move = { x: 0, y: 0 };
+  /** Damage taken by source, in total and over the last few seconds, which names what killed the bot. */
+  const taken = { contact: 0, bullets: 0, arena: 0 };
+  const recent = { contact: 0, bullets: 0, arena: 0 };
+  const crowdAtMinute = {};
+  const hpAtMinute = {};
+  /** Contact damage taken during each run-clock minute, boss fights included under the minute they interrupt. */
+  const contactAtMinute = {};
+  const picks = [];
+  let frames = 0;
+  let contactFrames = 0;
+  const trace = [];
+  let nextTrace = 0;
   const levelAtMinute = {};
   const fights = [];
   /** Bullets, dashes, marks and wall in each fight, before `damageTaken` and the dodge allowance. */
@@ -144,18 +171,26 @@ export function run({
       level: experience.level,
       kills: enemies.kills,
       bossesKilled,
-      data: runData(spawner.time, enemies.kills, bossesKilled, arena.milestoneKills, pickups.dataFound),
+      data: runData(spawner.time, enemies.kills, bossesKilled, arena.milestoneKills, pickups.dataFound, player.stats.dataMult),
       fights,
       fightDamage,
       evolvedAt,
       levelAtMinute,
+      crowdAtMinute,
+      hpAtMinute,
+      contactAtMinute,
+      picks,
+      damageBy: taken,
+      deathBy: outcome === 'dead' ? Object.entries(recent).sort((a, b) => b[1] - a[1])[0][0] : outcome,
+      contactShare: frames > 0 ? contactFrames / frames : 0,
       weapons: weapons.map((weapon) => weapon.def.id),
     };
   };
 
   while (seconds < maxSeconds) {
     seconds += DELTA / 1000;
-    if (bot !== 'still') strafe(move, player, enemies, gems, pickups, arena, seconds);
+    if (bot === 'human') steerHuman(move, human, skill, DELTA / 1000, world);
+    else if (bot !== 'still') strafe(move, player, enemies, gems, pickups, arena, seconds);
     if (bot === 'circle' && arena.active) circle(move, player, arena);
     if (bot === 'duel' && arena.active) duel(move, player, arena);
     player.update(move, DELTA);
@@ -173,12 +208,30 @@ export function run({
     const stats = player.stats;
     const contactDamage = enemies.update(DELTA, player) * stats.damageTakenMult * spawner.damageMult;
     contactTotal += contactDamage;
-    const dodgeableRaw = bullets.update(DELTA, player) + arenaDamage;
-    if (arena.active) damageThisFight += dodgeableRaw;
-    const dodgeable = dodgeableRaw * (bot === 'strafe' ? DODGEABLE_DAMAGE_TAKEN : 1);
+    const bulletDamage = bullets.update(DELTA, player);
+    if (arena.active) damageThisFight += bulletDamage + arenaDamage;
+    // The human bot sees and sidesteps bullets itself; dashes, marks and the wall are telegraphed, so it avoids a share
+    const factor = bot === 'strafe' ? DODGEABLE_DAMAGE_TAKEN : 1;
+    const bulletRead = arena.active ? 1 - skill.dodge * ARENA_BULLET_READ : 1;
+    const bulletTaken = (bot === 'human' ? bulletDamage * bulletRead : bulletDamage * factor) * damageTaken;
+    const arenaTaken = (bot === 'human' ? arenaDamage * (1 - skill.dodge) : arenaDamage * factor) * damageTaken;
+    const contactTaken = contactDamage * damageTaken;
     player.heal((stats.regen * DELTA) / 1000);
-    player.hp -= (contactDamage + dodgeable) * damageTaken;
-    if (player.hp <= 0) return result('dead');
+    player.hp -= contactTaken + bulletTaken + arenaTaken;
+    frames++;
+    if (contactDamage > 0) contactFrames++;
+    track(taken, recent, contactTaken, bulletTaken, arenaTaken);
+    const clockMinute = Math.floor(spawner.time / 60);
+    contactAtMinute[clockMinute] = (contactAtMinute[clockMinute] ?? 0) + contactTaken;
+    if (TRACE && seconds >= nextTrace) {
+      nextTrace += 1;
+      trace.push(sample(seconds, spawner.time, player, enemies, arena, human));
+      if (trace.length > TRACE_KEEP) trace.shift();
+    }
+    if (player.hp <= 0) {
+      if (TRACE) console.log(`    trace before death (${describeDeath(recent)}):\n${trace.join('\n')}`);
+      return result('dead');
+    }
 
     for (const weapon of weapons) weapon.update(DELTA);
     projectiles.update(DELTA);
@@ -191,17 +244,57 @@ export function run({
     if (gained > 0) {
       const levels = experience.add(gained * player.stats.xpMult);
       for (let i = 0; i < levels; i++) {
-        const card = pick(upgrades.roll(3));
+        pickContext.time = spawner.time;
+        const card = pick(upgrades.roll(upgrades.choiceCount), pickContext);
         if (!card) continue;
         if (card.kind === 'evolution' && evolvedAt === null) evolvedAt = spawner.time;
+        picks.push(card.name);
         upgrades.apply(card);
       }
     }
 
     const minute = Math.floor(spawner.time / 60);
     levelAtMinute[minute] ??= experience.level;
+    crowdAtMinute[minute] ??= enemies.hostileCount;
+    hpAtMinute[minute] ??= Math.round(player.hp);
   }
   return result('timeout');
+}
+
+/** One trace line: run clock, HP, room to the nearest enemy, how many are within 100 and 250 px, heading, position. */
+function sample(seconds, clock, player, enemies, arena, human) {
+  const px = player.sprite.x;
+  const py = player.sprite.y;
+  let gap = Infinity;
+  let near = 0;
+  let around = 0;
+  for (let i = 0; i < enemies.count; i++) {
+    const enemy = enemies.enemies[i];
+    if (enemy.def.prop || enemy.hp <= 0) continue;
+    const d = Math.hypot(enemy.sprite.x - px, enemy.sprite.y - py) - enemy.def.radius - player.radius;
+    gap = Math.min(gap, d);
+    if (d < 100) near++;
+    if (d < 250) around++;
+  }
+  const heading = human ? Math.round((human.heading * 180) / Math.PI) : '-';
+  return `      ${seconds.toFixed(0).padStart(4)}s clock ${clock.toFixed(0).padStart(4)} hp ${player.hp.toFixed(0).padStart(4)} gap ${gap.toFixed(0).padStart(4)} near ${String(near).padStart(3)} around ${String(around).padStart(3)} heading ${String(heading).padStart(4)} at ${px.toFixed(0)},${py.toFixed(0)}${arena.active ? ' ARENA' : ''}`;
+}
+
+function describeDeath(recent) {
+  return Object.entries(recent)
+    .map(([source, amount]) => `${source} ${amount.toFixed(0)}`)
+    .join(', ');
+}
+
+/** Adds this frame's damage to the totals and to a view that forgets most of it within four seconds. */
+function track(taken, recent, contact, bullets, arena) {
+  const keep = 1 - DELTA / 4000;
+  taken.contact += contact;
+  taken.bullets += bullets;
+  taken.arena += arena;
+  recent.contact = recent.contact * keep + contact;
+  recent.bullets = recent.bullets * keep + bullets;
+  recent.arena = recent.arena * keep + arena;
 }
 
 /** A decent human: circles the crowd instead of fleeing it, swaps direction, grabs gems and items when safe. */

@@ -107,7 +107,7 @@ export class Breakables {
 
     for (let cy = top; cy <= bottom; cy++) {
       for (let cx = left; cx <= right; cx++) {
-        if (hash(cx, cy, SALT_EXISTS) % 100 >= COMPUTER_CHANCE) continue;
+        if (hash(cx, cy, SALT_EXISTS) % 100 >= COMPUTER_CHANCE + this.player.stats.computerChance) continue;
         const key = chunkKey(cx, cy);
         if (this.broken.has(key) || this.isActive(key)) continue;
         const x = cx * CHUNK_SIZE + CHUNK_MARGIN + (hash(cx, cy, SALT_X) % (CHUNK_SIZE - CHUNK_MARGIN * 2));

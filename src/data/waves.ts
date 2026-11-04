@@ -27,12 +27,12 @@ export const WAVES: WaveDef[] = [
   { enemies: mix([ENEMIES.bug, 2], [ENEMIES.spam, 1]), minimum: 35, interval: 0.45, hpMult: 1 },
   { enemies: mix([ENEMIES.spam, 3], [ENEMIES.bug, 1]), minimum: 55, interval: 0.2, hpMult: 1.1 },
   { enemies: mix([ENEMIES.bug, 4], [ENEMIES.worm, 3], [ENEMIES.popUp, 1]), minimum: 50, interval: 0.5, hpMult: 1.3 },
-  { enemies: mix([ENEMIES.spam, 8], [ENEMIES.bug, 4], [ENEMIES.phisher, 1]), minimum: 100, interval: 0.2, hpMult: 1.4 },
-  { enemies: mix([ENEMIES.bug, 12], [ENEMIES.trojan, 1], [ENEMIES.popUp, 1]), minimum: 65, interval: 0.5, hpMult: 1.6 },
-  { enemies: mix([ENEMIES.spam, 10], [ENEMIES.bug, 6], [ENEMIES.adware, 2]), minimum: 135, interval: 0.12, hpMult: 1.7 },
-  { enemies: mix([ENEMIES.bug, 4], [ENEMIES.worm, 4], [ENEMIES.phisher, 3], [ENEMIES.trojan, 1]), minimum: 75, interval: 0.4, hpMult: 1.9 },
-  { enemies: mix([ENEMIES.spam, 10], [ENEMIES.bug, 6], [ENEMIES.adware, 3]), minimum: 170, interval: 0.14, hpMult: 2 },
-  { enemies: mix([ENEMIES.spam, 6], [ENEMIES.worm, 6], [ENEMIES.trojan, 1], [ENEMIES.popUp, 1]), minimum: 100, interval: 0.3, hpMult: 2.2 },
+  { enemies: mix([ENEMIES.spam, 8], [ENEMIES.bug, 4], [ENEMIES.phisher, 1]), minimum: 120, interval: 0.2, hpMult: 1.4 },
+  { enemies: mix([ENEMIES.bug, 12], [ENEMIES.trojan, 1], [ENEMIES.popUp, 1]), minimum: 78, interval: 0.5, hpMult: 1.6 },
+  { enemies: mix([ENEMIES.spam, 10], [ENEMIES.bug, 6], [ENEMIES.adware, 2]), minimum: 162, interval: 0.12, hpMult: 1.7 },
+  { enemies: mix([ENEMIES.bug, 4], [ENEMIES.worm, 4], [ENEMIES.phisher, 3], [ENEMIES.trojan, 1]), minimum: 90, interval: 0.4, hpMult: 1.9 },
+  { enemies: mix([ENEMIES.spam, 10], [ENEMIES.bug, 6], [ENEMIES.adware, 3]), minimum: 204, interval: 0.14, hpMult: 2 },
+  { enemies: mix([ENEMIES.spam, 6], [ENEMIES.worm, 6], [ENEMIES.trojan, 1], [ENEMIES.popUp, 1]), minimum: 120, interval: 0.3, hpMult: 2.2 },
 ];
 
 /**
@@ -52,7 +52,7 @@ export const EASY_START = { seconds: 15, hp: 1 };
  * `maxEnemies` while HP and damage only creep up. Rates are per full minute past the last wave.
  */
 export const OVERTIME = {
-  extraEnemies: 30,
+  extraEnemies: 35,
   /** Under the enemy pool size, which leaves room for props, summons and bosses. */
   maxEnemies: 450,
   hp: 0.06,

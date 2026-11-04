@@ -27,6 +27,8 @@ export interface RunSummary {
   weapons: string[];
   /** Picked up during the run. */
   dataFound: number;
+  /** The Workshop's Data Miner. */
+  dataMult: number;
 }
 
 export interface RunReward {
@@ -128,7 +130,7 @@ class Progress {
   /** Pays out a finished run and saves. */
   settleRun(run: RunSummary): RunReward {
     const lines: string[] = [];
-    let total = runData(run.time, run.kills, run.bossKills, run.milestoneKills, run.dataFound);
+    let total = runData(run.time, run.kills, run.bossKills, run.milestoneKills, run.dataFound, run.dataMult);
     if (run.dataFound > 0) lines.push(`Picked up ${run.dataFound} Data`);
 
     for (const evolution of EVOLUTIONS) {

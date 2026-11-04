@@ -13,6 +13,11 @@ export const MINI_BOSS_SLOT_CHANCE = 0.4;
 /** Chance from 0 to 1 that one upgrade goes to a weapon instead of a passive. */
 export const SLOT_WEAPON_CHANCE = 0.2;
 
+/** The odds with the Workshop's luck added to both chances. */
+export function withLuck(odds: SlotOdds, luck: number): SlotOdds {
+  return luck === 0 ? odds : { two: odds.two + luck, three: odds.three + luck };
+}
+
 /** How many reels hit, from 1 to 3. */
 export function rollHits(odds: SlotOdds): number {
   const roll = Math.random();
