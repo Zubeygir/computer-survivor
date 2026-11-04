@@ -6,11 +6,11 @@ Kullanıcı Türkçe yazar ve **yalnızca Türkçe**, sade yanıt almalıdır. K
 
 ## Neredeyiz
 
-Aşağıdaki her şey commit edildi ve Vercel'in yayınladığı `main` dalına gönderildi. `main` ve `playtest-feedback-fixes` aynı commit'i gösteriyor.
+Aşağıdaki her şey commit edildi ve Vercel'in yayınladığı `main` dalına gönderildi. `playtest-feedback-fixes` dalı artık `main`'in gerisinde.
 
 Oyun **sonsuz** bir survivors-like: bir oyun yalnızca ölünce biter. İlk oyuna özel eğitim, 20 boss, mini bosslar, slot makineleri, kırılabilir bilgisayarlar, 19 silah ve üç renk XP gem'i var.
 
-**Sıradaki iş Atölye (Workshop)** (aşağıda İş 1). Önce planını kısaca göster ve kullanıcının onayını al, çünkü kuralı her işin planının o işten hemen önce sunulmasıdır.
+**Sıradaki iş Atölye (Workshop)** (aşağıda İş 1). Önce planını kısaca göster ve kullanıcının onayını al, çünkü kuralı her işin planının o işten hemen önce sunulmasıdır. Dalga zorluğu 2026-11-01'de düşürüldü ve kullanıcı bunu oynayarak test ediyor, sonucu "Zorluk karşılaştırması" bölümünü değiştirebilir.
 
 Oyun tasarım dokümanı https://claude.ai/artifact/8yApVH6VuMDwYmPwAqVosy adresinde (Türkçe, docs araçlarıyla okunur). Sonsuz oyun, bosslar, slotlar ve düşenlerden önce yazıldı, bu yüzden farklı oldukları yerde `src/data/*.ts` ve bu dosya geçerlidir.
 
@@ -63,10 +63,11 @@ Kullanıcıdan gelen son gerçek veri: 3-4 Atölye yıldızlı hesapta 8+ dakika
 - 8 rastgele grupta 20 boss, kullanıcının isteğiyle Claude tasarladı. Yeni saldırı türleri: `front` (boşluklu mermi duvarı), `sweep` (işaret hatları), `blink` (uyarı işaretli ışınlanma), `pull` (oyuncuyu çeker), ayrıca fazlarda `speedMult` ve izlerde `always`. Kullanıcı çoğunu onayladı, sayılar ilk tahmindir.
 - 19 silah; Cassette Tape, kullanıcı deneyip beğenmeyince çıkarıldı. Yeniler: CD-ROM, Trackball, Fax Machine, Robot Vacuum, Flatbed Scanner, Ethernet Cable, Pager, Pocket Calculator, Boombox, her birinin evrimi var. Müze sayfalara bölündü.
 - Bütün silahların gerçek dalgalarda dengelenmesi. Kullanıcı CRT'nin fazla büyüdüğünü söyleyince CRT ve Degausser küçültüldü, Widescreen seviye başına +%6'ya indi.
+- Dalga zorluğu düşürüldü, çünkü kullanıcı 5:00'ten sonra kalabalığın çok arttığını, 7:00'den sonra hiçbir şeyin kesilemediğini söyledi. Kotalar ve can çarpanları azaldı, 7. dakika Worm ağırlıklı olmaktan çıktı, aralıklı doğuma tavan geldi. Kullanıcının isteğiyle 5. dakikanın karışımına dokunulmadı.
 
 ## Güncel sayılar (hepsi `src/data` içinde, hepsi geçici)
 
-- **Dalgalar (`waves.ts`):** Dakikaya göre kotalar 20, 40, 65, 90, 120, 150, 190, 220, 280, 340. Can çarpanları 1, 1.1, 1.3, 1.6, 2, 2.5, 3.1, 3.8, 4.6, 5.5. Aralıklar 0.7, 0.45, 0.2, 0.3, 0.2, 0.2, 0.12, 0.25, 0.14, 0.1. Aralıklı doğanlar kotanın üstüne birikir, bu yüzden aralığı kısaltmak kalabalığı hızla şişirir.
+- **Dalgalar (`waves.ts`):** Dakikaya göre kotalar 20, 40, 60, 85, 110, 135, 160, 185, 210, 240. Can çarpanları 1, 1.1, 1.3, 1.5, 1.8, 2.1, 2.4, 2.8, 3.2, 3.6. Aralıklar 0.7, 0.45, 0.2, 0.3, 0.2, 0.2, 0.12, 0.25, 0.14, 0.1. Aralıklı doğanlar kotanın üstüne birikir, ama canlı sayısı kotanın `CROWD_OVERFLOW` (1.25) katını veya 450'yi geçince durur. Kota dolumları tavandan etkilenmez.
 - **Kolay başlangıç:** İlk 15 saniyede doğan her şeyin canı 1'dir.
 - **Uzatma (son dalgadan sonra, her tam dakikada):** 450'ye kadar +40 kota, +%6 can, +%4 temas hasarı. Kullanıcı zorluğun sayıdan gelmesini, can ve hasarın az artmasını istiyor. 450 sınırı telefonlar içindir.
 - **XP (`progression.ts`):** `5 + 6(L-1) + L²/2`. Elle ayarlanmış daha hızlı ilk seviyeler denendi, evrimi çok erkene çektiği için kullanıcı iptal etti.
@@ -77,6 +78,18 @@ Kullanıcıdan gelen son gerçek veri: 3-4 Atölye yıldızlı hesapta 8+ dakika
 - **Bilgisayarlar (`drops.ts`, `Breakables.ts`):** 640x640'lık parça başına %20 ihtimal (kullanıcı iki kez azaltılmasını istedi), en az 320 piksel arayla, 30 can, her zaman en az 2 vuruş. Düşenler: Can 25 (%35), 5 Data (%35), 15 Data (%15), 40 Data (%4), Magnet (%7), Nuke (%4).
 - **Repair kartı:** 10 can (eskiden 30'du, tekrarlanan kartlar bir oyunda yaklaşık 800 can veriyordu).
 - **Ödüller (`meta.ts`):** 10 öldürme başına 1 Data, dakika başına 5, boss başına 30, milestone boss başına 100, ilk evrim başına 100. `runData` sayacın, ödülün ve simülatörün ortak formülüdür.
+
+## Zorluk karşılaştırması (2026-11-01)
+
+Yalnızca veri dosyalarından hesaplandı, oyunda ölçülmedi. Sahadaki toplam can (kota x ortalama can) dakikaya göre: 3:00'te 2.444, 4:00'te 3.086, 5:00'te 7.088, 6:00'da 4.267, 7:00'de 13.380, 8:00'de 16.680, 9:00'da 22.378, 10:00'da yaklaşık 27.700, 15:00'te yaklaşık 57.000. 7:00'den önceki eski değer 43.500'dü.
+
+Vampire Survivors'ın Mad Forest haritasıyla (vampire.survivors.wiki) kıyas:
+- Bizim normal silahlarımız onlarınkine yakın: Cursor 1. seviyede 11,4, son seviyede 133 DPS; Magic Wand 8,3 ve 120. Evrimli tarafta Holy Wand 240, Auto-Clicker 93 DPS, yani orada gerideyiz.
+- VS'nin bilinen dakikalarıyla kıyaslayınca, silah gücü hesaba katılmış halde bizim oyun ortalama 7-8 kat ağır. Kalan farkı VS'nin canı bulunamayan dakikalar, alan silahları ve 6 silah yuvası etkiler, kesin sayı gibi kullanma.
+- VS'de normal modda genel can çarpanı yok, kota iniş çıkışlı (100, 30, 10, 300, 20), 300 canlıda normal doğum duruyor ve 300'lük dakikada düşmanlar 15 canlı. Bizde sayı, can çarpanı ve düşman türü aynı anda ve hep yukarı gidiyor.
+- Bizde temas hasarı birikir ve dokunulmazlık yoktur, 8 Worm oyuncuyu 1,25 saniyede öldürür. VS'de 240 ms dokunulmazlık var, wiki bunun temas hasarına uygulandığını açıkça söylemiyor.
+
+Testten sonra bakılacaklar: 5. dakikadaki Trojan oranı (önerilen karışım 24 Bug, 1 Trojan, 2 Pop-Up), nefes aldıran iniş çıkışlı kotalar, evrimli silah gücü, 10:00 sonrası 450 düşman.
 
 ## Denge ölçümü
 
@@ -139,6 +152,7 @@ Hâlâ geçerli eski kararlar:
 
 ## Test ipuçları
 
+- Maks build testi: `?perfect` adresi Play'e basınca 8:00'den, 30. seviyede, 4 evrimli silah ve 4 maks pasifle başlar. 7:30'a kadarki bosslar geçilmiş sayılır, eğitim çıkmaz, hiçbir şey kaydedilmez. Ayarlar `upgrades.ts` içinde `PERFECT_TEST`.
 - Stres testi: Geçici olarak ilk dalganın `minimum` değerini `500` yap. Commit'ten önce geri al.
 - Geç dalgalar: `src/systems/Spawner.ts` içinde `elapsed` değerini geçici olarak örneğin `8 * 60` başlat, `nextMiniBoss` değerini de buna uydur.
 - Bosslar: `elapsed` değerini boss anından birkaç saniye önce başlat (örneğin `145`). Daha sonraki boss için `src/systems/Arena.ts` içindeki `bossesStarted` değerini de başlat.

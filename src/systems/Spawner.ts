@@ -14,17 +14,22 @@ const RECYCLE_FACTOR = 1.5;
 const BOTNET_SPACING = 30;
 
 export class Spawner {
-  private elapsed = 0;
+  private elapsed: number;
   private intervalLeft = 0;
-  private nextBotnet = 0;
-  private nextMiniBoss = nextMiniBossTime(0);
+  private nextBotnet: number;
+  private nextMiniBoss: number;
   private readonly point = new Phaser.Math.Vector2();
 
   constructor(
     private readonly camera: Phaser.Cameras.Scene2D.Camera,
     private readonly player: Player,
     private readonly enemies: EnemyManager,
-  ) {}
+    startTime = 0,
+  ) {
+    this.elapsed = startTime;
+    this.nextBotnet = BOTNET_EVENTS.filter((event) => event.time < startTime).length;
+    this.nextMiniBoss = nextMiniBossTime(startTime);
+  }
 
   /** Run time in seconds; the run clock everything time-based keys off. Stops while the scene is paused. */
   get time(): number {

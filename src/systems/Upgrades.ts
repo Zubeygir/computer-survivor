@@ -86,6 +86,15 @@ export class Upgrades {
     return pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : SLOT_REPAIR;
   }
 
+  /** Takes an evolution's weapon and passive to max level, then evolves the weapon. */
+  maxOut(into: WeaponId) {
+    const evolution = EVOLUTIONS.find((def) => def.into === into)!;
+    for (const def of [evolution.base, evolution.passive]) {
+      while (this.levelOf(def) < def.levels.length) this.apply(def);
+    }
+    this.apply(evolution);
+  }
+
   apply(def: UpgradeDef) {
     const level = this.levelOf(def);
     switch (def.kind) {

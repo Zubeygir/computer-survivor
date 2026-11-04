@@ -1,9 +1,12 @@
 import { xpToNext } from '../data/progression';
 
 export class Experience {
-  private currentLevel = 1;
   private currentXp = 0;
-  private needed = xpToNext(1);
+  private needed: number;
+
+  constructor(private currentLevel = 1) {
+    this.needed = xpToNext(currentLevel);
+  }
 
   get level(): number {
     return this.currentLevel;

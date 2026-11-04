@@ -5,6 +5,7 @@ import { BOSS_DROP, MINI_BOSS_DROP } from '../data/drops';
 import { rollGem } from '../data/gems';
 import { runData } from '../data/meta';
 import { MINI_BOSS_SLOT_CHANCE, type SlotOdds } from '../data/slots';
+import { PERFECT_TEST } from '../data/upgrades';
 import { WEAPONS, type WeaponId } from '../data/weapons';
 import { Player } from '../entities/Player';
 import { VirtualJoystick } from '../input/VirtualJoystick';
@@ -66,6 +67,7 @@ export class GameScene extends Phaser.Scene {
   private ground!: Phaser.GameObjects.TileSprite;
   private scenery!: Scenery;
   private keys!: MoveKeys;
+  private perfectTest = false;
   private readonly move = new Phaser.Math.Vector2();
 
   constructor() {
@@ -100,13 +102,15 @@ export class GameScene extends Phaser.Scene {
     });
     const address = new URLSearchParams(location.search);
     const bossTest = address.has('bosstest');
+    this.perfectTest = address.has('perfect');
+    const startTime = this.perfectTest ? PERFECT_TEST.seconds : 0;
     this.player = new Player(this, 0, 0);
     this.player.applyBonus(bossTest ? { ...progress.bonus, maxHp: BOSS_TEST.playerHp } : progress.bonus);
     this.hpBar = new HpBar(this);
     this.hurtFlash = new HurtFlash(this, this.player.sprite);
     // After the player, so the wall draws over anything brushing against it
-    this.arena = new Arena(this, this.enemies, this.player, this.bullets, this.zones, bossTest);
-    this.spawner = new Spawner(this.cameras.main, this.player, this.enemies);
+    this.arena = new Arena(this, this.enemies, this.player, this.bullets, this.zones, bossTest, startTime);
+    this.spawner = new Spawner(this.cameras.main, this.player, this.enemies, startTime);
     this.effects = new Effects(this);
     this.pickups = new Pickups(this, this.cameras.main, this.player, this.gems, this.enemies, (odds) => this.openSlot(odds));
     this.breakables = new Breakables(this.cameras.main, this.player, this.enemies, this.pickups, this.effects, (x, y) =>
@@ -118,20 +122,22 @@ export class GameScene extends Phaser.Scene {
     // Testing aid: `?weapon=<id>` starts the run with that weapon, locked or evolved ones too
     const testWeapon = address.get('weapon');
     if (testWeapon && testWeapon in WEAPONS) this.addWeapon(testWeapon as WeaponId);
-    this.experience = new Experience();
+    this.experience = new Experience(this.perfectTest ? PERFECT_TEST.level : 1);
     this.upgrades = new Upgrades(
       this.player,
       this.weapons,
       (id) => this.addWeapon(id),
       (id) => progress.isUnlocked(id),
     );
+    if (this.perfectTest) PERFECT_TEST.evolutions.forEach((id) => this.upgrades.maxOut(id));
     this.xpBar = new XpBar(this);
+    this.xpBar.set(this.experience.level, 0, this.experience.xpNeeded);
     this.inventory = new InventoryBar(this);
     this.refreshInventory();
     this.runTimer = new RunTimer(this);
     this.bossBar = new BossBar(this);
     this.dataCounter = new DataCounter(this);
-    this.tutorial = progress.tutorialDone
+    this.tutorial = progress.tutorialDone || this.perfectTest
       ? null
       : new Tutorial(this, this.player, this.enemies, (x, y, text) => this.openSpotlight(x, y, text));
     this.joystick = new VirtualJoystick(this);
@@ -257,13 +263,15 @@ export class GameScene extends Phaser.Scene {
       level: this.experience.level,
       kills: this.enemies.kills,
     };
-    const reward = progress.settleRun({
-      ...run,
-      bossKills: this.arena.bossKills,
-      milestoneKills: this.arena.milestoneKills,
-      weapons: this.weapons.map((weapon) => weapon.def.id),
-      dataFound: this.pickups.dataFound,
-    });
+    const reward = this.perfectTest
+      ? { total: 0, lines: ['Test run, nothing saved'], newRecord: false }
+      : progress.settleRun({
+          ...run,
+          bossKills: this.arena.bossKills,
+          milestoneKills: this.arena.milestoneKills,
+          weapons: this.weapons.map((weapon) => weapon.def.id),
+          dataFound: this.pickups.dataFound,
+        });
     const data: GameOverSceneData = { ...run, reward };
     this.scene.launch('GameOverScene', data);
   }

@@ -62,7 +62,10 @@ export class Arena {
     private readonly zones: DangerZones,
     /** Shows every boss in turn; see `BOSS_TEST`. */
     private readonly bossTest = false,
+    /** Run clock seconds; bosses due before it count as already fought. */
+    startTime = 0,
   ) {
+    this.bossesStarted = Math.floor(startTime / BOSS_INTERVAL);
     const count = Math.round((2 * Math.PI * ARENA_RADIUS) / WALL_SPACING);
     for (let i = 0; i < count; i++) {
       this.walls.push(scene.add.image(0, 0, ATLAS, 'firewall').setScale(PIXEL_SCALE).setVisible(false));

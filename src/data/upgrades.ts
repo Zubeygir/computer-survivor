@@ -377,6 +377,13 @@ export const EVOLUTIONS: EvolutionUpgrade[] = [
   evolution('Subwoofer', boombox, ramUpgrade, 'subwoofer', 'A huge blast that throws enemies far'),
 ];
 
+/** The `?perfect` address starts deep in a run with these maxed evolutions and saves nothing. */
+export const PERFECT_TEST: { seconds: number; level: number; evolutions: WeaponId[] } = {
+  seconds: 480,
+  level: 30,
+  evolutions: ['autoClicker', 'indestructibleBrick', 'laserPrinter', 'degausser'],
+};
+
 export const REPAIR: RepairUpgrade = {
   kind: 'repair',
   name: 'Repair',
