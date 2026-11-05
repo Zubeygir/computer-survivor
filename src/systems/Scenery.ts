@@ -29,16 +29,17 @@ export class Scenery {
     }
   }
 
-  update(camera: Phaser.Cameras.Scene2D.Camera) {
-    const left = Math.floor(camera.scrollX / CHUNK_SIZE);
-    const top = Math.floor(camera.scrollY / CHUNK_SIZE);
+  /** `viewX`, `viewY` and the size are the visible world rectangle. */
+  update(viewX: number, viewY: number, viewWidth: number, viewHeight: number) {
+    const left = Math.floor(viewX / CHUNK_SIZE);
+    const top = Math.floor(viewY / CHUNK_SIZE);
     // Only rebuilds when the view crosses into a new chunk
     if (left === this.chunkLeft && top === this.chunkTop) return;
     this.chunkLeft = left;
     this.chunkTop = top;
 
-    const right = Math.floor((camera.scrollX + camera.width) / CHUNK_SIZE) + 1;
-    const bottom = Math.floor((camera.scrollY + camera.height) / CHUNK_SIZE) + 1;
+    const right = Math.floor((viewX + viewWidth) / CHUNK_SIZE) + 1;
+    const bottom = Math.floor((viewY + viewHeight) / CHUNK_SIZE) + 1;
     let used = 0;
     for (let cy = top - 1; cy <= bottom; cy++) {
       for (let cx = left - 1; cx <= right; cx++) {

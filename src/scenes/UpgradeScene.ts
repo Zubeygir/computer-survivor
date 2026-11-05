@@ -3,7 +3,7 @@ import { ATLAS, PIXEL_SCALE } from '../art/atlas';
 import { EVOLUTIONS, type UpgradeDef } from '../data/upgrades';
 import { WEAPONS } from '../data/weapons';
 import type { Upgrades } from '../systems/Upgrades';
-import { COLOR, createButton, panel, pixelText, starRows, TEXT_SIZE, TITLE_SIZE } from '../ui/Button';
+import { COLOR, createButton, fitCamera, panel, pixelText, starRow, TITLE_SIZE } from '../ui/Button';
 import { createHand } from '../ui/Hand';
 
 export interface UpgradeSceneData {
@@ -16,22 +16,38 @@ export interface UpgradeSceneData {
 
 // Ignores taps right after the cards appear: the player is usually mid-swipe on the joystick
 const INPUT_LOCK_MS = 400;
-// Tight, so three tall cards keep as much text width as a phone allows
-const SIDE_MARGIN = 6;
-const GAP = 6;
-const TITLE_SPACE_PORTRAIT = 72;
-const TITLE_SPACE_LANDSCAPE = 48;
+const SIDE_MARGIN = 12;
+const GAP = 10;
+const TITLE_SPACE = 72;
 const BOTTOM_MARGIN = 12;
 /** Taken from the cards while a reroll is available. */
 const REROLL_SPACE = 48;
-const REROLL_BUTTON_W = 120;
-const REROLL_BUTTON_H = 36;
-const MAX_CARD_W = 170;
-const MAX_CARD_H = 250;
-const TEXT_PADDING = 8;
-const SMALL_TEXT_SIZE = 6;
-const ICON_SCALE = 3;
-/** Where the guide hand's finger rests, as a fraction of the card height below its center. */
+const REROLL_BUTTON_W = 160;
+const REROLL_BUTTON_H = 40;
+/** One column of wide cards: even a phone fits 20 characters per line, so text never shrinks. */
+const MAX_CARD_W = 420;
+const MAX_CARD_H = 136;
+const CARD_PADDING = 10;
+const ICON_BOX = 72;
+const ICON_SCALE = 4;
+/** Friends could not tell weapons from passives, so every card names its kind under the icon, in its color. */
+const KIND_LABEL: Record<UpgradeDef['kind'], { text: string; color: number }> = {
+  weapon: { text: 'Weapon', color: COLOR.data },
+  passive: { text: 'Passive', color: COLOR.good },
+  evolution: { text: 'Evolution', color: COLOR.gold },
+  repair: { text: 'Repair', color: COLOR.muted },
+};
+/** The label sits this far below the icon box; the box is raised by half of that to keep the pair centered. */
+const KIND_LABEL_GAP = 4;
+const KIND_LABEL_H = 16;
+/** Where the text column starts, after the icon box. */
+const TEXT_LEFT = CARD_PADDING + ICON_BOX + 16;
+/** Stars on the left and the badge on the right share this line. */
+const BADGE_LINE_H = 24;
+const LINE_GAP = 6;
+const NEW_BADGE_PADDING = 6;
+/** Where the guide hand's finger rests, as fractions of the middle card's size from its center. */
+const HAND_CARD_X = 0.15;
 const HAND_CARD_Y = 0.1;
 const HAND_TAP_DISTANCE = 12;
 const HAND_TAP_MS = 350;
@@ -98,44 +114,37 @@ export class UpgradeScene extends Phaser.Scene {
     this.scene.stop();
   }
 
-  /** Tall cards side by side, or two rows for four cards in portrait; only runs on a new choice or a resize. */
+  /** One column of wide cards, shrunk only in height when the screen is short; runs on a new choice or a resize. */
   private layout() {
     for (const card of this.cards) card.destroy();
     this.cards.length = 0;
     this.pressed = null;
 
-    const { width, height } = this.scale;
+    const { width, height } = fitCamera(this);
     this.backdrop.setSize(width, height);
-    const titleSpace = height > width ? TITLE_SPACE_PORTRAIT : TITLE_SPACE_LANDSCAPE;
-    this.title.setPosition(width / 2, titleSpace / 2);
+    this.title.setPosition(width / 2, TITLE_SPACE / 2);
 
     const n = this.choices.length;
     const canReroll = !this.guided && this.upgrades.rerollsLeft > 0;
-    const availH = height - titleSpace - BOTTOM_MARGIN - (canReroll ? REROLL_SPACE : 0);
-    // Four cards side by side would be too narrow on a phone, so portrait folds them into two rows
-    const columns = n > 3 && height > width ? 2 : n;
-    const rows = Math.ceil(n / columns);
-    const cardW = Math.min((width - SIDE_MARGIN * 2 - GAP * (columns - 1)) / columns, MAX_CARD_W);
-    const cardH = Math.min((availH - GAP * (rows - 1)) / rows, MAX_CARD_H);
-    const totalW = columns * cardW + (columns - 1) * GAP;
-    const totalH = rows * cardH + (rows - 1) * GAP;
-    const firstX = (width - totalW) / 2 + cardW / 2;
-    const firstY = titleSpace + (availH - totalH) / 2 + cardH / 2;
-    const cardX = (i: number) => firstX + (i % columns) * (cardW + GAP);
-    const cardY = (i: number) => firstY + Math.floor(i / columns) * (cardH + GAP);
+    const availH = height - TITLE_SPACE - BOTTOM_MARGIN - (canReroll ? REROLL_SPACE : 0);
+    const cardW = Math.min(width - SIDE_MARGIN * 2, MAX_CARD_W);
+    const cardH = Math.min((availH - GAP * (n - 1)) / n, MAX_CARD_H);
+    const totalH = n * cardH + (n - 1) * GAP;
+    const firstY = TITLE_SPACE + (availH - totalH) / 2 + cardH / 2;
+    const cardY = (i: number) => firstY + i * (cardH + GAP);
 
     for (let i = 0; i < n; i++) {
-      this.cards.push(this.createCard(this.choices[i], cardX(i), cardY(i), cardW, cardH));
+      this.cards.push(this.createCard(this.choices[i], width / 2, cardY(i), cardW, cardH));
     }
     const middle = Math.floor(n / 2);
-    this.handSpot?.setPosition(cardX(middle), cardY(middle) + cardH * HAND_CARD_Y);
+    this.handSpot?.setPosition(width / 2 + cardW * HAND_CARD_X, cardY(middle) + cardH * HAND_CARD_Y);
 
     if (canReroll) {
       this.cards.push(
         createButton(this, width / 2, height - BOTTOM_MARGIN - REROLL_SPACE / 2, {
           width: REROLL_BUTTON_W,
           height: REROLL_BUTTON_H,
-          label: `Reroll ${this.upgrades.rerollsLeft}`,
+          label: `Reroll (${this.upgrades.rerollsLeft})`,
           readyAt: this.readyAt,
           onClick: () => this.showNext(true),
         }),
@@ -157,42 +166,40 @@ export class UpgradeScene extends Phaser.Scene {
     return this.add.container(0, 0, [hand]).setDepth(1);
   }
 
+  /** Icon box on the left; name, then stars with the badge, then the level text flowing down on the right. */
   private createCard(def: UpgradeDef, x: number, y: number, w: number, h: number): Phaser.GameObjects.Container {
     const level = this.upgrades.levelOf(def);
+    const left = -w / 2;
     const top = -h / 2;
-    const bottom = h / 2;
-    const textWidth = w - TEXT_PADDING * 2;
+    const right = w / 2 - CARD_PADDING;
+    const textLeft = left + TEXT_LEFT;
+    const textWidth = right - textLeft;
+    const iconX = left + CARD_PADDING + ICON_BOX / 2;
+    const iconY = -(KIND_LABEL_GAP + KIND_LABEL_H) / 2;
+    const kind = KIND_LABEL[def.kind];
     const { shadow, face: bg } = panel(this, w, h, def.kind === 'evolution' ? COLOR.gold : COLOR.accent);
     bg.setInteractive();
     const parts: Phaser.GameObjects.GameObject[] = [
       shadow,
       bg,
-      this.add.image(0, top + 34, ATLAS, iconFor(def)).setScale(ICON_SCALE),
+      this.add.rectangle(iconX, iconY, ICON_BOX, ICON_BOX, COLOR.panelShadow).setStrokeStyle(2, kind.color),
+      this.add.image(iconX, iconY, ATLAS, iconFor(def)).setScale(ICON_SCALE),
+      pixelText(this, iconX, iconY + ICON_BOX / 2 + KIND_LABEL_GAP, kind.text, { color: kind.color }).setOrigin(0.5, 0),
     ];
 
-    const name = this.fittedText(def.name, top + 66, textWidth, COLOR.gold);
+    const name = pixelText(this, textLeft, top + CARD_PADDING, def.name, { color: COLOR.gold, maxWidth: textWidth, centered: false });
+    name.setOrigin(0, 0);
     parts.push(name);
-    let nextY = name.y + name.height + 12;
+    let nextY = name.y + name.height + LINE_GAP;
 
-    if (def.kind !== 'evolution' && def.kind !== 'repair') {
-      const stars = starRows(this, 0, nextY, level, def.levels.length, true);
-      parts.push(...stars);
-      nextY = stars[stars.length - 1].y + 12;
-    }
+    // A card with neither stars nor a badge skips the line altogether
+    const hasStars = def.kind !== 'evolution' && def.kind !== 'repair';
+    const badge = this.createBadge(def, level, right, nextY + BADGE_LINE_H / 2);
+    if (hasStars) parts.push(...starRow(this, textLeft, nextY + BADGE_LINE_H / 2, level, def.levels.length, true));
+    parts.push(...badge);
+    if (hasStars || badge.length > 0) nextY += BADGE_LINE_H + LINE_GAP;
 
-    parts.push(this.fittedText(def.levels[level].text, nextY, textWidth, COLOR.text));
-
-    const evolves = EVOLUTIONS.find((evolution) => evolution.passive === def);
-    if (evolves) {
-      parts.push(
-        pixelText(this, 0, bottom - 42, 'Evolves', { color: COLOR.gold }).setOrigin(0.5),
-        this.add.image(0, bottom - 20, ATLAS, WEAPONS[evolves.base.weapon].sprite).setScale(PIXEL_SCALE),
-      );
-    } else if (def.kind === 'weapon' && level === 0) {
-      parts.push(pixelText(this, 0, bottom - 20, 'New', { color: COLOR.data }).setOrigin(0.5));
-    } else if (def.kind === 'evolution') {
-      parts.push(pixelText(this, 0, bottom - 20, 'Evolution', { color: COLOR.gold }).setOrigin(0.5));
-    }
+    parts.push(pixelText(this, textLeft, nextY, def.levels[level].text, { maxWidth: textWidth, centered: false }).setOrigin(0, 0));
 
     bg.on('pointerdown', () => {
       if (this.game.loop.time >= this.readyAt) this.pressed = def;
@@ -203,11 +210,21 @@ export class UpgradeScene extends Phaser.Scene {
     return this.add.container(x, y, parts);
   }
 
-  /** Wraps at spaces only, so a single word too long for the card drops to the small size. */
-  private fittedText(text: string, y: number, maxWidth: number, color: number) {
-    const longestWord = Math.max(...text.split(' ').map((word) => word.length));
-    const size = longestWord * TEXT_SIZE > maxWidth ? SMALL_TEXT_SIZE : TEXT_SIZE;
-    return pixelText(this, 0, y, text, { size, color, maxWidth }).setOrigin(0.5, 0);
+  /** Right-aligned at `right`: NEW for an unowned weapon, EVOLVES plus the weapon for the passive that evolves it. */
+  private createBadge(def: UpgradeDef, level: number, right: number, cy: number): Phaser.GameObjects.GameObject[] {
+    const evolves = EVOLUTIONS.find((evolution) => evolution.passive === def);
+    if (evolves) {
+      const icon = this.add.image(right, cy, ATLAS, WEAPONS[evolves.base.weapon].sprite).setOrigin(1, 0.5).setScale(PIXEL_SCALE);
+      const label = pixelText(this, right - icon.displayWidth - LINE_GAP, cy, 'Evolves', { color: COLOR.gold }).setOrigin(1, 0.5);
+      return [icon, label];
+    }
+    if (def.kind === 'weapon' && level === 0) {
+      const label = pixelText(this, right - NEW_BADGE_PADDING, cy, 'New', { color: COLOR.data }).setOrigin(1, 0.5);
+      const boxW = label.width + NEW_BADGE_PADDING * 2;
+      const frame = this.add.rectangle(right - boxW / 2, cy, boxW, BADGE_LINE_H).setStrokeStyle(2, COLOR.data);
+      return [frame, label];
+    }
+    return [];
   }
 }
 

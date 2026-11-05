@@ -153,8 +153,9 @@ export class Upgrades {
     const level = this.levelOf(def);
     if (level >= def.levels.length) return false;
     if (level > 0) return true;
-    if (def.kind === 'weapon') return this.isUnlocked(def.weapon) && this.weapons.length < MAX_WEAPONS + this.player.stats.bonusWeaponSlots;
-    return this.passiveCount < MAX_PASSIVES;
+    const bonusSlots = this.player.stats.bonusSlots;
+    if (def.kind === 'weapon') return this.isUnlocked(def.weapon) && this.weapons.length < MAX_WEAPONS + bonusSlots;
+    return this.passiveCount < MAX_PASSIVES + bonusSlots;
   }
 
   private canEvolve(def: EvolutionUpgrade): boolean {

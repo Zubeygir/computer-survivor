@@ -78,8 +78,8 @@ export class Breakables {
   private inView(x: number, y: number, margin: number): boolean {
     const { sprite } = this.player;
     return (
-      Math.abs(x - sprite.x) <= this.camera.width / 2 + margin &&
-      Math.abs(y - sprite.y) <= this.camera.height / 2 + margin
+      Math.abs(x - sprite.x) <= this.camera.displayWidth / 2 + margin &&
+      Math.abs(y - sprite.y) <= this.camera.displayHeight / 2 + margin
     );
   }
 
@@ -98,8 +98,8 @@ export class Breakables {
 
   private addNearby() {
     const { x: px, y: py } = this.player.sprite;
-    const halfWidth = this.camera.width / 2 + SPAWN_MARGIN;
-    const halfHeight = this.camera.height / 2 + SPAWN_MARGIN;
+    const halfWidth = this.camera.displayWidth / 2 + SPAWN_MARGIN;
+    const halfHeight = this.camera.displayHeight / 2 + SPAWN_MARGIN;
     const left = Math.floor((px - halfWidth) / CHUNK_SIZE);
     const right = Math.floor((px + halfWidth) / CHUNK_SIZE);
     const top = Math.floor((py - halfHeight) / CHUNK_SIZE);

@@ -54,8 +54,8 @@ export class Spawner {
     this.elapsed += seconds;
     const wave = WAVES[Math.min(Math.floor(this.elapsed / 60), WAVES.length - 1)];
 
-    // Half the screen diagonal reaches the corners in any orientation
-    const ring = Math.hypot(this.camera.width, this.camera.height) / 2 + SPAWN_MARGIN;
+    // Half the visible world's diagonal reaches the corners in any orientation and zoom
+    const ring = Math.hypot(this.camera.displayWidth, this.camera.displayHeight) / 2 + SPAWN_MARGIN;
 
     const minimum = Math.min(wave.minimum + this.overtime * OVERTIME.extraEnemies, OVERTIME.maxEnemies);
 

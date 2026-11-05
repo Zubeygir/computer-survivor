@@ -4,7 +4,7 @@ import { SLOT_BULBS, SLOT_FACE, SLOT_LEVER, SLOT_SIGN, SLOT_WINDOW } from '../ar
 import { rollHits, type SlotOdds } from '../data/slots';
 import { UPGRADES } from '../data/upgrades';
 import type { SlotPick, Upgrades } from '../systems/Upgrades';
-import { clearScene, COLOR, panel, pixelText, starRows, TEXT_SIZE } from '../ui/Button';
+import { clearScene, COLOR, fitCamera, panel, pixelText, starRows, TEXT_SIZE } from '../ui/Button';
 import { createHand } from '../ui/Hand';
 import { iconFor } from './UpgradeScene';
 
@@ -235,7 +235,7 @@ export class SlotScene extends Phaser.Scene {
     this.tweens.killAll();
     clearScene(this);
     this.hand = null;
-    const { width, height } = this.scale;
+    const { width, height } = fitCamera(this);
     this.add.rectangle(0, 0, width, height, 0x000000, 0.72).setOrigin(0);
 
     const wide = width > height;
@@ -316,7 +316,7 @@ export class SlotScene extends Phaser.Scene {
   }
 
   private showResults(animate: boolean) {
-    const { width, height } = this.scale;
+    const { width, height } = fitCamera(this);
     const wide = width > height;
     const rowWidth = Math.min((wide ? width / 2 : width) - SIDE_MARGIN * 2, ROW_MAX_WIDTH);
     const rowX = wide ? (width * 3) / 4 : width / 2;

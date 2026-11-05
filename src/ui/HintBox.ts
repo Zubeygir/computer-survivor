@@ -14,8 +14,8 @@ export class HintBox {
   private readonly text: Phaser.GameObjects.BitmapText;
 
   constructor(scene: Phaser.Scene) {
-    this.backing = scene.add.rectangle(0, 0, 1, 1, 0x000000, 0.6).setScrollFactor(0).setDepth(DEPTH).setVisible(false);
-    this.text = pixelText(scene, 0, Y, '').setOrigin(0.5, 0).setScrollFactor(0).setDepth(DEPTH + 1).setVisible(false);
+    this.backing = scene.add.rectangle(0, 0, 1, 1, 0x000000, 0.6).setDepth(DEPTH).setVisible(false);
+    this.text = pixelText(scene, 0, Y, '').setOrigin(0.5, 0).setDepth(DEPTH + 1).setVisible(false);
     this.resize(scene.scale.width);
   }
 

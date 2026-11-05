@@ -44,6 +44,9 @@ export const WEAPON_PRICES: Partial<Record<WeaponId, number>> = {
   boombox: 1800,
 };
 
+/** The Workshop screen's two tabs. */
+export type WorkshopTab = 'stats' | 'mechanics';
+
 export interface WorkshopDef {
   id: string;
   name: string;
@@ -52,6 +55,7 @@ export interface WorkshopDef {
   stats: Partial<PlayerStats>;
   /** Price of each level; its length is the max level. */
   prices: number[];
+  tab: WorkshopTab;
 }
 
 /** Level prices that grow by `growth` each level, rounded to tens; the economy pass sets the real numbers. */
@@ -63,24 +67,24 @@ const STAT_PRICES = prices(50, 10, 1.5);
 
 /** Percentages are of the base stats in `player.ts`: 200 move speed, 80 pickup radius. */
 export const WORKSHOP: WorkshopDef[] = [
-  { id: 'armorPlate', name: 'Armor Plate', text: '+10 max HP', stats: { maxHp: 10 }, prices: STAT_PRICES },
-  { id: 'firmware', name: 'Firmware', text: '+3% damage', stats: { damageMult: 0.03 }, prices: STAT_PRICES },
-  { id: 'overdrive', name: 'Overdrive', text: '+2% move speed', stats: { moveSpeed: 4 }, prices: STAT_PRICES },
-  { id: 'longCable', name: 'Long Cable', text: '+5% pickup range', stats: { pickupRadius: 4 }, prices: STAT_PRICES },
-  { id: 'cache', name: 'Cache', text: '+3% XP', stats: { xpMult: 0.03 }, prices: STAT_PRICES },
-  { id: 'turboClock', name: 'Turbo Clock', text: '-2% cooldown', stats: { cooldownMult: -0.02 }, prices: STAT_PRICES },
-  { id: 'bigScreen', name: 'Big Screen', text: '+3% area', stats: { areaMult: 0.03 }, prices: STAT_PRICES },
-  { id: 'spareBattery', name: 'Spare Battery', text: '+4% duration', stats: { durationMult: 0.04 }, prices: STAT_PRICES },
-  { id: 'fiberLine', name: 'Fiber Line', text: '+4% projectile speed', stats: { projectileSpeedMult: 0.04 }, prices: STAT_PRICES },
-  { id: 'thermalPaste', name: 'Thermal Paste', text: '-2% damage taken', stats: { damageTakenMult: -0.02 }, prices: STAT_PRICES },
-  { id: 'antivirusSub', name: 'Antivirus Sub', text: '+0.2 HP per second', stats: { regen: 0.2 }, prices: STAT_PRICES },
-  { id: 'dualCore', name: 'Dual Core', text: '+1 projectile', stats: { bonusProjectiles: 1 }, prices: prices(5000, 1, 1) },
-  { id: 'luckyCoin', name: 'Lucky Coin', text: '+2% double and triple slot hits', stats: { luck: 0.02 }, prices: prices(200, 5, 1.6) },
-  { id: 'dataMiner', name: 'Data Miner', text: '+5% Data at run end', stats: { dataMult: 0.05 }, prices: prices(100, 10, 1.5) },
-  { id: 'reroll', name: 'Reroll', text: '+1 card reroll per run', stats: { rerolls: 1 }, prices: prices(300, 3, 2) },
-  { id: 'wideMenu', name: 'Wide Menu', text: '4 cards to pick from', stats: { bonusCards: 1 }, prices: prices(2000, 1, 1) },
-  { id: 'scrapRadar', name: 'Scrap Radar', text: '+3% computer chance', stats: { computerChance: 3 }, prices: prices(150, 5, 1.6) },
-  { id: 'expansionBay', name: 'Expansion Bay', text: '+1 weapon slot', stats: { bonusWeaponSlots: 1 }, prices: prices(8000, 1, 1) },
+  { id: 'armorPlate', name: 'Armor Plate', text: '+10 max HP', stats: { maxHp: 10 }, prices: STAT_PRICES, tab: 'stats' },
+  { id: 'firmware', name: 'Firmware', text: '+3% damage', stats: { damageMult: 0.03 }, prices: STAT_PRICES, tab: 'stats' },
+  { id: 'overdrive', name: 'Overdrive', text: '+2% move speed', stats: { moveSpeed: 4 }, prices: STAT_PRICES, tab: 'stats' },
+  { id: 'longCable', name: 'Long Cable', text: '+5% pickup range', stats: { pickupRadius: 4 }, prices: STAT_PRICES, tab: 'stats' },
+  { id: 'cache', name: 'Cache', text: '+3% XP', stats: { xpMult: 0.03 }, prices: STAT_PRICES, tab: 'stats' },
+  { id: 'turboClock', name: 'Turbo Clock', text: '-2% cooldown', stats: { cooldownMult: -0.02 }, prices: STAT_PRICES, tab: 'stats' },
+  { id: 'bigScreen', name: 'Big Screen', text: '+3% area', stats: { areaMult: 0.03 }, prices: STAT_PRICES, tab: 'stats' },
+  { id: 'spareBattery', name: 'Spare Battery', text: '+4% duration', stats: { durationMult: 0.04 }, prices: STAT_PRICES, tab: 'stats' },
+  { id: 'fiberLine', name: 'Fiber Line', text: '+4% projectile speed', stats: { projectileSpeedMult: 0.04 }, prices: STAT_PRICES, tab: 'stats' },
+  { id: 'thermalPaste', name: 'Thermal Paste', text: '-2% damage taken', stats: { damageTakenMult: -0.02 }, prices: STAT_PRICES, tab: 'stats' },
+  { id: 'antivirusSub', name: 'Antivirus Sub', text: '+0.2 HP per second', stats: { regen: 0.2 }, prices: STAT_PRICES, tab: 'stats' },
+  { id: 'dualCore', name: 'Dual Core', text: '+1 projectile', stats: { bonusProjectiles: 1 }, prices: prices(5000, 1, 1), tab: 'stats' },
+  { id: 'luckyCoin', name: 'Lucky Coin', text: '+2% double and triple slot hits', stats: { luck: 0.02 }, prices: prices(200, 5, 1.6), tab: 'mechanics' },
+  { id: 'dataMiner', name: 'Data Miner', text: '+5% Data at run end', stats: { dataMult: 0.05 }, prices: prices(100, 10, 1.5), tab: 'mechanics' },
+  { id: 'reroll', name: 'Reroll', text: '+1 card reroll per run', stats: { rerolls: 1 }, prices: prices(300, 3, 2), tab: 'mechanics' },
+  { id: 'wideMenu', name: 'Wide Menu', text: '4 cards to pick from', stats: { bonusCards: 1 }, prices: prices(2000, 1, 1), tab: 'mechanics' },
+  { id: 'scrapRadar', name: 'Scrap Radar', text: '+3% computer chance', stats: { computerChance: 3 }, prices: prices(150, 5, 1.6), tab: 'mechanics' },
+  { id: 'expansionBay', name: 'Expansion Bay', text: '+1 weapon and +1 passive slot', stats: { bonusSlots: 1 }, prices: prices(12000, 1, 1), tab: 'mechanics' },
 ];
 
 /** Sums the bought Workshop levels into one set of stat bonuses. */

@@ -1,9 +1,9 @@
 import Phaser from 'phaser';
 import { createSpotlight } from '../textures';
-import { clearScene, COLOR, pixelText } from '../ui/Button';
+import { clearScene, COLOR, fitCamera, pixelText } from '../ui/Button';
 
 export interface SpotlightSceneData {
-  /** Screen position of what to point out. */
+  /** Screen position of what to point out, in CSS pixels. */
   x: number;
   y: number;
   text: string;
@@ -47,7 +47,7 @@ export class SpotlightScene extends Phaser.Scene {
   private layout() {
     this.tweens.killAll();
     clearScene(this);
-    const { width, height } = this.scale;
+    const { width, height } = fitCamera(this);
     const { x, y, text } = this.spot;
     createSpotlight(this, TEXTURE, width, height, x, y, HOLE_RADIUS);
     this.add.image(0, 0, TEXTURE).setOrigin(0);

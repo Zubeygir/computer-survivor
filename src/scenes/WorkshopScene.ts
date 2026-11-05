@@ -1,75 +1,136 @@
 import Phaser from 'phaser';
-import { WORKSHOP, type WorkshopDef } from '../data/meta';
+import { WORKSHOP, type WorkshopDef, type WorkshopTab } from '../data/meta';
 import { progress } from '../systems/Progress';
-import { addBackdrop, addPager, clearScene, COLOR, createButton, gridCells, pixelText } from '../ui/Button';
+import { addDarkBackdrop, addScreenHeader, clearScene, COLOR, createButton, fitCamera, panel, pixelText, SCREEN_HEADER_H, starRow } from '../ui/Button';
+import { ScrollList } from '../ui/ScrollList';
 
-const MARGIN = 12;
-const HEADER_H = 64;
-const GAP = 10;
-const WIDE_LAYOUT_WIDTH = 640;
-/** One column on a phone, so this is the number of rows that still leaves room for two rows of stars. */
-const CELLS_PER_PAGE = 6;
-const FOOTER_H = 52;
+const SIDE_MARGIN = 12;
+const MAX_COLUMN_W = 420;
+const TAB_Y = SCREEN_HEADER_H + 12;
+const TAB_H = 36;
+const TAB_GAP = 11;
+const LIST_TOP = TAB_Y + TAB_H + 14;
+/** Rows grow past this when the effect text wraps. */
+const ROW_MIN_H = 84;
+const ROW_GAP = 8;
+const ROW_PADDING = 12;
+const NAME_Y = 12;
+const TEXT_Y = 34;
+/** From the text's bottom to the star row's center, and from there to the row's bottom. */
+const STARS_GAP = 14;
+const STARS_BOTTOM = 18;
+const PRICE_W = 96;
+const PRICE_H = 40;
+/** Between the text column and the price button. */
+const PRICE_GAP = 8;
+const TABS: { tab: WorkshopTab; label: string }[] = [
+  { tab: 'stats', label: 'Stats' },
+  { tab: 'mechanics', label: 'Mechanics' },
+];
 
-/** Limited permanent upgrades bought with Data. */
+/** Limited permanent upgrades bought with Data: two tabs of rows, each with its own price button. */
 export class WorkshopScene extends Phaser.Scene {
-  private page = 0;
+  private tab: WorkshopTab = 'stats';
+  private scroll = 0;
+  private list: ScrollList | null = null;
 
   constructor() {
     super('WorkshopScene');
   }
 
   create() {
-    this.page = 0;
+    this.tab = 'stats';
+    this.scroll = 0;
     this.layout();
     this.scale.on('resize', this.layout, this);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.scale.off('resize', this.layout, this));
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.scale.off('resize', this.layout, this);
+      this.list?.destroy();
+    });
   }
 
-  /** Rebuilds the screen; only runs on entry, on resize and after a purchase. */
+  /** Rebuilds the screen; only runs on entry, on resize, on a tab change and after a purchase. */
   private layout() {
+    this.list?.destroy();
     clearScene(this);
-    addBackdrop(this);
-    const { width, height } = this.scale;
-    this.add.rectangle(0, 0, width, HEADER_H, COLOR.panelShadow).setOrigin(0);
-    createButton(this, MARGIN + 44, HEADER_H / 2, {
-      width: 88,
-      height: 40,
-      label: 'Back',
-      onClick: () => this.scene.start('MenuScene'),
-    });
-    pixelText(this, width - MARGIN, HEADER_H / 2, `Data ${progress.data}`, { color: COLOR.data, centered: false }).setOrigin(1, 0.5);
+    const { width, height } = fitCamera(this);
+    addDarkBackdrop(this);
+    const columnW = Math.min(width - SIDE_MARGIN * 2, MAX_COLUMN_W);
+    const left = (width - columnW) / 2;
+    const right = left + columnW;
 
-    const columns = width >= WIDE_LAYOUT_WIDTH ? 3 : 1;
-    const top = HEADER_H + MARGIN;
-    const area = { x: MARGIN, y: top, width: width - MARGIN * 2, height: height - top - FOOTER_H - MARGIN };
-    const grid = gridCells(CELLS_PER_PAGE, columns, area, GAP);
-    const first = this.page * CELLS_PER_PAGE;
-    WORKSHOP.slice(first, first + CELLS_PER_PAGE).forEach((def, i) => {
-      const { x, y } = grid.centers[i];
-      this.addCell(def, x, y, grid.width, grid.height);
-    });
-    addPager(this, width / 2, height - FOOTER_H / 2, this.page, Math.ceil(WORKSHOP.length / CELLS_PER_PAGE), (page) => {
-      this.page = page;
-      this.layout();
+    // The list first, so the header and tabs draw over rows scrolled beneath them
+    const list = new ScrollList(this, { x: left, y: LIST_TOP, width: columnW, height: height - LIST_TOP }, this.scroll);
+    this.list = list;
+    let top = 0;
+    for (const def of WORKSHOP.filter((def) => def.tab === this.tab)) {
+      const { row, height } = this.createRow(def, top, columnW);
+      list.content.add(row);
+      top += height + ROW_GAP;
+    }
+    list.setContentHeight(top - ROW_GAP + SIDE_MARGIN);
+
+    addScreenHeader(this, 'Workshop', progress.data, left, right, () => this.scene.start('MenuScene'));
+    const tabW = (columnW - TAB_GAP) / 2;
+    TABS.forEach(({ tab, label }, i) => {
+      createButton(this, left + tabW / 2 + i * (tabW + TAB_GAP), TAB_Y + TAB_H / 2, {
+        width: tabW,
+        height: TAB_H,
+        label,
+        primary: tab === this.tab,
+        onClick: () => {
+          if (tab === this.tab) return;
+          this.tab = tab;
+          this.scroll = 0;
+          this.layout();
+        },
+      });
     });
   }
 
-  private addCell(def: WorkshopDef, x: number, y: number, width: number, height: number) {
+  /** Name, effect and the level stars on the left, the price button on the right; the height follows the effect text. */
+  private createRow(def: WorkshopDef, top: number, width: number): { row: Phaser.GameObjects.Container; height: number } {
     const level = progress.workshopLevel(def);
-    const max = def.prices.length;
-    const maxed = level >= max;
+    const maxed = level >= def.prices.length;
     const price = def.prices[level];
-    createButton(this, x, y, {
-      width,
-      height,
-      label: `${def.name}\n${def.text}\n${maxed ? 'Max' : `${price} Data`}`,
-      stars: { owned: level, total: max },
-      color: maxed ? COLOR.gold : COLOR.text,
-      disabled: !maxed && progress.data < price,
-      onClick: () => {
-        if (progress.buyWorkshop(def)) this.layout();
-      },
+    const affordable = !maxed && progress.data >= price;
+    const textW = width - ROW_PADDING * 2 - PRICE_W - PRICE_GAP;
+    const name = pixelText(this, ROW_PADDING, NAME_Y, def.name, { color: COLOR.gold, centered: false });
+    const text = pixelText(this, ROW_PADDING, TEXT_Y, def.text, {
+      color: maxed || affordable ? COLOR.text : COLOR.muted,
+      maxWidth: textW,
+      centered: false,
     });
+    const starsY = TEXT_Y + text.height + STARS_GAP;
+    const height = Math.max(ROW_MIN_H, starsY + STARS_BOTTOM);
+    // Made after the texts to know the height, but listed first so it draws under them
+    const { shadow, face } = panel(this, width, height, maxed ? COLOR.accent : COLOR.line);
+    shadow.setPosition(width / 2, height / 2 + 4);
+    face.setPosition(width / 2, height / 2);
+    const parts: Phaser.GameObjects.GameObject[] = [shadow, face, name, text, ...starRow(this, ROW_PADDING, starsY, level, def.prices.length)];
+    const priceX = width - ROW_PADDING - PRICE_W / 2;
+    const priceY = height / 2;
+    if (maxed) {
+      const { shadow: maxShadow, face: maxFace } = panel(this, PRICE_W, PRICE_H, COLOR.accent, COLOR.accent);
+      maxShadow.setPosition(priceX, priceY + 4);
+      maxFace.setPosition(priceX, priceY);
+      parts.push(maxShadow, maxFace, pixelText(this, priceX, priceY, 'Max', { color: COLOR.ink }).setOrigin(0.5));
+    } else {
+      parts.push(
+        createButton(this, priceX, priceY, {
+          width: PRICE_W,
+          height: PRICE_H,
+          label: String(price),
+          color: COLOR.data,
+          inlineIcon: 'drop-data-small',
+          disabled: !affordable,
+          onClick: () => {
+            this.scroll = this.list?.scroll ?? 0;
+            if (progress.buyWorkshop(def)) this.layout();
+          },
+        }),
+      );
+    }
+    return { row: this.add.container(0, top, parts), height };
   }
 }

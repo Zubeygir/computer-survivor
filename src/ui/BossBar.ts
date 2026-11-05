@@ -21,17 +21,14 @@ export class BossBar {
     this.bg = scene.add
       .rectangle(0, BAR_Y, 1, BAR_HEIGHT, 0x000000, 0.6)
       .setOrigin(0, 0.5)
-      .setScrollFactor(0)
       .setDepth(DEPTH);
     // Progress is shown by scaling the fill horizontally, like the XP bar
     this.fill = scene.add
       .rectangle(0, BAR_Y, 1, BAR_HEIGHT, 0xd81b60)
       .setOrigin(0, 0.5)
-      .setScrollFactor(0)
       .setDepth(DEPTH + 1);
     this.label = pixelText(scene, 0, LABEL_Y, '')
       .setOrigin(0.5, 0)
-      .setScrollFactor(0)
       .setDepth(DEPTH);
     this.resize(scene.scale.width);
     this.setVisible(false);

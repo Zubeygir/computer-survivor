@@ -31,7 +31,6 @@ export class HurtFlash {
     this.overlay = scene.add
       .image(0, 0, TEXTURE)
       .setOrigin(0)
-      .setScrollFactor(0)
       .setDepth(DEPTH)
       .setTint(COLOR)
       .setVisible(false);

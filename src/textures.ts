@@ -46,6 +46,18 @@ export function createSpotlight(scene: Phaser.Scene, key: string, width: number,
   texture.refresh();
 }
 
+/** A plain tile with one 2x2 dot in the middle; tiled, it makes the faint grid behind the menus. */
+export function createDotTile(scene: Phaser.Scene, key: string, size: number, background: string, dot: string) {
+  if (scene.textures.exists(key)) return;
+  const texture = scene.textures.createCanvas(key, size, size)!;
+  const context = texture.getContext();
+  context.fillStyle = background;
+  context.fillRect(0, 0, size, size);
+  context.fillStyle = dot;
+  context.fillRect(size / 2 - 1, size / 2 - 1, 2, 2);
+  texture.refresh();
+}
+
 export function createRectTexture(scene: Phaser.Scene, key: string, width: number, height: number, color: number) {
   if (scene.textures.exists(key)) return;
   const g = scene.make.graphics({}, false);

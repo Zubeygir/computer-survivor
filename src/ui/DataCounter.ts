@@ -23,10 +23,9 @@ export class DataCounter {
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
-    this.icon = scene.add.image(0, Y, ATLAS, 'drop-data-small').setScale(PIXEL_SCALE).setScrollFactor(0).setDepth(DEPTH);
+    this.icon = scene.add.image(0, Y, ATLAS, 'drop-data-small').setScale(PIXEL_SCALE).setDepth(DEPTH);
     this.text = pixelText(scene, 0, Y, '0', { color: COLOR.gold, centered: false })
       .setOrigin(1, 0.5)
-      .setScrollFactor(0)
       .setDepth(DEPTH);
     this.resize(scene.scale.width);
   }

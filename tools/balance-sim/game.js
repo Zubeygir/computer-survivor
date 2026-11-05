@@ -62,8 +62,8 @@ function fakeImage() {
 }
 
 const scene = { add: { image: fakeImage, circle: fakeImage }, textures: { exists: () => true } };
-// Portrait phone: the camera only decides the spawn ring
-const camera = { width: 390, height: 844, flash() {} };
+// Portrait phone at device pixel ratio 3 and world zoom 2: the camera only decides the spawn ring
+const camera = { width: 1125, height: 2436, displayWidth: 562, displayHeight: 1218, flash() {} };
 
 /**
  * Plays one run, following the frame order of `GameScene.update`.

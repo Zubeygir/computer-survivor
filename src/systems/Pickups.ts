@@ -79,7 +79,7 @@ export class Pickups {
         this.gems.attractAll();
         break;
       case 'nuke':
-        this.enemies.killInView(x, y, this.camera.width / 2, this.camera.height / 2);
+        this.enemies.killInView(x, y, this.camera.displayWidth / 2, this.camera.displayHeight / 2);
         this.camera.flash(NUKE_FLASH_MS, 255, 255, 255);
         break;
       case 'slot':

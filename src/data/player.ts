@@ -48,8 +48,8 @@ export interface PlayerStats {
   bonusCards: number;
   /** Percentage points added to the chance that a map chunk holds a computer. */
   computerChance: number;
-  /** Extra weapon slots. */
-  bonusWeaponSlots: number;
+  /** Extra weapon and passive slots, one of each per point. */
+  bonusSlots: number;
 }
 
 // Moves to per-character data once multiple characters exist
@@ -78,5 +78,5 @@ export const BASE_PLAYER_STATS: PlayerStats = {
   rerolls: 0,
   bonusCards: 0,
   computerChance: 0,
-  bonusWeaponSlots: 0,
+  bonusSlots: 0,
 };

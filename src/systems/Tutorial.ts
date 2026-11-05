@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { ENEMIES, type EnemyDef } from '../data/enemies';
 import { xpToNext } from '../data/progression';
 import type { Player } from '../entities/Player';
-import { COLOR } from '../ui/Button';
+import { COLOR, DPR } from '../ui/Button';
 import { createHand } from '../ui/Hand';
 import { HintBox } from '../ui/HintBox';
 import type { EnemyManager } from './EnemyManager';
@@ -49,14 +49,16 @@ export class Tutorial {
 
   constructor(
     private readonly scene: Phaser.Scene,
+    /** The HUD scene draws the hint and the hand; the ring is a world object in `scene`. */
+    private readonly hud: Phaser.Scene,
     private readonly player: Player,
     private readonly enemies: EnemyManager,
     /** Freezes the game and points out the chip at world position (x, y). */
     private readonly spotlight: (x: number, y: number, text: string) => void,
   ) {
-    this.hint = new HintBox(scene);
+    this.hint = new HintBox(hud);
     this.hint.show('Drag to move');
-    this.hand = createHand(scene).setScrollFactor(0).setDepth(HAND_DEPTH);
+    this.hand = createHand(hud).setDepth(HAND_DEPTH);
   }
 
   /** Standing still while the first enemy walks in keeps the auto-fire obvious and the chip on screen. */
@@ -113,7 +115,9 @@ export class Tutorial {
   }
 
   private swingHand() {
-    const { width, height } = this.scene.scale;
+    // The hand lives on the HUD, which lays out in CSS pixels
+    const width = this.hud.scale.width / DPR;
+    const height = this.hud.scale.height / DPR;
     this.hand.setPosition(
       width / 2 + Math.sin(this.clock * HAND_SPEED_X) * HAND_SWING_X,
       height * HAND_Y + Math.sin(this.clock * HAND_SPEED_Y) * HAND_SWING_Y,
@@ -124,7 +128,8 @@ export class Tutorial {
     this.step = 'enemy';
     this.hand.destroy();
     this.hint.show('You fire automatically');
-    const { width, height } = this.scene.scale;
+    // Just off the visible world, whatever the zoom
+    const { displayWidth: width, displayHeight: height } = this.scene.cameras.main;
     const { x, y } = this.player.sprite;
     const distance = (Math.max(width, height) / 2) * ENEMY_DISTANCE;
     if (height > width) {

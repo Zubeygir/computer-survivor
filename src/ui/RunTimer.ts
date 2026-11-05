@@ -12,7 +12,6 @@ export class RunTimer {
   constructor(scene: Phaser.Scene) {
     this.text = pixelText(scene, scene.scale.width / 2, Y, formatTime(0), { size: 18 })
       .setOrigin(0.5, 0)
-      .setScrollFactor(0)
       .setDepth(1500);
   }
 

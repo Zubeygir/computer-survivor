@@ -15,9 +15,9 @@ export class InventoryBar {
   private readonly weaponIcons: Phaser.GameObjects.Image[];
   private readonly passiveIcons: Phaser.GameObjects.Image[];
 
-  constructor(scene: Phaser.Scene, weaponSlots = MAX_WEAPONS) {
+  constructor(scene: Phaser.Scene, weaponSlots = MAX_WEAPONS, passiveSlots = MAX_PASSIVES) {
     this.weaponIcons = this.createRow(scene, weaponSlots, Y);
-    this.passiveIcons = this.createRow(scene, MAX_PASSIVES, Y + SLOT + GAP);
+    this.passiveIcons = this.createRow(scene, passiveSlots, Y + SLOT + GAP);
   }
 
   /** Atlas frames of what is owned; call when the inventory changes. */
@@ -33,11 +33,9 @@ export class InventoryBar {
         .rectangle(x, y, SLOT, SLOT, 0x000000, 0.45)
         .setOrigin(0)
         .setStrokeStyle(1, 0xe8b33a, 0.6)
-        .setScrollFactor(0)
         .setDepth(DEPTH);
       return scene.add
         .image(x + SLOT / 2, y + SLOT / 2, ATLAS, 'star')
-        .setScrollFactor(0)
         .setDepth(DEPTH + 1)
         .setVisible(false);
     });

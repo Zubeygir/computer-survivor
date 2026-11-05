@@ -6,11 +6,11 @@ Kullanıcı Türkçe yazar ve **yalnızca Türkçe**, sade yanıt almalıdır. K
 
 ## Neredeyiz
 
-Aşağıdaki her şey commit edildi ve Vercel'in yayınladığı `main` dalına gönderildi (son commit 2026-11-05, `0b2bbf3`: 8 pasif, Atölye, kalabalık artışı, simülatör). Commit'ler artık doğrudan `main` üzerinde; `playtest-feedback-fixes` dalı geride kaldı, kullanılmıyor.
+Aşağıdaki her şey commit edildi ve Vercel'in yayınladığı `main` dalına gönderildi (son commit 2026-11-05 akşamı: mobil tasarım geçişi, HUD sahnesi, cihaz piksel oranı, yeni menüler, can barı, `?maxed`, Expansion Bay, bu dosya; bir önceki `0b2bbf3`: 8 pasif, Atölye, kalabalık artışı, simülatör). Commit'ler artık doğrudan `main` üzerinde; `playtest-feedback-fixes` dalı geride kaldı, kullanılmıyor.
 
 Oyun **sonsuz** bir survivors-like: bir oyun yalnızca ölünce biter. İlk oyuna özel eğitim, 20 boss, mini bosslar, slot makineleri, kırılabilir bilgisayarlar, 19 silah ve üç renk XP gem'i var.
 
-**Atölye (İş 1) 2026-11-04'te iki parça halinde bitti, kullanıcı henüz denemedi. İş 2'nin zorluk kısmı 2026-11-05'te simülasyonla yapıldı (aşağıda "Ölçüm"), fiyatlar ve ödüller kullanıcının gerçek oyunlarına bırakıldı; sıradaki adım kullanıcının bu haliyle oynaması.** Her işin planı o işten hemen önce sunulur ve kullanıcının onayı beklenir. 2026-11-04'te ayrıca 8 yeni pasif eklendi, artık 19 silahın 19 ayrı anahtarı var (aşağıda "Bu dönemde yapılanlar"). **2026-11-04'te zorluk işleri Atölye'nin önüne alındı:** kullanıcı oyuncuların 100-200 düşmanlık orduyla bütün oyun kaçtığını gördü. Yapılanlar: C nefes aldıran kota eğrisi ve B kota dolumunu bütçeye bağlama, ikisi de kullanıcı oynarken ayarlanıyor; ilk oyundan sonra kotalar 3. dakikadan itibaren yaklaşık %25 artırıldı. A (temas hasarına tavan: en sert düşman tam, diğerleri %25) denendi ve aynı gün kaldırıldı, çünkü kullanıcı "asla ölünmüyor" dedi; temas hasarı tamamen toplanır, tavan veya dokunulmazlık tekrar önerilmez. Ayrıntılar "Zorluk karşılaştırması" bölümünde.
+**İş 1 (Atölye) ve İş 2 (ekonomi) kapandı: kullanıcı 2026-11-05 akşamı fiyatları yer tutucu haliyle bıraktı ("şu an iyi, çok da zor olmaması lazım"). Aynı akşam mobil tasarım geçişi yapıldı (aşağıda "Bu dönemde yapılanlar", 2026-11-05 akşamı maddeleri): kartlar satır düzenine geçti ve tür etiketi aldı, HUD kendi sahnesine taşındı, kamera telefonda uzaklaşıyor, tuval cihaz piksel oranında çiziyor, menü, Atölye ve Müze yeniden yazıldı, can barı yenilendi. Kullanıcı kartları, kamerayı, Atölye'yi ve can barını gördü; menü ve Müze'yi henüz telefonda görmedi. Sıradaki iş kullanıcının seçimiyle İş 3 (zor mod); uygulama planı İş 3'ün altında, başlarken yeniden onaylatılır. Sonra İş 4 (karakterler).** Her işin planı o işten hemen önce sunulur ve kullanıcının onayı beklenir. 2026-11-04'te ayrıca 8 yeni pasif eklendi, artık 19 silahın 19 ayrı anahtarı var (aşağıda "Bu dönemde yapılanlar"). **2026-11-04'te zorluk işleri Atölye'nin önüne alındı:** kullanıcı oyuncuların 100-200 düşmanlık orduyla bütün oyun kaçtığını gördü. Yapılanlar: C nefes aldıran kota eğrisi ve B kota dolumunu bütçeye bağlama, ikisi de kullanıcı oynarken ayarlanıyor; ilk oyundan sonra kotalar 3. dakikadan itibaren yaklaşık %25 artırıldı. A (temas hasarına tavan: en sert düşman tam, diğerleri %25) denendi ve aynı gün kaldırıldı, çünkü kullanıcı "asla ölünmüyor" dedi; temas hasarı tamamen toplanır, tavan veya dokunulmazlık tekrar önerilmez. Ayrıntılar "Zorluk karşılaştırması" bölümünde.
 
 Oyun tasarım dokümanı https://claude.ai/artifact/8yApVH6VuMDwYmPwAqVosy adresinde (Türkçe, docs araçlarıyla okunur). Sonsuz oyun, bosslar, slotlar ve düşenlerden önce yazıldı, bu yüzden farklı oldukları yerde `src/data/*.ts` ve bu dosya geçerlidir.
 
@@ -18,16 +18,16 @@ Oyun tasarım dokümanı https://claude.ai/artifact/8yApVH6VuMDwYmPwAqVosy adres
 
 ### İş 1: Atölye
 
-Kullanıcı sonsuz oyunun çok daha fazla içeriğe ihtiyacı olduğu konusunda kesindi: "kesinlikle artması gerekiyor, çok fazla". Bosslar, silahlar ve Atölye bitti. Temel fikir oyuncunun kendini geliştirmeden ilerleyememesi. Plan 2026-11-04'te onaylandı, fiyat sayıları İş 2'ye kalır. **İki parça da aynı gün yapıldı:** 18 yükseltme, 3 sayfa, `prices` üreticisi; yer tutucu fiyatlarla toplam yaklaşık 96.000 Data (istatistikler 67.260, mekanikler 28.960), eskiden 6.000. Kullanıcı henüz denemedi.
-- **1. parça (saf veri ve ekran):** 12 istatistik yükseltmesi, her biri 10 seviye (Dual Core 1): Armor Plate +10 can, Firmware +%3 hasar, Overdrive +%2 hız, Long Cable +%5 çekim, Cache +%3 XP, Turbo Clock −%2 bekleme, Big Screen +%3 alan, Spare Battery +%4 süre, Fiber Line +%4 mermi hızı, Thermal Paste −%2 alınan hasar, Antivirus Sub +0,2 can/sn, Dual Core +1 mermi (en pahalı). Mevcut beşinin seviye başı değeri küçülür, kayıtlı seviyeler zayıflar (test aşamasında kabul edildi). Müze'deki sayfalama `Button.ts`'e taşınıp burada da kullanılır: telefonda sayfa başına 6 hücre tek sütun, genişte 3 sütun. Fiyatlar `prices(başlangıç, seviye, çarpan)` üreticisiyle, yer tutucu `prices(50, 10, 1.5)`.
-- **2. parça (mekanikler, her biri ayrı küçük iş):** Lucky Coin (slotta 2 ve 3 vuruş +%2, 5 seviye, `rollHits`'e `luck` stat'ı; kullanıcı "bayağı mantıklı" dedi, kalır), Data Miner (oyun sonu Data +%5, 10 seviye, `settleRun`), Reroll (seviye kartlarını oyun başına 1 kez yenile, 3 seviye, UpgradeScene düğmesi), Wide Menu (3 yerine 4 kart, 1 seviye), Scrap Radar (bilgisayar ihtimali +%3, 5 seviye), Expansion Bay (5. silah yuvası, 1 seviye, `MAX_WEAPONS` stat olur, envanter çubuğu).
-- Dirilme Atölye'de yok, ödüllü reklama saklandı. Atölye toplamı 96.000, Müze 16.300 Data; simülasyonda iyi oyuncu 20 oyunda 15-18.000 harcıyor, yani tamamı 80-100 oyun. Kullanıcı "fiyatlar oyuncuyu gerçekten zorlamalı" dedi; İş 2'de gerçek oyunlara göre karar verilecek.
+Kullanıcı sonsuz oyunun çok daha fazla içeriğe ihtiyacı olduğu konusunda kesindi: "kesinlikle artması gerekiyor, çok fazla". Bosslar, silahlar ve Atölye bitti. Temel fikir oyuncunun kendini geliştirmeden ilerleyememesi. Plan 2026-11-04'te onaylandı, fiyat sayıları İş 2'ye kalır. **İki parça da aynı gün yapıldı:** 18 yükseltme, `prices` üreticisi; toplam 100.220 Data (istatistikler 67.260, mekanikler 32.960), eskiden 6.000. Kullanıcı 2026-11-05'te denedi; ekran aynı akşam yeniden tasarlandı (sekmeler ve kaydırmalı liste, aşağıda).
+- **1. parça (saf veri ve ekran):** 12 istatistik yükseltmesi, her biri 10 seviye (Dual Core 1): Armor Plate +10 can, Firmware +%3 hasar, Overdrive +%2 hız, Long Cable +%5 çekim, Cache +%3 XP, Turbo Clock −%2 bekleme, Big Screen +%3 alan, Spare Battery +%4 süre, Fiber Line +%4 mermi hızı, Thermal Paste −%2 alınan hasar, Antivirus Sub +0,2 can/sn, Dual Core +1 mermi (en pahalı). Mevcut beşinin seviye başı değeri küçülür, kayıtlı seviyeler zayıflar (test aşamasında kabul edildi). Fiyatlar `prices(başlangıç, seviye, çarpan)` üreticisiyle, `prices(50, 10, 1.5)`. Sayfalama 2026-11-05 akşamı kalktı: STATS (12) ve MECHANICS (6) sekmeleri, parmakla kaydırılan satır listesi (`ScrollList`), satır başına fiyat düğmesi; hangi yükseltmenin hangi sekmede olduğu `WorkshopDef.tab` alanında.
+- **2. parça (mekanikler, her biri ayrı küçük iş):** Lucky Coin (slotta 2 ve 3 vuruş +%2, 5 seviye, `rollHits`'e `luck` stat'ı; kullanıcı "bayağı mantıklı" dedi, kalır), Data Miner (oyun sonu Data +%5, 10 seviye, `settleRun`), Reroll (seviye kartlarını oyun başına 1 kez yenile, 3 seviye, UpgradeScene düğmesi), Wide Menu (3 yerine 4 kart, 1 seviye), Scrap Radar (bilgisayar ihtimali +%3, 5 seviye), Expansion Bay (2026-11-05'ten beri +1 silah **ve** +1 pasif yuvası, 1 seviye, 12.000; `bonusSlots` stat'ı iki sınıra da eklenir, envanter çubuğunun iki satırı da uzar; kullanıcı "silah 5'e çıkıyorsa pasif de 5 olsun" dedi).
+- Dirilme Atölye'de yok, ödüllü reklama saklandı. Atölye toplamı 100.220, Müze 15.900 Data. 120 oyunluk kariyer simülasyonunda (2026-11-05 akşamı) iyi bot Müze'yi 50, Atölye'yi 70 oyunda dolduruyor; kullanıcı bunu gördü ve fiyatları olduğu gibi bıraktı (İş 2).
 
 ### İş 2: Ekonomi ve son denge
 
-Zorluk kısmı 2026-11-05'te insan gibi botla ölçülüp uygulandı (aşağıda "Ölçüm"). Kalan: fiyatlar ve ödüller, kullanıcının gerçek oyunlarına göre; yer tutucu iskelet simülasyonda makul çıktı (iyi oyuncu 20 oyunda yaklaşık 15-18.000 Data harcıyor, Atölye 80-100 oyunda dolar). Kullanıcı bu iş için sınırsız simülasyon izni verdi, şartı botların insan gibi oynaması. Fiyatlar oyuncuyu gerçekten zorlamalı.
+**Kapandı, 2026-11-05 akşamı.** Zorluk kısmı aynı gün insan gibi botla ölçülüp uygulandı (aşağıda "Ölçüm"). Kullanıcı kendi oyunlarında ortalama 10 dakika dayandığını söyledi; 120 oyunluk kariyer simülasyonu 10 dakikalık oyunun 500-750 Data verdiğini, iyi botun Atölye'yi 70 oyunda doldurduğunu ve 20 dakikaya ulaşınca gelirin oyun başına 4.000'in üstüne çıktığını (24.000 öldürme tek başına 2.400) gösterdi. Fiyat eğrisini dikleştirme planı (stat büyümesi 1,5'ten 1,7'ye, mekanikler orantılı) sunuldu, kullanıcı önce onayladı sonra vazgeçti: "Şu anki haliyle kalsın, şu an iyi, çok da zor olmaması lazım." Yer tutucu fiyatlar gerçek fiyat oldu; ödül formülü de aynı. Kullanıcı açmadıkça fiyat ve ödülü yeniden önerme. Simülasyon izni bu işe aitti.
 
-Claude'un önerdiği, ayrıntıları henüz onaylanmamış süre hedefleri (oyun sayıları öneridir):
+Eski süre hedefleri, artık bağlayıcı değil (kullanıcı 2026-11-05 akşamı bugünkü süreleri yeterli buldu; ilk oyun 7:30-12:30 kabul):
 
 | Oyuncu | Hedef |
 |---|---|
@@ -36,11 +36,49 @@ Claude'un önerdiği, ayrıntıları henüz onaylanmamış süre hedefleri (oyun
 | Yaklaşık 30 oyundan sonra | 13-15 dakika |
 | Atölye büyük ölçüde dolu | 20+ dakika |
 
-Kullanıcıdan gelen son gerçek veri eski dalgalara ait: 3-4 Atölye yıldızlı hesapta 8+ dakika, yeni oyuncu için tahminen en fazla 3-5 dakika; 2026-11-05'te botun kalibrasyon çapası olarak kullanıldı. Kullanıcı 2026-11-05'te bu tablonun "üzerinden geçildiğini" (eski ölçümler geçersiz) söyledi ve bugünkü oyunlarından veri vermedi ("elimde yok"); tablo hedef olarak kullanıldı ama onaylanmış değil, ilk sohbette sor.
+Kullanıcının gerçek verisi: eski dalgalarda 3-4 Atölye yıldızlı hesapta 8+ dakika (botun kalibrasyon çapası), bugünkü dalgalarda Atölye yıldızlı hesabıyla ortalama 10 dakika (2026-11-05 akşamı). Yeni oyuncu için tahmin en fazla 3-5 dakika.
+
+### İş 3: Zor mod
+
+Kullanıcı 2026-11-05'te istedi: çok iyi, Atölye'si dolu oyuncuların bile zorlanacağı bir mod. "Eski zorluk tabloları zor mod olsun" fikri konuşuldu ve reddedildi: eski halin sorunu yapısaldı (anında dolan kota, nefes anı yok, herkesin kaçtığı ordu) ve bugünkü içerikle ölçülmedi. Zor mod bugünkü sistemin üstüne **tek bir çarpan seti**dir; nefes alma ve dolum düzeni aynı kalır, her şey sıkılaşır.
+
+- **Veri:** `src/data/difficulty.ts`, iki kayıt: `normal` (hepsi 1) ve `hard`. Başlangıç önerisi, simülatörle ayarlanacak: düşman sayısı x1,5, düşman canı x1,5, temas hasarı x1,5, kota dolumu iki kat hızlı, boss canı x1,5, boss saldırı hasarı x1,5, oyun sonu Data x2. **Hedef:** `GOOD` bot + Atölye tamamen dolu + Müze tamamen açık hesap, zorda ortanca 10-15 dakikada ölsün; normalde o hesap 20:00'ı her oyunda geçiyor (bkz. "Denge ölçümü"). Yeni başlayan için zor mod düşünülmez, zaten kilitli.
+- **Uygulama:** çarpanlar Spawner (kota, dolum), EnemyManager (can, temas hasarı), Arena ve BossBrain (boss canı ve hasarı), `settleRun` (Data) içinde tek yerden okunur; sistem koduna sayı girmez. Seçili mod GameScene'e `init` verisiyle gelir.
+- **Açılış:** normalde bir kez 10:00'a ulaşmak (10:00 bossunu görmek). Açılana kadar menüde görünmez; açılınca bir kez "Hard mode unlocked" satırı sonuç ekranında.
+- **Menü:** PLAY'in altında NORMAL | HARD seçici, Atölye sekmeleri gibi (`createButton` `primary`). Seçim kayda yazılır (`SaveState.difficulty`), oyun o modla başlar.
+- **Kayıt:** zor mod için ayrı rekor (`bestTimeHard`); menünün BEST rozeti seçili modun rekorunu gösterir; sonuç ekranındaki "New record" aynı şekilde moda göre. Günlük görevler iki modda da sayılır.
+- **Simülatör:** `SIM_DIFFICULTY=hard` ile bütün bölümler aynı çarpanlarla koşar; `human` ve `career` bölümleri hedefi ölçer. Çarpanlar veri dosyasına girer, `tweaks.js`'e aday olarak değil.
+- **Sıra:** veri ve çarpanların okunması → menü seçici ve kayıt → açılış ve rekor → simülasyonla sayı ayarı → kullanıcı oynar.
+
+**Uygulama planı (2026-11-05 akşamı sunuldu; kullanıcı "sonra yapacağım" dedi, başlarken yeniden onaylat):**
+- `src/data/difficulty.ts`: `DifficultyId = 'normal' | 'hard'`, `DIFFICULTIES` kaydı (`enemies`, `enemyHp`, `contactDamage`, `refillSpeed`, `bossHp`, `bossDamage`, `dataMult`), `HARD_UNLOCK_SECONDS = 600`. Hard başlangıcı: 1,5 / 1,5 / 1,5 / 2 / 1,5 / 1,5 / 2.
+- `Spawner` kurucuya zorluk alır: `minimum = min((wave.minimum + uzatma) x enemies, OVERTIME.maxEnemies)` (450'lik havuz tavanı kalır), doğan düşman canı x `enemyHp` (kolay başlangıcın 15 saniyesi hariç, mini bosslar dahil), dolum `minimum / (REFILL.seconds / refillSpeed)` ve `minPerSecond x refillSpeed`, `damageMult` getter'ı x `contactDamage` (GameScene temas hasarını zaten `spawner.damageMult` ile çarpıyor).
+- `Arena` kurucuya zorluk alır: `bossMaxHp` x `bossHp` (`bossTest` hariç), `brain.begin`'e giden çarpan `BOSS_LOOP_DAMAGE_MULT ** fightRound x bossDamage` (mermi, dash, iz, patlama hepsi oradan geçer).
+- Data: `runData`'nın son çarpanı `player.stats.dataMult x difficulty.dataMult`, canlı sayaç ve `endRun` aynı; evrim ve günlük görev ödülleri çarpılmaz.
+- `SaveState`: `difficulty` (varsayılan `normal`), `hardUnlocked` (false), `bestTimeHard` (0); eski kayıtlar `loadSave`'deki birleştirmeyle gelir. `Progress`: `difficulty` get/set (yazar), `hardUnlocked`, `bestTimeFor(id)`. `RunSummary.difficulty`; `settleRun` normalde `time >= 600` ise `hardUnlocked = true` ve "Hard mode unlocked" satırı; rekor karşılaştırması moda göre.
+- `GameScene` ve `GameOverScene` modu `progress.difficulty`'den okur, sahneler arası veri taşınmaz; Restart aynı modda açar. `GameOverSceneData` rekor metni için modu bilir.
+- `MenuScene`: PLAY'in altında NORMAL | HARD seçici (iki `createButton`, seçili `primary`), yalnızca `hardUnlocked` ise; seçim `progress.difficulty`'ye yazılır ve `layout` yeniden çalışır, BEST rozeti seçili modun rekorunu gösterir. HUD'da süre sayacı zor modda kırmızı (`HudSceneData.hard`, tek satır; kullanıcı istemezse kalkar).
+- Simülatör: `report.js` `SIM_DIFFICULTY` ortam değişkenini okur, `game.js` Spawner, Arena ve `runData`'ya verir. Ölçüm: `GOOD` bot, Atölye tamamen dolu ve Müze tamamen açık hesapla (`maxedPlayer` senaryosu) `human` ve `career`; hedef ortanca 10-15 dakika; 1,5'ler buna göre oynar. Simülasyon için izin istenecek.
+- Dokunulan dosyalar: `difficulty.ts` (yeni), `Spawner.ts`, `Arena.ts`, `GameScene.ts`, `HudScene.ts`, `RunTimer.ts`, `SaveData.ts`, `Progress.ts`, `MenuScene.ts`, `GameOverScene.ts`, `tools/balance-sim/game.js`, `report.js`. Performans etkisi yok.
+
+### İş 4: Karakterler ve skinler
+
+Kullanıcı 2026-11-05'te istedi: her silaha bir karakter (19 karakter; şimdiki kahraman Cursor'ın karakteri), her karakterde 3 skin (baz + 2), hepsi **gizli görevlerle** açılır, oyuncu görevleri bilmez. Kararlar: imza özelliği **olsun**, skinler **palet değişimi**, kilitliler **siluet** olarak görünsün.
+
+- **Karakter ne verir:** kendi silahıyla başlar (Cursor yerine) ve bir imza özelliği taşır (küçük bir stat, örneğin Printer +%10 menzil, Boombox +20 can, Floppy +%5 çekim). Yalnızca başlangıç silahı olsaydı karakterler kopya olurdu; özellik onları ayırır ve zayıf başlayan silahları dengeler. Hepsi `PlayerStats` üzerinden gider, Atölye bonusu gibi `applyBonus` ile.
+- **Veri:** `src/data/characters.ts`: `id`, `name`, `weapon`, `trait` (stat kısmi nesnesi, bir satır açıklama), `unlock` (gizli görev), `skins` (3 kayıt: `id`, `name`, palet eşlemesi, `unlock`). Baz skin karakterle birlikte açılır. Palet değişimi `PALETTE` harflerinin karakter başına yeniden eşlenmesidir: aynı çizgi, farklı şapka, tulum, ten rengi; atlas her skin için ayrı kareler üretir (dur, iki adım). 19 x 3 kare = 57 çizim, skinler çizim istemez.
+- **Kayıt:** `SaveState.characters: Record<id, string[]>` (açık skin id'leri; boş dizi = karakter kilitli, kayıt yok = kilitli), `selectedCharacter`, `selectedSkin`. Eski kayıtlar `cursor` karakteri ve baz skini açık sayılır.
+- **Gizli görevler:** oyun sonunda `settleRun` içinde değerlendirilir, tür olarak günlük görevlere benzer: `evolve` (silahı evrimleştir), `survive` (o silahla N dakika; silah oyun sonunda eldeyse sayılır), `kills` (o silahla N öldürme; **yeni sayaç**: Weapon/ProjectileManager öldürmeyi silah id'sine yazar, `RunSummary.killsByWeapon`), `boss` (o silah eldeyken N. bossu öldür), `level` (o silahla seviye N). Her karakterin görevi kendi silahına bağlı; skin görevleri **o karakterle** daha ileri hedefler (örneğin "bu karakterle 15 dakika", "bu karakterle 20:00 bossu"). Koşul metni yalnızca açıldıktan sonra görünür. Sayılar `characters.ts`'te, ilk sohbette kullanıcıya listelenip onaylanır.
+- **Gizlilik ve geri bildirim:** Karakterler ekranında kilitli karakter siyah siluet ve "???" adıyla durur, koşul yazmaz; kilitli skin kutusu boş çerçeve. Açılınca sonuç ekranına "New character: X" / "New skin: Y" satırı ve o anda koşul açıklanır ("Evolved the Floppy Disk"). Açılan karakter kaydedilir, Data ödülü yok (ödül karakterin kendisi).
+- **Ekranlar:** menüde kum şeridindeki kahraman seçili karakteri ve skini gösterir; şeridin altında küçük CHARACTERS düğmesi (Museum/Workshop satırı üç düğme olur veya şeridin üstüne ikinci satır; menüde karar verilir). Yeni `CharactersScene`: Müze gibi `ScrollList` satırları: portre (baz skin), ad, imza özelliği, sağda üç skin kutusu; satıra dokununca karakter, kutuya dokununca skin seçilir; seçili olan altın çerçeve. Kilitli satır siluet + "???".
+- **Oyun:** `Player` seçili karakterin karelerini kullanır (`PLAYER_FRAMES` karaktere göre), `GameScene` `addWeapon(character.weapon)` ile başlar, `applyBonus` Atölye bonusu + imza özelliği. Eğitim, `?perfect` ve `?weapon` aynı çalışır. Simülatörde `start` parametresi zaten var; imza özelliği `bonus` ile verilir.
+- **Sanat:** her karakter için 3 kare (dur, adım A, adım B), 16x20, `sprites.ts`'teki `TECH_BODY` + bacak deseniyle aynı yapı. Ben çizer, PNG olarak gönderirim, kullanıcı onaylar ("Test ipuçları"ndaki PNG betiği). Skin paletleri karakterle birlikte önerilir.
+- **Sıra:** (a) veri, kayıt, Karakterler ekranı, Player kareleri, başlangıç silahı, görev değerlendirmesi; şimdiki kahramanın palet kopyalarıyla test edilir. (b) Sanat partileri: **1. parti** dört başlangıç silahı (Cursor mevcut, Brick Phone, Floppy Disk, CRT Monitor); **2. parti** 8-Bit Computer, Dial-up Modem, Cooling Fan, USB Stick, Satellite Dish; **3. parti** Dot Matrix Printer, CD-ROM, Trackball, Fax Machine, Robot Vacuum; **4. parti** Flatbed Scanner, Ethernet Cable, Pager, Pocket Calculator, Boombox. (c) Her karakter simülatörde `start` ile ölçülür, imza özellikleri dengelenir.
+- **Bağımlılık:** İş 3 (zor mod) ile çakışmaz; ikisi de menüye düğme ekler, menü düzeni ikisinde birlikte düşünülür. Karakter görevleri zor modda da sayılır.
 
 ### Bilerek sonraya bırakılanlar
 
-- **Telefon performansı:** Kullanıcı sonra bakacak. Geç oyunda 450 düşmana çıkılıyor ve bu gerçek telefonda ölçülmedi.
+- **Telefon performansı:** Kullanıcı sonra bakacak. Geç oyunda 450 düşmana çıkılıyor ve bu gerçek telefonda ölçülmedi; 2026-11-05 akşamından beri tuval cihaz çözünürlüğünde (375 CSS'lik DPR 3 telefonda 1125x2436), GPU yükü arttı. `Button.ts`'teki `MAX_DPR` 3; zorlanan cihaz çıkarsa 2'ye çekilir.
 - **Debug yazıları (FPS, ENEMIES, KILLS):** Test sürdüğü müddetçe kalacak. Kullanıcı kaldırılmasının çok uzak olduğunu söyledi, istenmeden kaldırma.
 - **Ses:** Henüz yok.
 - **Mobil paketleme:** Capacitor, gerçek telefon testi, safe-area, yön kilidi, kaydı `localStorage` dışına taşıma.
@@ -70,6 +108,18 @@ Kullanıcıdan gelen son gerçek veri eski dalgalara ait: 3-4 Atölye yıldızl�
 - Zorluk (2026-11-04): temas tavanı A denendi ve kaldırıldı, nefes aldıran kota eğrisi C ve dolum bütçesi B kaldı, ayrıntısı "Güncel sayılar"da.
 - Simülatör (2026-11-05): insan gibi bot, kariyer ve ekonomi döngüsü, eski dalga tabloları, aday değişiklikler; ayrıntısı "Denge ölçümü"nde. Kullanıcı paralel ajan kullanmaya da izin verdi ("daha hızlı bitireceksen, kaliteden ödün verme"); kariyer ve eski dalga modülleri öyle yazıldı.
 - Kalabalık artışı (2026-11-05): 4. dakikadan itibaren %20, uzatma +35; boss eğrisi kullanıcının kararıyla eski halinde.
+- `?maxed` test adresi (2026-11-05 akşamı): `SaveData.ts`'te tek bayrak, bütün silahlar açık, 18 Atölye yükseltmesi maks, evrimler görülmüş, eğitim bitmiş, 999.999 Data, hiçbir şey kaydedilmez; `?maxed&perfect` ikisini birleştirir.
+- Ekonomi kararı (2026-11-05 akşamı): fiyatlar ve ödül formülü yer tutucu haliyle kesinleşti, ayrıntısı İş 2'de.
+- **Mobil tasarım geçişi (2026-11-05 akşamı).** Kullanıcı dört ekran görüntüsüyle geldi: kart yazıları farklı boyutlarda ve üst üste biniyor, telefonda ekran bomboş kalıyor ve karakter çok yakın, arena ekrana sığmıyor, menüler kötü. Teşhis: kartlar üç dar sütunda 117 pikseldi ve 12'lik fonta 8 harf sığıyordu, uzun kelimeler 6'ya düşüyordu; kamera zoom'u her cihazda 1'di (masaüstü 1920x1080 dünya pikseli görürken telefon 375x812), doğum halkası köşegene bağlı olduğu için düşmanlar yandan 300 piksel yürüyüp görünüyordu; arena çapı 640 zaten 375'e sığmazdı; menüler oyun zemini üstünde aynı stildi. Beş PNG mockup çizildi (oyunun gerçek fontu ve sprite'larıyla, "Test ipuçları"ndaki yöntem), kullanıcı hepsini beğendi ve sırayla onayladı:
+  - **Kartlar:** tek sütun satır kartlar (en fazla 420 piksel; ekran kısaysa yükseklik sığdırılır), solda 72'lik ikon kutusu, altında tür etiketi (WEAPON cyan, PASSIVE yeşil, EVOLUTION altın, REPAIR gri; kutu çerçevesi aynı renk, arkadaşları silahla pasifi ayırt edemediği için eklendi), sağda ad, aynı satırda yıldızlar (`starRow`, tek sıra) ve rozet (NEW cyan çerçeve, EVOLVES ve silah sprite'ı), altında açıklama; her yazı 12, küçülme yok. Eğitim eli ortadaki satıra gider.
+  - **HUD sahnesi:** Phaser'da kamera zoom'u `scrollFactor 0` nesneleri de küçülttüğü için HUD (XP, sayaç, boss çubuğu, Data, envanter, hasar flaşı, debug yazısı, joystick görseli, eğitim ipucu ve eli) yeni `HudScene`'e taşındı; GameScene onu `launch` eder, `onReady` ile bağlar, bağlanana kadar `update` döner (ilk kare). Joystick girdiyi GameScene'den okur, HUD'a çizer.
+  - **Kamera:** `VIEW_SHORT_SIDE = 560`: kısa kenar 560 dünya pikselinden azsa kamera uzaklaşır, zoom "sanat pikseli = tam sayı cihaz pikseli" olacak şekilde yuvarlanır (375@3 → 2, 390@2 → 1,5, 430@3 → 2,5, masaüstü → 1). Zemin tileSprite'ı görünen dünya boyunda ve her kare görünüm köşesine taşınır (`viewX/Y`, `worldView` update'te bayat). Doğum halkası, kırılabilir alanı, Nuke alanı ve dekor görünen dünyayı (`displayWidth/Height`) okur; doğum halkası telefonda 513'ten yaklaşık 720 piksele çıktı.
+  - **Cihaz piksel oranı:** `main.ts` `Phaser.Scale.NONE`, tuval pencere x `DPR`, `zoom: 1/DPR`, pencere `resize` olayı elle; her arayüz sahnesi `fitCamera` ile kamerasını `DPR` zoom'una alıp CSS piksel boyutunu okur; HUD sınıflarından `setScrollFactor(0)` kaldırıldı; işaretçi koordinatları `DPR`'ye bölünür. Eski "yüksek DPR'da bulanıklık" ertelemesi böylece kapandı.
+  - **Menü:** koyu noktalı zemin (`addDarkBackdrop`), üstte BEST ve Data rozetleri, gölgeli iki satır logo, "SURVIVE THE SWARM", ekran boyu kum şeridinde kahraman ve çöpler, altın dolgulu PLAY, ikonlu MUSEUM ve WORKSHOP, günlük görevler paneli (kutucuk, metin, ilerleme çubuğu, sayaç; yükseklik metne göre). 740'tan kısa ekranda slogan kalkar ve şerit 64'e iner, 680'den kısada şerit de kalkar. Yatay düzen kalktı; masaüstünde aynı sütun ortada.
+  - **Atölye ve Müze:** ortak `addScreenHeader` (BACK, başlık, Data rozeti; şerit dokunmayı yutar), `ScrollList` (parmakla sürüklenen maskeli liste, kaydırma çubuğu), Atölye'de STATS/MECHANICS sekmeleri ve satır başına fiyat düğmesi (etki yazısı sarılır, satır büyür), Müze'de ikon kutusu, ad, "WITH <pasif>", EVOLVED/OWNED/fiyat; `addPager`, `gridCells` ve kum `addBackdrop` silindi. Düğmelere 10 CSS piksellik dokunma payı geldi (sürükleme tıklama sayılmaz).
+  - **Can barı:** renk kademesi (%50 üstü yeşil, %25-50 sarı, altı kırmızı ve yanıp sönme), hasar izi (açık katman 0,3 saniye bekleyip saniyede 1,5 bar hızıyla erir), 44x5 dünya pikseli. 48x8 kenarlıklı sürüm "çok kalın, kötü" diye reddedildi.
+  - Simülatörün sahte kamerası 562x1218 görünümlü telefon oldu (`displayWidth/Height`).
+- Kullanıcının "hareket ederken pikselleşme" gözlemi (2026-11-05 akşamı): masaüstünde F12 cihaz emülasyonuyla (16 Pro Max, DPR 3) bakıyordu; DevTools 1290 piksellik tuvali monitöre sığdırmak için kesirli küçültüyor, kıpırtı ondan. Gerçek telefonda sanat pikseli tam sayı fiziksel piksel. Kod değişmedi.
 
 ## Güncel sayılar (hepsi `src/data` içinde, hepsi geçici)
 
@@ -84,8 +134,8 @@ Kullanıcıdan gelen son gerçek veri eski dalgalara ait: 3-4 Atölye yıldızl�
 - **Slotlar (`slots.ts`):** Mini bosslar %40 ihtimalle düşürür. 2 ve 3 yükseltme ihtimali: mini boss %7 ve %1, boss %16 ve %4. Slot yalnızca sahip olunanı yükseltir, %20 silah ve %80 pasif. Pasif yoksa %80'lik kısım yerine 30 can verir, çünkü silaha düşmek tek silaha yığılmayı ödüllendirip evrimi 3:04'e çekiyordu. Pasifler dolunca silahlara geçer. Slotlar evrim yapmaz.
 - **Bilgisayarlar (`drops.ts`, `Breakables.ts`):** 640x640'lık parça başına %20 ihtimal (kullanıcı iki kez azaltılmasını istedi), en az 320 piksel arayla, 30 can, her zaman en az 2 vuruş. Düşenler: Can 25 (%35), 5 Data (%35), 15 Data (%15), 40 Data (%4), Magnet (%7), Nuke (%4).
 - **Repair kartı:** 10 can (eskiden 30'du, tekrarlanan kartlar bir oyunda yaklaşık 800 can veriyordu).
-- **Atölye (`meta.ts`):** 18 yükseltme. 11 istatistik yükseltmesi 10 seviye, fiyatları `prices(50, 10, 1.5)` = 50, 80, 110, 170, 250, 380, 570, 850, 1280, 1920 (toplam 5.660); Dual Core tek seviye 5.000. Mekanikler: Lucky Coin `prices(200, 5, 1.6)`, Data Miner `prices(100, 10, 1.5)`, Reroll `prices(300, 3, 2)`, Wide Menu 2.000, Scrap Radar `prices(150, 5, 1.6)`, Expansion Bay 8.000. Ekran sayfa başına 6 hücre (`CELLS_PER_PAGE`), telefonda tek sütun, 640 pikselden genişte 3 sütun; pager `Button.ts` içinde Müze'yle ortak.
-- **Atölye mekanikleri:** Hepsi oyuncu stat'ı olarak taşınır (`luck`, `dataMult`, `rerolls`, `bonusCards`, `computerChance`, `bonusWeaponSlots` `player.ts` içinde), tek bonus yolu. Luck slot açılırken `withLuck` ile iki ihtimale de eklenir. Data Miner `runData`'nın son çarpanıdır, canlı sayaç ve oyun sonu aynı sayıyı verir; evrim ve günlük görev ödülleri çarpılmaz. Reroll hakkı `Upgrades.rerollsLeft`, düğme kartların altında 48 piksellik yerde, eğitimde ve hak bitince yok. 4 kart dikey ekranda 2x2 dizilir. Scrap Radar parça eşiğine puan ekler (20'den en çok 35'e). 5. silah yuvası envanter çubuğunu bir hücre uzatır.
+- **Atölye (`meta.ts`):** 18 yükseltme. 11 istatistik yükseltmesi 10 seviye, fiyatları `prices(50, 10, 1.5)` = 50, 80, 110, 170, 250, 380, 570, 850, 1280, 1920 (toplam 5.660); Dual Core tek seviye 5.000. Mekanikler: Lucky Coin `prices(200, 5, 1.6)`, Data Miner `prices(100, 10, 1.5)`, Reroll `prices(300, 3, 2)`, Wide Menu 2.000, Scrap Radar `prices(150, 5, 1.6)`, Expansion Bay 12.000. Toplam 100.220, Müze 15.900. Ekran: STATS ve MECHANICS sekmeleri (`WorkshopDef.tab`), `ScrollList` satırları (tek satırlı metin 84, iki satırlı 102 piksel), satır başına fiyat düğmesi; alınamayan soluk, dolu olan altın MAX.
+- **Atölye mekanikleri:** Hepsi oyuncu stat'ı olarak taşınır (`luck`, `dataMult`, `rerolls`, `bonusCards`, `computerChance`, `bonusSlots` `player.ts` içinde), tek bonus yolu. Luck slot açılırken `withLuck` ile iki ihtimale de eklenir. Data Miner `runData`'nın son çarpanıdır, canlı sayaç ve oyun sonu aynı sayıyı verir; evrim ve günlük görev ödülleri çarpılmaz. Reroll hakkı `Upgrades.rerollsLeft`, düğme kartların altında 48 piksellik yerde, eğitimde ve hak bitince yok. 4 kart dikey listede dört satır olur, 667 yükseklikte bile sığar. Scrap Radar parça eşiğine puan ekler (20'den en çok 35'e). Expansion Bay'in `bonusSlots`'u silah ve pasif sınırına birlikte eklenir, envanter çubuğunun iki satırını da bir hücre uzatır.
 - **Ödüller (`meta.ts`):** 10 öldürme başına 1 Data, dakika başına 5, boss başına 30, milestone boss başına 100, ilk evrim başına 100. `runData` sayacın, ödülün ve simülatörün ortak formülüdür.
 
 ## Zorluk karşılaştırması (2026-11-01)
@@ -123,6 +173,8 @@ Son ölümsüz bot, Cursor odaklı, yeni hesap, mor boss gem'lerinden önce: 1:0
 
 Geçici bir ölçüm için gerçek kod Vite ile repo dışında paketlenip prototipler yamalanabilir (`Arena.prototype.start`, `Upgrades.prototype.spin`, ...). `Arena.update` yamasının değerini döndürmesi gerekir.
 
+**Kamera değişikliği ve ölçümler (2026-11-05 akşamı):** Spawner doğum halkasını artık görünen dünyanın köşegeninden alıyor; sahte kamera `displayWidth 562, displayHeight 1218` (DPR 3 telefon, zoom 2), halka yaklaşık 720 piksel. Bu satırdan önceki bütün sayılar 390x844'lük eski görünümle (halka 513) ölçüldü; düşmanlar artık daha uzaktan yürüdüğü için erken dakikalar biraz kolaylaşmış olabilir, kullanıcı henüz "kolaylaştı" demedi. Aynı akşamın 120 oyunluk kariyer sonucu (eski halka): iyi bot 10 dakikalık oyunlarda 500-750 Data (öldürme 330-460, süre 50, üç boss 90, bulunan gerisi), Müze 50. oyunda, Atölye 70. oyunda dolu, 20 dakikaya ulaşınca oyun başına 4.000+ Data ve 120. oyunda 200.000 birikim; acemi bot 120 oyunda %88. İlk 9:00 iyi botta 2. oyun, 13:00 6. oyun, 20:00 42. oyun.
+
 ## Kararlar
 
 Sonsuz oyun:
@@ -154,6 +206,16 @@ Hâlâ geçerli eski kararlar:
 - **Evrim:** Son seviyede silah ve herhangi bir seviyede eşi olan pasif gerekir; bir sonraki seviye atlamada altın kart olarak çıkar. 2026-11-04'ten beri 19 silahın 19 ayrı anahtarı var; sahip olunan silahın anahtar pasifi kartlarda 2 kat ağırlıklı (`KEY_PASSIVE_WEIGHT`), yoksa 4 yuvaya 19 pasifle evrim nadir olurdu.
 - **Brick Phone:** Sahte 3B yayla atılır. **Magnet pasifi:** Seviye başına +%5, bilerek zayıf.
 
+2026-11-05 akşamı kararları:
+- **Ekonomi:** yer tutucu fiyatlar ve ödül formülü kesin; iyi oyuncu Atölye'yi 70 oyunda doldurur, geç oyunda gelir patlar, kullanıcı bilerek böyle bıraktı.
+- **Tasarım dili:** menüler koyu lacivert zemin ve nokta ızgarası üstünde, kum yalnızca oyun zemini ve menüdeki kahraman şeridi. Altın (`accent`) başlık, çerçeve ve etiket; cyan (`data`) Data ve silah; yeşil pasif. Tek sütun düzen, en fazla 420 piksel, masaüstünde ortada; yatay telefon desteklenmiyor, yön kilidi paketleme işinde. Bütün yazılar 12, başlıklar 18/24, logo 36; 6'lık yazı yalnızca debug satırında.
+- **Kartlar türünü yazar:** arkadaşlar silahla pasifi ayırt edemedi; etiket ve renk birlikte.
+- **Piksel kuralı:** dünyada sanat pikseli her cihazda tam sayı cihaz pikseli (zoom yuvarlanır); arayüzde kamera tam `DPR`, tam sayı olmayan DPR'li Android'lerde yazı hafif eşitsiz, kabul edildi. Masaüstünde Windows ölçeği %125 ise dünya zoom'u 1,5'e yuvarlanır ve her şey eskisinden %20 büyük görünür, kabul edildi.
+- **Kaydırma yerine sayfalama yok:** Atölye ve Müze `ScrollList` ile kaydırılır, momentum yok.
+- **Can barı ince kalır:** 44x5, renk kademeli, hasar izli. Kalın ve kenarlıklı sürüm reddedildi.
+- **Zor mod eski tablolar değildir:** bugünkü dalgaların üstüne tek çarpan seti (İş 3). Kullanıcı "full olan insanların bile zorlanacağı" bir mod istiyor.
+- **Karakterler:** her silaha bir karakter, imza özelliği var, skinler palet değişimi, kilitliler siluet ve "???", görevler gizli, sanat dört parti (İş 4).
+
 ## Tuzaklar
 
 - **Vercel dağıtımlarını asla kontrol etme, bekleme veya raporlama.** Kullanıcı buna kızdı; push işin sonudur. Yerelde de test ediyor.
@@ -168,6 +230,14 @@ Hâlâ geçerli eski kararlar:
 - Simülasyonları arka planda paralel koştururken çıktı klasörü değişkenini `&` zincirinin dışında, kendi satırında tanımla; zincir içindeki atama sonraki komuta geçmez ve çıktı kök dizine düşer. İki batch bu yüzden yarım kaldı.
 - `tweaks.js`'deki bir aday veri dosyasına girince listeden silinir; kalırsa `SIM_TWEAK` onu bir daha üstüne uygular.
 - Kabuk içinde `node -e` ile backtick içeren metin düzenleme bozulur; düzenleme betiğini dosyaya yazıp çalıştır.
+- **Kamera zoom'u altında `setScrollFactor(0)` kullanma.** Phaser zoom'u scrollFactor 0 nesneleri de kamera merkezi etrafında ölçekler; `fitCamera`'lı arayüz sahnelerinde (zoom = `DPR`) böyle bir nesne ekranın dışına uçar. HUD kendi sahnesinde, kamerası sabit, scrollFactor gerekmez.
+- **İşaretçi koordinatları cihaz pikselidir** (`pointer.x`), arayüz CSS pikselinde yerleşir: `DPR`'ye böl (joystick, `ScrollList`, `TAP_SLOP`).
+- `camera.worldView` yalnızca çizimde güncellenir; `update` içinde görünümün köşesi `oyuncu - displayWidth / 2` ile elle hesaplanır (`viewX/Y`), yoksa zemin bir kare geride kalır.
+- `HudScene` bir kare geç bağlanır; GameScene `update` `hud` yokken döner, HUD'a dokunan kodlar `this.hud?.` kullanır. Oyun yeniden başlarken GameScene `SHUTDOWN` HudScene'i durdurur, `create` yeniden `launch` eder.
+- `ScrollList` sahne `clearScene` ile temizlenmeden önce `destroy()` ister: işaretçi dinleyicileri ve maske grafiği yoksa sızar. Maske girdiyi kırpmaz; başlık şeridi `setInteractive()` ile altına kayan satırların dokunuşunu yutar, liste alanı bu yüzden ekranın dibine kadar iner.
+- `Rectangle.setSize` ve `BitmapText.height` ile panel yüksekliği metinden sonra belirlenir; çizim sırası için panel önce yaratılıp sonra boyutlanır (menü görevleri, Atölye satırları).
+- Chrome DevTools cihaz emülasyonu DPR 3 tuvali kesirli küçültür; orada görülen "pikselleşme" ve kıpırtı gerçek değildir. Telefonla LAN adresinden bak ya da DevTools yakınlaştırmasını %100 yap.
+- `Phaser.Scale.RESIZE` zoom'u yok sayar; cihaz piksel oranı için `NONE` + elle `scale.resize` kullanılır (`main.ts`). `innerWidth/innerHeight` ile tuval boyutu pencere her değişince yenilenir.
 
 ## Test ipuçları
 
@@ -181,21 +251,25 @@ Hâlâ geçerli eski kararlar:
 - Eğitimi tekrar oynama: Oyunu gizli pencerede aç veya `localStorage` içinden `computer-survivor-save` kaydını sil.
 - Kullanıcının bir görseli değerlendirmesi için gerçek sahneyi jsDelivr'den gelen Phaser ile çalıştıran geçici bir Artifact sayfası yayınla, dosyalarını scratchpad'de tut ve kararından sonra sil. Bu slot makinesinde işe yaradı.
 - Piksel ızgaralarını (ikonlar) kontrol etmek için 60 satırlık bir node betiği yeter: vite ile paketle (`@art` takma adı `src/art`'a, `phaser` `tools/balance-sim/phaser-stub.js`'e, `ssr.noExternal: true`), `PALETTE` harflerini RGBA'ya çevir, 8 kat büyüt, `zlib.deflateSync` ile elle IHDR/IDAT/IEND yazıp PNG üret, kart zemini `0x2a2f3a`; sonra görseli sohbete gönder ve önce kendin bak. 2026-11-04'te 8 ikon böyle onaylandı; betik scratchpad'deydi, yeniden yaz.
-- Pasifler için adres kısayolu yok; kartlardan seçilir, sahip olunan silahın anahtarı 2 kat sık gelir. Atölye mekaniklerini (Reroll, Wide Menu, Expansion Bay) denemek Data ister; istenirse `?perfect` benzeri "bütün Atölye maks" test adresi kolay.
+- Pasifler için adres kısayolu yok; kartlardan seçilir, sahip olunan silahın anahtarı 2 kat sık gelir.
+- Her şey açık hesap: `?maxed` (2026-11-05). Bütün silahlar açık, 18 Atölye yükseltmesi maks (5 silah ve 5 pasif yuvası, 4 kart, Reroll), evrimler görülmüş, eğitim bitmiş, 999.999 Data; hiçbir şey kaydedilmez, adresi kaldırınca gerçek kayıt geri gelir. `?maxed&perfect` maks hesapla 8:00'den başlar. Oyun sonu ekranı Data gösterir ama yazmaz.
+- Telefon görünümünü masaüstünde doğru görmek: DevTools cihaz emülasyonu tuvali kesirli küçültür (bkz. Tuzaklar); yakınlaştırmayı %100 yap ya da telefonla `npm run dev`'in LAN adresinden aç. Masaüstü Windows ölçeği %125 ise dünya zoom'u 1,5'tir.
+- **Tasarım mockup'ı:** kullanıcı tasarım önerisini PNG olarak ister ve yapılamayacak şey görmek istemez. Yöntem (2026-11-05): scratchpad'de `entry.ts` ile `src/art/sprites.ts`'i (saf veri: `PALETTE`, `SPRITES`, `FONT_GLYPHS`) Vite `lib`/`iife` olarak paketle, küçük bir Node http sunucusu (statik + `POST /save/<ad>`) ve bir canvas sayfası yaz: glyph'leri 6x8 hücrede `size/6` birimle, sprite'ları tam sayı ölçekle, panelleri dikdörtgenle çiz, `toBlob` ile sunucuya gönder; sayfayı yerleşik tarayıcıda aç, PNG'leri `Read` ile kendin gör, sonra kullanıcıya gönder, sunucuyu kapat. Beş ekran böyle onaylandı; betikler scratchpad'deydi, yeniden yaz.
 
 ## Kod haritası
 
 | Dosya | Görevi |
 |---|---|
-| `src/main.ts` | Phaser ayarları (`RESIZE`), sahne listesi |
-| `src/scenes/GameScene.ts` | Her şeyi bağlar; kare sırası burada |
-| `src/scenes/UpgradeScene.ts` | Seviye atlama katmanı; `guided` eğitim elini ekler, Reroll düğmesi, 4 kartta dikey 2x2 |
+| `src/main.ts` | Phaser ayarları: `Scale.NONE`, tuval pencere x `DPR`, `zoom 1/DPR`, pencere `resize` dinleyicisi, sahne listesi |
+| `src/scenes/GameScene.ts` | Her şeyi bağlar; kare sırası burada; `worldZoom` kuralı (`VIEW_SHORT_SIDE`), zemin ve `viewX/Y`, `HudScene`'i `launch` edip `bindHud` ile bağlar |
+| `src/scenes/HudScene.ts` | Oyun HUD'ı kendi sahnesinde (kamera `DPR`): XP, sayaç, boss çubuğu, Data, envanter, hasar flaşı, debug satırı; `width` CSS piksel |
+| `src/scenes/UpgradeScene.ts` | Seviye atlama katmanı: tek sütun satır kartlar, tür etiketi, yıldız ve rozet satırı, `guided` eğitim eli, Reroll düğmesi |
 | `src/scenes/SlotScene.ts` | Slot makinesi katmanı: makaralar, kol, paralar, sonuç satırları |
 | `src/scenes/SpotlightScene.ts` | Tek nokta dışını grileştiren eğitim katmanı |
-| `src/scenes/MenuScene.ts` | Açılış ekranı: Play, Müze, Atölye, günlük görevler, en iyi süre |
-| `src/scenes/MuseumScene.ts`, `WorkshopScene.ts` | Silah açma ve kalıcı yükseltmeler |
+| `src/scenes/MenuScene.ts` | Açılış ekranı: rozetler, logo, kahraman şeridi, PLAY, Müze ve Atölye, günlük görevler; kısa ekran düzenleri |
+| `src/scenes/MuseumScene.ts`, `WorkshopScene.ts` | Silah açma ve kalıcı yükseltmeler: `addScreenHeader` + `ScrollList` satırları, Atölye'de sekmeler |
 | `src/scenes/GameOverScene.ts` | Sonuç katmanı: istatistikler, rekor, Data, Restart, Menu, Workshop |
-| `src/input/VirtualJoystick.ts` | Yüzen joystick, birim `direction`, duraklatmadan önce `reset()` |
+| `src/input/VirtualJoystick.ts` | Yüzen joystick, birim `direction`, duraklatmadan önce `reset()`; girdiyi GameScene'den okur, HUD sahnesine `DPR`'ye bölerek çizer |
 | `src/entities/Player.ts` | Hareket, `radius`, `velocity` ve `turnRate`, değişken `stats` ve `hp` |
 | `src/systems/SpatialHash.ts` | Bellek ayırmayan ızgara, her karede yeniden kurulur |
 | `src/systems/EnemyManager.ts` | Düşman havuzu, hareket, ayrılma, temas, prop'lar, ertelenmiş ölüm (`removeDead`) |
@@ -214,34 +288,40 @@ Hâlâ geçerli eski kararlar:
 | `src/systems/Effects.ts` | Havuzlu patlama ve çizgi görselleri |
 | `src/systems/EnemyBullets.ts` | Havuzlu düşman mermileri |
 | `src/systems/Progress.ts`, `SaveData.ts` | Data, açılanlar, Atölye, günlük görevler, en iyi süre, eğitim bayrağı; kayıt |
-| `src/systems/Scenery.ts` | Hash'ten parça başına hurda; `hash` dışa verir |
-| `src/ui/XpBar.ts`, `HpBar.ts`, `RunTimer.ts`, `BossBar.ts`, `InventoryBar.ts`, `DataCounter.ts` | Arayüz göstergeleri |
-| `src/ui/HurtFlash.ts`, `HintBox.ts`, `Hand.ts` | Hasar parlaması, eğitim metin kutusu, eğitim eli |
-| `src/ui/Button.ts` | Piksel yazı, paneller, yıldızlar, korumalı düğme, ızgara düzeni, sayfalama, arayüz renkleri |
+| `src/systems/Scenery.ts` | Hash'ten parça başına hurda, görünen dünya dikdörtgenini alır; `hash` dışa verir |
+| `src/ui/XpBar.ts`, `RunTimer.ts`, `BossBar.ts`, `InventoryBar.ts`, `DataCounter.ts` | HUD göstergeleri, `HudScene` içinde |
+| `src/ui/HpBar.ts` | Oyuncunun altındaki dünya can çubuğu: renk kademesi, kırmızıda yanıp sönme, hasar izi; `update(hp, max, delta)` |
+| `src/ui/HurtFlash.ts`, `HintBox.ts`, `Hand.ts` | Hasar parlaması, eğitim metin kutusu, eğitim eli (HUD sahnesinde) |
+| `src/ui/Button.ts` | `DPR` ve `fitCamera`, renkler, piksel yazı, paneller, yıldız satırları, korumalı düğme (`primary`, `inlineIcon`, dokunma payı), Data rozeti, ekran başlığı, koyu zemin |
+| `src/ui/ScrollList.ts` | Parmakla kaydırılan maskeli liste ve kaydırma çubuğu; `destroy()` şart |
 | `src/data/*.ts` | Oyuncu değerleri, düşmanlar, silahlar, yükseltmeler, dalgalar, bosslar, mini bosslar, slotlar, düşenler, gem'ler, seviye eğrisi, geri dönüş döngüsü için `meta.ts` |
 | `src/art/` | Görseller, yazı tipi, palet, `slotMachine.ts`; `loadArt` atlası `MenuScene` içinden bir kez kurar |
-| `src/textures.ts` | Üretilen disk, çizgi, vignette ve spot dokuları |
+| `src/textures.ts` | Üretilen disk, çizgi, vignette, spot ve menü nokta dokuları |
 | `tools/balance-sim/` | Ekransız simülatör, oyun derlemesinin parçası değil: `game.js` bir oyun, `human.js` insan gibi bot, `career.js` oyun kariyeri ve ekonomi, `legacy.js` eski dalga tabloları, `tweaks.js` aday değişiklikler, `report.js` komut satırı |
 
 `GameScene.update` kare sırası: girdi → eğitim beklemesi → oyuncu → eğitim → arena (hasar döndürür) → can çubuğu konumu → spawner ve zamanlayıcı (kavga veya eğitim sırasında atlanır) ya da boss çubuğu → düşmanlar (hash'i kurar, temas hasarı) → düşman mermileri → can yenileme, can, hasar parlaması, ölüm kontrolü → silahlar → mermiler → efektler → `removeDead` → eşyalar → Data sayacı → bilgisayarlar → gem'ler → XP ve seviye atlama → kamera, zemin, manzara. Düşman indeksleri yalnızca `removeDead` öncesine kadar sabittir; `breakables.update` havuza ekleyip çıkardığı için ondan sonra çalışır.
 
-Katmanlar `GameScene` sahnesini `scene.pause()` ile duraklatır ve önce joystick'i sıfırlar, çünkü duraklatılmış sahne `pointerup` almaz.
+Katmanlar `GameScene` sahnesini `scene.pause()` ile duraklatır ve önce joystick'i sıfırlar, çünkü duraklatılmış sahne `pointerup` almaz. HUD ayrı sahnede çizildiği için duraklamadan etkilenmez; katmanlar (kartlar, slot, spotlight, oyun sonu) HUD'dan sonra `launch` edildiği için üstte kalır.
+
+Koordinat sistemleri: tuval cihaz pikselidir; arayüz sahneleri `fitCamera` ile CSS pikselinde yerleşir (`scale.width / DPR`); dünya kamerasının zoom'u `worldZoom`; dünyadan ekrana çevirme `(x - viewX) * cam.zoom / DPR` (spotlight).
 
 ## Bilerek ertelenenler
 
 - Yoğun gruplarda kalabalık titremesi: Çakışmanın kare başına yalnızca bir kısmını çöz. Gerçek yoğunluklarla tekrar bak.
-- Yüksek DPR ekranlarda bulanık görüntü (Phaser 3 CSS pikseliyle çizer).
+- Yatay telefon düzeni: tek sütun düzenler dikey içindir, yatayda kartlar ve menü sıkışır; yön kilidi paketleme işinde.
+- `ScrollList`'te momentum ve kaydırma sonrası geri sekme yok; kullanıcı isterse eklenir.
 - Phaser 4 var; kararla 3.90'da kaldık.
 
 ## Açık sorular
 
 - 450+ düşmanla gerçek telefonda FPS.
 - Ses: ne zaman ve nasıl.
-- Farklı oyuncu karakterleri (kullanıcı şu an önemli olmadığını söyledi).
 - İlerlemeyi yeni telefona taşıma (kullanıcı çok sonranın işi olduğunu söyledi).
-- İyi oyuncunun ilk oyunu 6-7 dakikada bitmeli mi? Simülasyonda 7:30-12:30; bunun için ya düşman hızı kuralı (kullanıcı istemiyor) ya 5:00 ve 7:30 bossları sertleşmeli. Kullanıcı karar vermedi.
+- Zor mod çarpanları ölçülmedi (İş 3); karakter görevlerinin sayıları yazılmadı (İş 4).
+- Doğum halkasının 513'ten 720'ye çıkması erken dakikaları kolaylaştırdı mı? Kullanıcı oynayınca söyleyecek; gerekirse kotalar artar.
+- Menü ve Müze'nin yeni halleri telefonda görülmedi; 640 yüksekliğindeki telefonlarda görev paneli üç uzun görevle dibe sığmayabilir.
 - 10:00 bossu duvar kalsın mı? Kullanıcı 2026-11-05'te boss eğrisini bilerek eski halinde bıraktı; ölçüm maks build dışında herkesin orada öldüğünü söylüyor. Kullanıcı açmadıkça tekrar önerme, açarsa `bossSoft` sayıları "Ölçüm"de.
-- Fiyat ve ödül eğrisi (İş 2'nin kalanı), kullanıcının gerçek oyunlarından sonra.
+- Telefonda cihaz çözünürlüğündeki tuvalin (DPR 3'te 1125x2436) kare hızı; `MAX_DPR` 3, zorlanırsa 2.
 
 ## Çalışma anlaşması
 
@@ -250,6 +330,8 @@ Katmanlar `GameScene` sahnesini `scene.pause()` ile duraklatır ve önce joystic
 - **Her işin planını o işten hemen önce sun ve kullanıcının düzeltmelerini bekle.** Tasarımı sık sık değiştirir, bir onay sonraki işleri kapsamaz. Küçük doğrudan istekler hemen yapılabilir.
 - Onaylanan yaklaşım çalışmazsa dur ve bildir, sessizce başka yola geçme. Slot geri dönüş kuralında bu oldu.
 - Bütün görsel testleri kullanıcı yapar: tarayıcı veya görsel test çalıştırma. Ekranda neyin görülmediğini açıkça söyle. Bir simülasyon sayısını oyuncunun yaşayacağı şey gibi sunma.
+- Tasarım önerisini PNG mockup olarak ver, oyunun gerçek fontu ve sprite'larıyla ("Test ipuçları"); kullanıcı yapılamayacak şey görmek istemiyor, mockup'ta ne varsa Phaser'da birebir yapılır.
+- Kullanıcı bir değişikliği beğenmezse ("çok kalın, kötü") tartışmadan geri al veya küçült; sayıları sorup ona bırak.
 - `npx tsc --noEmit` ile doğrula. İstenmedikçe bot simülasyonu yok, "Denge ölçümü" bölümüne bak; İş 2 için izin var. Değişikliklerden sonra dev sunucusunun yeni kodu sunduğunu kontrol et.
 - Yalnızca istenince commit ve push yap. İstenince: `npm run build`, doğrudan `main` üzerinde commit (Co-Authored-By satırıyla), `git push origin main`, orada dur. Push'u sen teklif etme, kullanıcı ister.
 - Kullanıcı paralel ajanlara izin verdi; bağımsız modülleri ajana ver, tasarım ağırlıklı işi kendin yap, ajanların dosyalarıyla seninkiler çakışmasın.

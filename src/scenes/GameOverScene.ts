@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { progress, type RunReward } from '../systems/Progress';
-import { clearScene, COLOR, createButton, pixelText, TITLE_SIZE } from '../ui/Button';
+import { clearScene, COLOR, createButton, fitCamera, pixelText, TITLE_SIZE } from '../ui/Button';
 import { formatTime } from '../ui/RunTimer';
 
 export interface GameOverSceneData {
@@ -40,7 +40,7 @@ export class GameOverScene extends Phaser.Scene {
   private layout() {
     clearScene(this);
     const { time, level, kills, reward } = this.run;
-    const { width, height } = this.scale;
+    const { width, height } = fitCamera(this);
     const cx = width / 2;
     this.add.rectangle(0, 0, width, height, 0x000000, 0.75).setOrigin(0);
     pixelText(this, cx, height * 0.12, 'Game over', { size: TITLE_SIZE, color: COLOR.danger }).setOrigin(0.5);
