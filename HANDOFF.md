@@ -6,11 +6,11 @@ Kullanıcı Türkçe yazar ve **yalnızca Türkçe**, sade yanıt almalıdır. K
 
 ## Neredeyiz
 
-Aşağıdaki her şey commit edildi ve Vercel'in yayınladığı `main` dalına gönderildi (son commit 2026-11-06: zor mod (İş 3), Atölye ve Müze listelerine atalet, bu dosya; bir önceki `6705238`: mobil tasarım geçişi, HUD sahnesi, cihaz piksel oranı, yeni menüler, can barı, `?maxed`, Expansion Bay). Commit'ler artık doğrudan `main` üzerinde; `playtest-feedback-fixes` dalı geride kaldı, kullanılmıyor.
+Aşağıdaki her şey commit edildi ve Vercel'in yayınladığı `main` dalına gönderildi (son commit 2026-11-06 akşamı: İş 4'ün kod aşaması (karakterler, skinler, Gem, Characters ekranları), zor modun menü adı Nightmare, bu dosya; ondan önce `4da116f`: zor mod (İş 3), liste ataleti; ondan önce `6705238`: mobil tasarım geçişi, HUD sahnesi, cihaz piksel oranı, yeni menüler, can barı, `?maxed`, Expansion Bay). Commit'ler artık doğrudan `main` üzerinde; `playtest-feedback-fixes` dalı geride kaldı, kullanılmıyor.
 
 Oyun **sonsuz** bir survivors-like: bir oyun yalnızca ölünce biter. İlk oyuna özel eğitim, 20 boss, mini bosslar, slot makineleri, kırılabilir bilgisayarlar, 19 silah ve üç renk XP gem'i var.
 
-**İş 1 (Atölye) ve İş 2 (ekonomi) kapandı: kullanıcı 2026-11-05 akşamı fiyatları yer tutucu haliyle bıraktı ("şu an iyi, çok da zor olmaması lazım"). Aynı akşam mobil tasarım geçişi yapıldı (aşağıda "Bu dönemde yapılanlar", 2026-11-05 akşamı maddeleri): kartlar satır düzenine geçti ve tür etiketi aldı, HUD kendi sahnesine taşındı, kamera telefonda uzaklaşıyor, tuval cihaz piksel oranında çiziyor, menü, Atölye ve Müze yeniden yazıldı, can barı yenilendi. Kullanıcı kartları, kamerayı, Atölye'yi ve can barını gördü; menü ve Müze'yi henüz telefonda görmedi. 2026-11-06'da İş 3 (zor mod) yapıldı ve simülasyonla ayarlandı, Atölye ve Müze listelerine atalet geldi; kullanıcı ikisini de henüz oynamadı. Sıradaki iş İş 4 (karakterler), planı başlarken sunulur.** Her işin planı o işten hemen önce sunulur ve kullanıcının onayı beklenir. 2026-11-04'te ayrıca 8 yeni pasif eklendi, artık 19 silahın 19 ayrı anahtarı var (aşağıda "Bu dönemde yapılanlar"). **2026-11-04'te zorluk işleri Atölye'nin önüne alındı:** kullanıcı oyuncuların 100-200 düşmanlık orduyla bütün oyun kaçtığını gördü. Yapılanlar: C nefes aldıran kota eğrisi ve B kota dolumunu bütçeye bağlama, ikisi de kullanıcı oynarken ayarlanıyor; ilk oyundan sonra kotalar 3. dakikadan itibaren yaklaşık %25 artırıldı. A (temas hasarına tavan: en sert düşman tam, diğerleri %25) denendi ve aynı gün kaldırıldı, çünkü kullanıcı "asla ölünmüyor" dedi; temas hasarı tamamen toplanır, tavan veya dokunulmazlık tekrar önerilmez. Ayrıntılar "Zorluk karşılaştırması" bölümünde.
+**İş 1 (Atölye) ve İş 2 (ekonomi) kapandı: kullanıcı 2026-11-05 akşamı fiyatları yer tutucu haliyle bıraktı ("şu an iyi, çok da zor olmaması lazım"). Aynı akşam mobil tasarım geçişi yapıldı (aşağıda "Bu dönemde yapılanlar", 2026-11-05 akşamı maddeleri): kartlar satır düzenine geçti ve tür etiketi aldı, HUD kendi sahnesine taşındı, kamera telefonda uzaklaşıyor, tuval cihaz piksel oranında çiziyor, menü, Atölye ve Müze yeniden yazıldı, can barı yenilendi. Kullanıcı kartları, kamerayı, Atölye'yi ve can barını gördü; menü ve Müze'yi henüz telefonda görmedi. 2026-11-06'da İş 3 (zor mod) yapıldı ve simülasyonla ayarlandı, Atölye ve Müze listelerine atalet geldi; kullanıcı ikisini de henüz oynamadı. Aynı gün İş 4'ün kod aşaması yapıldı (karakterler şimdilik teknisyenin renk kopyaları) ve zor modun ekrandaki adı Nightmare oldu. Sıradaki adım İş 4'ün sanat partileri, 1. parti Brick Phone, Floppy Disk, CRT Monitor.** Her işin planı o işten hemen önce sunulur ve kullanıcının onayı beklenir. 2026-11-04'te ayrıca 8 yeni pasif eklendi, artık 19 silahın 19 ayrı anahtarı var (aşağıda "Bu dönemde yapılanlar"). **2026-11-04'te zorluk işleri Atölye'nin önüne alındı:** kullanıcı oyuncuların 100-200 düşmanlık orduyla bütün oyun kaçtığını gördü. Yapılanlar: C nefes aldıran kota eğrisi ve B kota dolumunu bütçeye bağlama, ikisi de kullanıcı oynarken ayarlanıyor; ilk oyundan sonra kotalar 3. dakikadan itibaren yaklaşık %25 artırıldı. A (temas hasarına tavan: en sert düşman tam, diğerleri %25) denendi ve aynı gün kaldırıldı, çünkü kullanıcı "asla ölünmüyor" dedi; temas hasarı tamamen toplanır, tavan veya dokunulmazlık tekrar önerilmez. Ayrıntılar "Zorluk karşılaştırması" bölümünde.
 
 Oyun tasarım dokümanı https://claude.ai/artifact/8yApVH6VuMDwYmPwAqVosy adresinde (Türkçe, docs araçlarıyla okunur). Sonsuz oyun, bosslar, slotlar ve düşenlerden önce yazıldı, bu yüzden farklı oldukları yerde `src/data/*.ts` ve bu dosya geçerlidir.
 
@@ -69,6 +69,17 @@ Kullanıcı 2026-11-05'te istedi: çok iyi, Atölye'si dolu oyuncuların bile zo
 
 ### İş 4: Karakterler ve skinler
 
+**Kod aşaması yapıldı, 2026-11-06; sanat partileri sırada.** Kullanıcının son kararları aşağıdaki eski taslağın önüne geçer:
+- **Skinler:** 1. skin karakterin kendisidir ve **görevle** açılır: silahını evrimleştirmek ("Evolve the X"); kullanıcı "ilk skin de görevle açılmalı" diye vurguladı. Yalnızca başlangıç karakteri Cursor baştan açık. Karakterin açık olduğu ayrıca kaydedilmez, `SaveState.evolutions`'dan okunur (eski evrimler karakteri hemen açar). 2. skin görevle: o karakterle 15:00 (`SKIN_TASK_SECONDS`, iki modda da). 3. skin her zaman en şaşalısıdır ve **Gem** ile alınır (`PREMIUM_SKIN_PRICE` 100).
+- **Gem:** gerçek parayla satılacak yeni premium para (`SaveState.gems`). **Şimdilik herkese sınırsız ve bedava: `src/data/meta.ts` içinde `FREE_GEMS = true`. Yayından önce mutlaka `false` yapılmalı** (kullanıcı: "unutma sonradan bunu düzeltmek lazım"). Mağaza mobil paketlemeyle gelir.
+- **İmza özellikleri:** her biri yaklaşık 1-2 pasif seviyesi, hepsi farklı stat (`characters.ts`): Cursor +%15 hasar, Brick Phone +%15 mermi boyutu, Floppy +%10 çekim, CRT değene 8 DPS, 8-Bit −%12 bekleme, Dial-up +%15 menzil, Cooling Fan +%9 alan, Printer +%15 mermi hızı, USB +%15 süre, Satellite +0,75 can/sn, CD-ROM −%9 alınan hasar, Trackball +1 delme, Fax +%12 XP, Robot Vacuum +%15 hareket, Scanner +%8 kritik, Ethernet +0,4 can/öldürme, Pager +%15 Data, Calculator +%15 boss hasarı, Boombox +30 can. Ölçülmedi.
+- **Öldürme sayacı yok:** silah başına öldürme sayımı bütün hasar yollarına dokunmayı gerektirdiği için görev şablonundan çıkarıldı.
+- **Ekranlar (PNG mockup ile onaylandı; ilk liste hali reddedildi, "bilgi eksikliği" vardı):** `CharactersScene` iki sütun kareler (üstte ad, küçük platformda karakter; kullanılan altın çerçeve ve "Used"; kilitli siluet ve "???"); kareye dokununca `CharacterScene`: büyük karakter platformda, oklar ve yatay kaydırmayla sonsuz skin döngüsü, ad, üç nokta, altta panel ve düğme. Panel: sahip olunan skinde başlangıç silahı (ikonla) ve özellik, kilitli 2. skinde "??? : Unlock to – Reach 15:00 as X" ve karakter başına en iyi süre çubuğu (`SaveState.characterBest`), 3. skinde fiyat ve pembe "Get free"/"Buy" düğmesi, kilitli karakterde "Evolve the X" ve gerekiyorsa "Buy the X in the Museum first". Menüde Museum/Workshop altında tam genişlikte Characters düğmesi (kullanıcı "rastgele yap, sonra bakarız" dedi); menü kahramanı seçili karakter ve skin.
+- **Sanat yapısı:** `src/art/characters.ts` her karakterin 3 karesini ve 3 skinin palet eşlemesini tutar; atlas açılışta `char-<id>-<skin>-<stand|stepA|stepB>` karelerini üretir. Şimdilik herkes teknisyen çizgisi, farklı iş kıyafeti renkleri; 3. skin yer tutucusu altın şapka ve bordo tulum. Karakter adları şimdilik silah adları, skin adları Classic/Veteran/Deluxe; gerçek adlar sanat partileriyle önerilecek. 3. skin "şaşalı" olacağı için palet yetmezse skin başına kare değişimi eklenebilir.
+- **Oyun:** GameScene seçili karakterin silahıyla başlar ve özelliğini Atölye bonusundan sonra uygular; `?perfect` hep Cursor ile başlar; `?maxed` bütün karakter ve skinleri açar. Sonuç ekranı "New character" ve "New skin" satırlarını yazar.
+
+Aşağısı 2026-11-05'in ilk taslağı, kayıt için duruyor.
+
 Kullanıcı 2026-11-05'te istedi: her silaha bir karakter (19 karakter; şimdiki kahraman Cursor'ın karakteri), her karakterde 3 skin (baz + 2), hepsi **gizli görevlerle** açılır, oyuncu görevleri bilmez. Kararlar: imza özelliği **olsun**, skinler **palet değişimi**, kilitliler **siluet** olarak görünsün.
 
 - **Karakter ne verir:** kendi silahıyla başlar (Cursor yerine) ve bir imza özelliği taşır (küçük bir stat, örneğin Printer +%10 menzil, Boombox +20 can, Floppy +%5 çekim). Yalnızca başlangıç silahı olsaydı karakterler kopya olurdu; özellik onları ayırır ve zayıf başlayan silahları dengeler. Hepsi `PlayerStats` üzerinden gider, Atölye bonusu gibi `applyBonus` ile.
@@ -89,6 +100,7 @@ Kullanıcı 2026-11-05'te istedi: her silaha bir karakter (19 karakter; şimdiki
 - **Ses:** Henüz yok.
 - **Mobil paketleme:** Capacitor, gerçek telefon testi, safe-area, yön kilidi, kaydı `localStorage` dışına taşıma.
 - **Ödüllü reklamlar:** Tasarlandı, yapılmadı (oyun başına bir kez dirilme, sonuç ekranında Data'yı ikiye katlama).
+- **Gem mağazası:** Gem gerçek parayla satılacak; o iş gelince `FREE_GEMS` `false` yapılır.
 - **Kapalı test ve yayın hazırlığı.**
 
 ## Bu dönemde yapılanlar (oyun testi geri bildirimleri, 2026-10-31)
@@ -222,7 +234,8 @@ Hâlâ geçerli eski kararlar:
 - **Kaydırma yerine sayfalama yok:** Atölye ve Müze `ScrollList` ile kaydırılır; 2026-11-06'dan beri ataletli.
 
 2026-11-06 kararları:
-- **Zor mod:** boss canı ve hasarı x2, diğerleri x1,5, dolum ve Data x2; 10:00 normal rekoruyla açılır; ayrı rekor; zor modda süre sayacı kırmızı (kullanıcı istemezse kalkar).
+- **Zor mod:** boss canı ve hasarı x2, diğerleri x1,5, dolum ve Data x2; 10:00 normal rekoruyla açılır; ayrı rekor; zor modda süre sayacı kırmızı (kullanıcı istemezse kalkar). Ekrandaki adı **Nightmare** ("Hard hoş durmuyor"); kodda `hard` kaldı.
+- **Karakterler:** 1. skin görevle (silahı evrimleştir), 2. skin görevle (15:00), 3. skin Gem ile; Gem şimdilik bedava; ayrıntı İş 4'te.
 - **Can barı ince kalır:** 44x5, renk kademeli, hasar izli. Kalın ve kenarlıklı sürüm reddedildi.
 - **Zor mod eski tablolar değildir:** bugünkü dalgaların üstüne tek çarpan seti (İş 3). Kullanıcı "full olan insanların bile zorlanacağı" bir mod istiyor.
 - **Karakterler:** her silaha bir karakter, imza özelliği var, skinler palet değişimi, kilitliler siluet ve "???", görevler gizli, sanat dört parti (İş 4).
@@ -254,7 +267,8 @@ Hâlâ geçerli eski kararlar:
 
 - Maks build testi: `?perfect` adresi Play'e basınca 8:00'den, 30. seviyede, 4 evrimli silah ve 4 maks pasifle başlar. 7:30'a kadarki bosslar geçilmiş sayılır, eğitim çıkmaz, hiçbir şey kaydedilmez. Ayarlar `upgrades.ts` içinde `PERFECT_TEST`.
 - Stres testi: Geçici olarak ilk dalganın `minimum` değerini ve `OVERTIME.maxEnemies` (450, kotayı keser) değerini `500` yap. Commit'ten önce geri al.
-- Zor mod: normal rekor 10:00 veya üstüyse menüde NORMAL | HARD çıkar; `?maxed` ile hep açıktır. Seçim kayda yazılır.
+- Zor mod: normal rekor 10:00 veya üstüyse menüde NORMAL | NIGHTMARE çıkar; `?maxed` ile hep açıktır. Seçim kayda yazılır.
+- Karakterler: `?maxed` bütün karakterleri ve skinleri açar. Gerçek kayıtta karakter, silahı bir kez evrimleşmişse açıktır.
 - Geç dalgalar: `src/systems/Spawner.ts` içinde `elapsed` değerini geçici olarak örneğin `8 * 60` başlat, `nextMiniBoss` değerini de buna uydur.
 - Bosslar: `elapsed` değerini boss anından birkaç saniye önce başlat (örneğin `145`). Daha sonraki boss için `src/systems/Arena.ts` içindeki `bossesStarted` değerini de başlat.
 - Hızlı seviye atlama: Geçici olarak `xpToNext` değerini düşür.
@@ -306,6 +320,10 @@ Hâlâ geçerli eski kararlar:
 | `src/ui/HurtFlash.ts`, `HintBox.ts`, `Hand.ts` | Hasar parlaması, eğitim metin kutusu, eğitim eli (HUD sahnesinde) |
 | `src/ui/Button.ts` | `DPR` ve `fitCamera`, renkler, piksel yazı, paneller, yıldız satırları, korumalı düğme (`primary`, `inlineIcon`, dokunma payı), Data rozeti, ekran başlığı, koyu zemin |
 | `src/ui/ScrollList.ts` | Parmakla kaydırılan maskeli liste, atalet, kayarken dokunuş kalkanı ve kaydırma çubuğu; `destroy()` şart |
+| `src/data/characters.ts` | 19 karakter (id = başlangıç silahının id'si), imza özellikleri, skin adları, görev eşiği, Gem fiyatı |
+| `src/art/characters.ts` | Karakter kareleri ve skin paletleri, `characterFrame`/`characterFrames` adları |
+| `src/scenes/CharactersScene.ts`, `CharacterScene.ts` | Karakter ızgarası; tek karakter sayfası (platform, skin döngüsü, panel) |
+| `src/ui/Pedestal.ts` | Karakterlerin durduğu basamaklı piksel platform |
 | `src/data/difficulty.ts` | Normal ve zor mod çarpanları, `HARD_UNLOCK_SECONDS`; Spawner, Arena ve GameScene'in Data çarpanı buradan okur |
 | `src/data/*.ts` | Oyuncu değerleri, düşmanlar, silahlar, yükseltmeler, dalgalar, bosslar, mini bosslar, slotlar, düşenler, gem'ler, seviye eğrisi, geri dönüş döngüsü için `meta.ts` |
 | `src/art/` | Görseller, yazı tipi, palet, `slotMachine.ts`; `loadArt` atlası `MenuScene` içinden bir kez kurar |
@@ -333,6 +351,8 @@ Koordinat sistemleri: tuval cihaz pikselidir; arayüz sahneleri `fitCamera` ile 
 - Zor mod simülasyonla ayarlandı ama kullanıcı oynamadı; boss x2 ona göre değişebilir. Karakter görevlerinin sayıları yazılmadı (İş 4).
 - Zor mod seçicisi menüye 52 piksel ekledi; kısa telefonlarda görev paneli dibe taşabilir.
 - Liste ataletinin mesafesi (`FLING_DECAY_MS` 325) telefonda denenmedi.
+- Menü Characters düğmesiyle bir satır daha uzadı; kısa ekranlarda görev paneli taşabilir. Characters ve karakter sayfası oyunda görülmedi.
+- Karakter imza özellikleri ölçülmedi.
 - Doğum halkasının 513'ten 720'ye çıkması erken dakikaları kolaylaştırdı mı? Kullanıcı oynayınca söyleyecek; gerekirse kotalar artar.
 - Menü ve Müze'nin yeni halleri telefonda görülmedi; 640 yüksekliğindeki telefonlarda görev paneli üç uzun görevle dibe sığmayabilir.
 - 10:00 bossu duvar kalsın mı? Kullanıcı 2026-11-05'te boss eğrisini bilerek eski halinde bıraktı; ölçüm maks build dışında herkesin orada öldüğünü söylüyor. Kullanıcı açmadıkça tekrar önerme, açarsa `bossSoft` sayıları "Ölçüm"de.

@@ -3,6 +3,8 @@ import { GROUND, PIXEL_SCALE } from '../art/atlas';
 import { BOSS_KILL_HEAL, BOSS_TEST } from '../data/bosses';
 import { BOSS_DROP, MINI_BOSS_DROP } from '../data/drops';
 import { rollGem } from '../data/gems';
+import { characterFrames } from '../art/characters';
+import { characterDef, STARTING_CHARACTER, type CharacterDef } from '../data/characters';
 import { DIFFICULTIES, type DifficultyId } from '../data/difficulty';
 import { runData } from '../data/meta';
 import { MINI_BOSS_SLOT_CHANCE, withLuck, type SlotOdds } from '../data/slots';
@@ -74,6 +76,7 @@ export class GameScene extends Phaser.Scene {
   private keys!: MoveKeys;
   private perfectTest = false;
   private difficulty: DifficultyId = 'normal';
+  private character!: CharacterDef;
   /** The Workshop's Data Miner times the difficulty's; fixed for the run. */
   private dataMult = 1;
   private readonly move = new Phaser.Math.Vector2();
@@ -115,8 +118,12 @@ export class GameScene extends Phaser.Scene {
     const startTime = this.perfectTest ? PERFECT_TEST.seconds : 0;
     this.difficulty = progress.difficulty;
     const difficulty = DIFFICULTIES[this.difficulty];
-    this.player = new Player(this, 0, 0);
+    // The max-build test is built around Cursor's evolution, so it always plays the starting character
+    this.character = this.perfectTest ? characterDef(STARTING_CHARACTER) : progress.character;
+    const skin = this.perfectTest ? 0 : progress.skin;
+    this.player = new Player(this, 0, 0, characterFrames(this.character.id, skin));
     this.player.applyBonus(bossTest ? { ...progress.bonus, maxHp: BOSS_TEST.playerHp } : progress.bonus);
+    this.player.applyBonus(this.character.trait);
     this.dataMult = this.player.stats.dataMult * difficulty.dataMult;
     this.hpBar = new HpBar(this);
     // After the player, so the wall draws over anything brushing against it
@@ -129,7 +136,7 @@ export class GameScene extends Phaser.Scene {
     );
     this.projectiles = new ProjectileManager(this, this.enemies, this.player, this.effects);
     this.weapons = [];
-    this.addWeapon('cursor');
+    this.addWeapon(this.character.id);
     // Testing aid: `?weapon=<id>` starts the run with that weapon, locked or evolved ones too
     const testWeapon = address.get('weapon');
     if (testWeapon && testWeapon in WEAPONS) this.addWeapon(testWeapon as WeaponId);
@@ -315,6 +322,7 @@ export class GameScene extends Phaser.Scene {
           dataFound: this.pickups.dataFound,
           dataMult: this.dataMult,
           difficulty: this.difficulty,
+          character: this.character.id,
         });
     const data: GameOverSceneData = { ...run, reward };
     this.scene.launch('GameOverScene', data);

@@ -177,8 +177,11 @@ export function createButton(scene: Phaser.Scene, x: number, y: number, options:
   return button;
 }
 
-/** Dark bar across the top of a menu screen: Back, the title and the Data chip within `left`..`right`. */
-export function addScreenHeader(scene: Phaser.Scene, title: string, data: number, left: number, right: number, onBack: () => void) {
+/**
+ * Dark bar across the top of a menu screen: Back, the title and the Data chip within `left`..`right`.
+ * Screens where Data buys nothing pass `null` and get no chip.
+ */
+export function addScreenHeader(scene: Phaser.Scene, title: string, data: number | null, left: number, right: number, onBack: () => void) {
   const width = scene.scale.width / DPR;
   // Interactive so taps on rows scrolled under the bar stop here
   scene.add.rectangle(0, 0, width, SCREEN_HEADER_H, COLOR.panelShadow).setOrigin(0).setInteractive();
@@ -189,8 +192,11 @@ export function addScreenHeader(scene: Phaser.Scene, title: string, data: number
     color: COLOR.muted,
     onClick: onBack,
   });
-  pixelText(scene, width / 2, SCREEN_HEADER_H / 2, title, { size: HEADER_TITLE_SIZE, color: COLOR.accent }).setOrigin(0.5);
-  dataChip(scene, right, (SCREEN_HEADER_H - CHIP_H) / 2, data);
+  const label = pixelText(scene, width / 2, SCREEN_HEADER_H / 2, title, { size: HEADER_TITLE_SIZE, color: COLOR.accent }).setOrigin(0.5);
+  // Long character names would run into Back; they drop to body size instead
+  const room = width - 2 * (left + BACK_BUTTON_W + 12);
+  if (label.width > room) label.setFontSize(TEXT_SIZE);
+  if (data !== null) dataChip(scene, right, (SCREEN_HEADER_H - CHIP_H) / 2, data);
 }
 
 /** Destroys everything on screen, for scenes that rebuild themselves on resize. */

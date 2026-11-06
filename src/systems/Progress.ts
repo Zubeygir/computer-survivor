@@ -1,5 +1,17 @@
 import {
+  CHARACTERS,
+  characterDef,
+  PREMIUM_SKIN,
+  PREMIUM_SKIN_PRICE,
+  SKIN_TASK_SECONDS,
+  STARTING_CHARACTER,
+  TASK_SKIN,
+  type CharacterDef,
+  type CharacterId,
+} from '../data/characters';
+import {
   DAILY_ALL_DONE_BONUS,
+  FREE_GEMS,
   DAILY_TASK_COUNT,
   DAILY_TASK_REWARD,
   DAILY_TASKS,
@@ -31,6 +43,7 @@ export interface RunSummary {
   /** The Workshop's Data Miner times the difficulty's. */
   dataMult: number;
   difficulty: DifficultyId;
+  character: CharacterId;
 }
 
 export interface RunReward {
@@ -50,6 +63,10 @@ export interface DailyTaskView {
 function today(): string {
   const now = new Date();
   return `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+}
+
+function evolutionOf(weapon: string): string {
+  return EVOLUTIONS.find((evolution) => evolution.base.weapon === weapon)?.into ?? '';
 }
 
 function baseWeaponId(id: string): string {
@@ -100,6 +117,52 @@ class Progress {
   set difficulty(id: DifficultyId) {
     this.state.difficulty = id;
     writeSave(this.state);
+  }
+
+  /** Unlocked by evolving its weapon once; the starting character always is. */
+  characterUnlocked(def: CharacterDef): boolean {
+    return def.id === STARTING_CHARACTER || this.state.evolutions.includes(evolutionOf(def.id));
+  }
+
+  bestTimeAs(def: CharacterDef): number {
+    return this.state.characterBest[def.id] ?? 0;
+  }
+
+  ownsSkin(def: CharacterDef, skin: number): boolean {
+    if (!this.characterUnlocked(def)) return false;
+    return skin === 0 || (this.state.skins[def.id]?.includes(skin) ?? false);
+  }
+
+  /** Falls back to the starting character if the saved pick is not usable. */
+  get character(): CharacterDef {
+    const def = characterDef(this.state.character);
+    return this.ownsSkin(def, this.state.skin) ? def : characterDef(STARTING_CHARACTER);
+  }
+
+  get skin(): number {
+    return this.ownsSkin(characterDef(this.state.character), this.state.skin) ? this.state.skin : 0;
+  }
+
+  selectCharacter(def: CharacterDef, skin: number) {
+    if (!this.ownsSkin(def, skin)) return;
+    this.state.character = def.id;
+    this.state.skin = skin;
+    writeSave(this.state);
+  }
+
+  get gems(): number {
+    return FREE_GEMS ? Infinity : this.state.gems;
+  }
+
+  /** Returns false when it can't be paid for. */
+  buyPremiumSkin(def: CharacterDef): boolean {
+    if (!this.characterUnlocked(def) || this.ownsSkin(def, PREMIUM_SKIN)) return false;
+    if (!FREE_GEMS) {
+      if (this.state.gems < PREMIUM_SKIN_PRICE) return false;
+      this.state.gems -= PREMIUM_SKIN_PRICE;
+    }
+    this.addSkin(def, PREMIUM_SKIN);
+    return true;
   }
 
   get tutorialDone(): boolean {
@@ -154,6 +217,15 @@ class Progress {
       this.state.evolutions.push(evolution.into);
       total += RUN_REWARDS.firstEvolution;
       lines.push(`New evolution: ${evolution.name}`);
+      const unlocked = CHARACTERS.find((def) => def.id === evolution.base.weapon && def.id !== STARTING_CHARACTER);
+      if (unlocked) lines.push(`New character: ${unlocked.name} - evolved the ${evolution.base.name}`);
+    }
+
+    const played = characterDef(run.character);
+    this.state.characterBest[played.id] = Math.max(this.bestTimeAs(played), run.time);
+    if (run.time >= SKIN_TASK_SECONDS && this.characterUnlocked(played) && !this.ownsSkin(played, TASK_SKIN)) {
+      this.addSkin(played, TASK_SKIN);
+      lines.push(`New skin: ${played.skins[TASK_SKIN]} ${played.name} - reached ${SKIN_TASK_SECONDS / 60}:00 as ${played.name}`);
     }
 
     total += this.advanceDaily(run, lines);
@@ -162,9 +234,14 @@ class Progress {
     const newRecord = run.time > this.bestTimeFor(run.difficulty);
     if (newRecord && run.difficulty === 'hard') this.state.bestTimeHard = run.time;
     else if (newRecord) this.state.bestTime = run.time;
-    if (!wasHardUnlocked && this.hardUnlocked) lines.push('Hard mode unlocked');
+    if (!wasHardUnlocked && this.hardUnlocked) lines.push('Nightmare mode unlocked');
     writeSave(this.state);
     return { total, lines, newRecord };
+  }
+
+  private addSkin(def: CharacterDef, skin: number) {
+    (this.state.skins[def.id] ??= []).push(skin);
+    writeSave(this.state);
   }
 
   private pay(price: number): boolean {

@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import { CharacterScene } from './scenes/CharacterScene';
+import { CharactersScene } from './scenes/CharactersScene';
 import { GameOverScene } from './scenes/GameOverScene';
 import { GameScene } from './scenes/GameScene';
 import { HudScene } from './scenes/HudScene';
@@ -27,7 +29,7 @@ const game = new Phaser.Game({
     zoom: 1 / DPR,
   },
   // Only the first scene starts automatically; the rest are started from it and from GameScene
-  scene: [MenuScene, GameScene, HudScene, UpgradeScene, SlotScene, SpotlightScene, GameOverScene, MuseumScene, WorkshopScene],
+  scene: [MenuScene, GameScene, HudScene, UpgradeScene, SlotScene, SpotlightScene, GameOverScene, MuseumScene, WorkshopScene, CharactersScene, CharacterScene],
 });
 
 window.addEventListener('resize', () => game.scale.resize(canvasWidth(), canvasHeight()));

@@ -21,10 +21,17 @@ export class Player {
   /** Radians per second the move is turning, smoothed because a joystick never holds a steady curve. */
   turnRate = 0;
   private walkTime = 0;
-  private shownFrame: string = PLAYER_FRAMES.stand;
+  private shownFrame: string;
 
-  constructor(scene: Phaser.Scene, x: number, y: number) {
-    this.sprite = scene.add.image(x, y, ATLAS, PLAYER_FRAMES.stand).setScale(PIXEL_SCALE);
+  constructor(
+    scene: Phaser.Scene,
+    x: number,
+    y: number,
+    /** The character and skin being played; see `characterFrames`. */
+    private readonly frames: { stand: string; walk: string[] } = PLAYER_FRAMES,
+  ) {
+    this.shownFrame = frames.stand;
+    this.sprite = scene.add.image(x, y, ATLAS, frames.stand).setScale(PIXEL_SCALE);
   }
 
   /** Adds permanent upgrades on top of the base stats. Call once, before the run starts. */
@@ -60,8 +67,8 @@ export class Player {
 
   private animate(moving: boolean, delta: number) {
     this.walkTime = moving ? this.walkTime + delta : 0;
-    const walk = PLAYER_FRAMES.walk;
-    const frame = moving ? walk[Math.floor(this.walkTime / WALK_FRAME_MS) % walk.length] : PLAYER_FRAMES.stand;
+    const walk = this.frames.walk;
+    const frame = moving ? walk[Math.floor(this.walkTime / WALK_FRAME_MS) % walk.length] : this.frames.stand;
     if (frame === this.shownFrame) return;
     this.shownFrame = frame;
     this.sprite.setFrame(frame);

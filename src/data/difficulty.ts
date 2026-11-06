@@ -21,7 +21,7 @@ export const DIFFICULTIES: Record<DifficultyId, DifficultyDef> = {
   normal: { label: 'Normal', enemies: 1, enemyHp: 1, contactDamage: 1, refillSpeed: 1, bossHp: 1, bossDamage: 1, dataMult: 1 },
   // Bosses carry it: the crowd barely touches a maxed account, so 1.5 left it dying at 20:00 like on normal.
   // Measured 2026-11-06 with the good bot on a maxed account: 2 gives a 15:00 median (10:00-20:00), 2.25 walls it at 10:00.
-  hard: { label: 'Hard', enemies: 1.5, enemyHp: 1.5, contactDamage: 1.5, refillSpeed: 2, bossHp: 2, bossDamage: 2, dataMult: 2 },
+  hard: { label: 'Nightmare', enemies: 1.5, enemyHp: 1.5, contactDamage: 1.5, refillSpeed: 2, bossHp: 2, bossDamage: 2, dataMult: 2 },
 };
 
 /** Reaching this run clock on normal opens hard mode. */

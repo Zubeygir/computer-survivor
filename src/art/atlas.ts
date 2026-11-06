@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import type { CharacterId } from '../data/characters';
+import { CHARACTER_ART, CHARACTER_FRAMES, characterFrame } from './characters';
 import { FONT_GLYPHS, PALETTE, SPRITES } from './sprites';
 
 /** All pixel sprites live in one texture, so they batch into one draw call. */
@@ -32,20 +34,39 @@ export function loadArt(scene: Phaser.Scene) {
   createGround(scene);
 }
 
+interface AtlasEntry {
+  name: string;
+  rows: string[];
+  palette: Record<string, string>;
+}
+
+/** Every sprite, then each character frame once per skin with that skin's colors. */
+function atlasEntries(): AtlasEntry[] {
+  const entries: AtlasEntry[] = Object.keys(SPRITES).map((name) => ({ name, rows: SPRITES[name], palette: PALETTE }));
+  for (const id of Object.keys(CHARACTER_ART) as CharacterId[]) {
+    const art = CHARACTER_ART[id];
+    art.skins.forEach((colors, skin) => {
+      const palette = { ...PALETTE, ...colors };
+      for (const frame of CHARACTER_FRAMES) entries.push({ name: characterFrame(id, skin, frame), rows: art[frame], palette });
+    });
+  }
+  return entries;
+}
+
 function createAtlas(scene: Phaser.Scene) {
-  const placed: { name: string; x: number; y: number; width: number; height: number }[] = [];
+  const placed: (AtlasEntry & { x: number; y: number; width: number; height: number })[] = [];
   let x = 0;
   let y = 0;
   let rowHeight = 0;
-  for (const name of Object.keys(SPRITES)) {
-    const rows = SPRITES[name];
+  for (const entry of atlasEntries()) {
+    const { rows } = entry;
     const width = Math.max(...rows.map((row) => row.length));
     if (x + width > ATLAS_WIDTH) {
       x = 0;
       y += rowHeight + GAP;
       rowHeight = 0;
     }
-    placed.push({ name, x, y, width, height: rows.length });
+    placed.push({ ...entry, x, y, width, height: rows.length });
     x += width + GAP;
     rowHeight = Math.max(rowHeight, rows.length);
   }
@@ -53,9 +74,9 @@ function createAtlas(scene: Phaser.Scene) {
   const texture = scene.textures.createCanvas(ATLAS, ATLAS_WIDTH, y + rowHeight)!;
   const context = texture.getContext();
   for (const sprite of placed) {
-    SPRITES[sprite.name].forEach((row, py) => {
+    sprite.rows.forEach((row, py) => {
       for (let px = 0; px < row.length; px++) {
-        const color = PALETTE[row[px]];
+        const color = sprite.palette[row[px]];
         if (!color) continue;
         context.fillStyle = color;
         context.fillRect(sprite.x + px, sprite.y + py, 1, 1);

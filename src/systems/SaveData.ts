@@ -1,3 +1,4 @@
+import { CHARACTERS, PREMIUM_SKIN, STARTING_CHARACTER, TASK_SKIN } from '../data/characters';
 import { HARD_UNLOCK_SECONDS, type DifficultyId } from '../data/difficulty';
 import { STARTING_WEAPONS, WEAPON_PRICES, WORKSHOP } from '../data/meta';
 import { EVOLUTIONS } from '../data/upgrades';
@@ -31,6 +32,14 @@ export interface SaveState {
   bestTimeHard: number;
   /** The mode PLAY starts. */
   difficulty: DifficultyId;
+  /** Premium currency, bought with real money. */
+  gems: number;
+  /** Owned skin indexes past the base one, by character id; characters themselves unlock through `evolutions`. */
+  skins: Record<string, number[]>;
+  character: string;
+  skin: number;
+  /** Longest run per character id, on either mode; shows progress toward the task skin. */
+  characterBest: Record<string, number>;
 }
 
 function defaultSave(): SaveState {
@@ -45,6 +54,11 @@ function defaultSave(): SaveState {
     bestTime: 0,
     bestTimeHard: 0,
     difficulty: 'normal',
+    gems: 0,
+    skins: {},
+    character: STARTING_CHARACTER,
+    skin: 0,
+    characterBest: {},
   };
 }
 
@@ -57,6 +71,7 @@ function maxedSave(): SaveState {
     evolutions: EVOLUTIONS.map((evolution) => evolution.into),
     tutorialDone: true,
     bestTime: HARD_UNLOCK_SECONDS,
+    skins: Object.fromEntries(CHARACTERS.map((def) => [def.id, [TASK_SKIN, PREMIUM_SKIN]])),
   };
 }
 

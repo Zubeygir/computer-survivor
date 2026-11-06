@@ -23,6 +23,12 @@ export function runData(time: number, kills: number, bossKills: number, mileston
   );
 }
 
+/**
+ * TESTING ONLY: Gem, the premium currency, is unlimited and free for everyone until real purchases
+ * exist (mobile packaging). Must be false before release.
+ */
+export const FREE_GEMS = true;
+
 export const STARTING_WEAPONS: readonly WeaponId[] = ['cursor', 'brickPhone', 'floppyDisk', 'crtMonitor'];
 
 /** Data to unlock a weapon in the Museum. */

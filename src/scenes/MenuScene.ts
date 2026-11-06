@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { ATLAS, GROUND, loadArt } from '../art/atlas';
-import { PLAYER_FRAMES } from '../art/sprites';
+import { characterFrame } from '../art/characters';
 import { DIFFICULTIES, type DifficultyId } from '../data/difficulty';
 import { DAILY_TASK_REWARD } from '../data/meta';
 import { progress, type DailyTaskView } from '../systems/Progress';
@@ -29,6 +29,7 @@ const MODE_H = 36;
 const MODE_GAP = 11;
 const MODES: readonly DifficultyId[] = ['normal', 'hard'];
 const SECONDARY_H = 52;
+const CHARACTERS_H = 40;
 const SECONDARY_GAP = 15;
 const JUNK_SCALE = 3;
 const TASK_TITLE_H = 28;
@@ -128,7 +129,15 @@ export class MenuScene extends Phaser.Scene {
       inlineIcon: 'icon-ram',
       onClick: () => this.scene.start('WorkshopScene'),
     });
-    y += SECONDARY_H + 20;
+    y += SECONDARY_H + 12;
+
+    createButton(this, cx, y + CHARACTERS_H / 2, {
+      width: columnW,
+      height: CHARACTERS_H,
+      label: 'Characters',
+      onClick: () => this.scene.start('CharactersScene'),
+    });
+    y += CHARACTERS_H + 20;
 
     this.addDailyTasks(left, y, columnW);
   }
@@ -152,7 +161,8 @@ export class MenuScene extends Phaser.Scene {
     this.add.image(cx + 165, floor - 42, ATLAS, 'bug-1').setScale(2);
     // Drawn last, so it stands in front of the junk; smaller on the compact strip
     const heroScale = compact ? 3 : 4;
-    this.add.image(cx, floor - (compact ? 34 : 48), ATLAS, PLAYER_FRAMES.stand).setScale(heroScale);
+    const hero = characterFrame(progress.character.id, progress.skin, 'stand');
+    this.add.image(cx, floor - (compact ? 34 : 48), ATLAS, hero).setScale(heroScale);
   }
 
   /** `top` is the panel's top edge; its height follows the task texts. */
