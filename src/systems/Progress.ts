@@ -10,6 +10,7 @@ import {
   type DailyTaskDef,
   type WorkshopDef,
 } from '../data/meta';
+import { HARD_UNLOCK_SECONDS, type DifficultyId } from '../data/difficulty';
 import type { PlayerStats } from '../data/player';
 import { EVOLUTIONS } from '../data/upgrades';
 import type { WeaponId } from '../data/weapons';
@@ -27,8 +28,9 @@ export interface RunSummary {
   weapons: string[];
   /** Picked up during the run. */
   dataFound: number;
-  /** The Workshop's Data Miner. */
+  /** The Workshop's Data Miner times the difficulty's. */
   dataMult: number;
+  difficulty: DifficultyId;
 }
 
 export interface RunReward {
@@ -82,8 +84,22 @@ class Progress {
     return workshopBonus(this.state.workshop);
   }
 
-  get bestTime(): number {
-    return this.state.bestTime;
+  bestTimeFor(id: DifficultyId): number {
+    return id === 'hard' ? this.state.bestTimeHard : this.state.bestTime;
+  }
+
+  get hardUnlocked(): boolean {
+    return this.state.bestTime >= HARD_UNLOCK_SECONDS;
+  }
+
+  /** Falls back to normal while hard mode is still locked. */
+  get difficulty(): DifficultyId {
+    return this.hardUnlocked ? this.state.difficulty : 'normal';
+  }
+
+  set difficulty(id: DifficultyId) {
+    this.state.difficulty = id;
+    writeSave(this.state);
   }
 
   get tutorialDone(): boolean {
@@ -142,8 +158,11 @@ class Progress {
 
     total += this.advanceDaily(run, lines);
     this.state.data += total;
-    const newRecord = run.time > this.state.bestTime;
-    if (newRecord) this.state.bestTime = run.time;
+    const wasHardUnlocked = this.hardUnlocked;
+    const newRecord = run.time > this.bestTimeFor(run.difficulty);
+    if (newRecord && run.difficulty === 'hard') this.state.bestTimeHard = run.time;
+    else if (newRecord) this.state.bestTime = run.time;
+    if (!wasHardUnlocked && this.hardUnlocked) lines.push('Hard mode unlocked');
     writeSave(this.state);
     return { total, lines, newRecord };
   }

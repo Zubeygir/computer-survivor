@@ -44,7 +44,7 @@ export class GameOverScene extends Phaser.Scene {
     const cx = width / 2;
     this.add.rectangle(0, 0, width, height, 0x000000, 0.75).setOrigin(0);
     pixelText(this, cx, height * 0.12, 'Game over', { size: TITLE_SIZE, color: COLOR.danger }).setOrigin(0.5);
-    const record = reward.newRecord ? 'New record' : `Best ${formatTime(progress.bestTime)}`;
+    const record = reward.newRecord ? 'New record' : `Best ${formatTime(progress.bestTimeFor(progress.difficulty))}`;
     pixelText(this, cx, height * 0.26, `Time ${formatTime(time)}\n${record}\nLevel ${level}  Kills ${kills}`).setOrigin(0.5);
     pixelText(this, cx, height * 0.38, [`+${reward.total} Data`, `Total ${progress.data}`, ...reward.lines].join('\n'), {
       color: COLOR.data,

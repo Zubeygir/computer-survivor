@@ -1,4 +1,5 @@
 import { BOSS_KILL_HEAL } from '../../src/data/bosses';
+import { DIFFICULTIES } from '../../src/data/difficulty';
 import { BOSS_DROP, MINI_BOSS_DROP } from '../../src/data/drops';
 import { rollGem } from '../../src/data/gems';
 import { nextMiniBossTime } from '../../src/data/miniBosses';
@@ -26,6 +27,14 @@ import { GOOD, createHumanState, steerHuman } from './human.js';
 const DELTA = 1000 / 30;
 /** SIM_TRACE=1 keeps one sample per second and prints the last ones when the bot dies. */
 const TRACE = Boolean(process.env.SIM_TRACE);
+/**
+ * SIM_DIFFICULTY=hard plays every section on hard mode's multipliers; SIM_DIFFICULTY_SET='{"bossHp":2}'
+ * overrides some of them, for trying candidates before they go into `difficulty.ts`.
+ */
+const DIFFICULTY = {
+  ...DIFFICULTIES[process.env.SIM_DIFFICULTY ?? 'normal'],
+  ...JSON.parse(process.env.SIM_DIFFICULTY_SET ?? '{}'),
+};
 const TRACE_KEEP = 15;
 const MAX_SECONDS = 2400;
 /** The bots don't try to dodge bullets, dashes or ground marks; a human sidesteps most of them. */
@@ -112,8 +121,8 @@ export function run({
       bossesKilled++;
     }
   });
-  arena = new Arena(scene, enemies, player, bullets, new DangerZones(scene));
-  const spawner = new Spawner(camera, player, enemies);
+  arena = new Arena(scene, enemies, player, bullets, new DangerZones(scene), DIFFICULTY);
+  const spawner = new Spawner(camera, player, enemies, DIFFICULTY);
   if (clock > 0) {
     spawner.elapsed = clock;
     spawner.nextMiniBoss = nextMiniBossTime(clock);
@@ -171,7 +180,7 @@ export function run({
       level: experience.level,
       kills: enemies.kills,
       bossesKilled,
-      data: runData(spawner.time, enemies.kills, bossesKilled, arena.milestoneKills, pickups.dataFound, player.stats.dataMult),
+      data: runData(spawner.time, enemies.kills, bossesKilled, arena.milestoneKills, pickups.dataFound, player.stats.dataMult * DIFFICULTY.dataMult),
       fights,
       fightDamage,
       evolvedAt,

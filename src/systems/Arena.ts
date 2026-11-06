@@ -12,6 +12,7 @@ import {
   type BossDef,
   type ClosingWall,
 } from '../data/bosses';
+import type { DifficultyDef } from '../data/difficulty';
 import type { EnemyDef } from '../data/enemies';
 import type { Player } from '../entities/Player';
 import { BossBrain } from './BossBrain';
@@ -60,6 +61,7 @@ export class Arena {
     private readonly player: Player,
     bullets: EnemyBullets,
     private readonly zones: DangerZones,
+    private readonly difficulty: DifficultyDef,
     /** Shows every boss in turn; see `BOSS_TEST`. */
     private readonly bossTest = false,
     /** Run clock seconds; bosses due before it count as already fought. */
@@ -170,14 +172,16 @@ export class Arena {
   private spawnBoss(event: BossDef) {
     const angle = Math.random() * Math.PI * 2;
     const dist = this.radius - BOSS_INSET;
-    this.bossMaxHp = this.bossTest ? BOSS_TEST.hp : BOSS_FIRST_HP * BOSS_HP_GROWTH ** this.fightOrder * event.hpMult;
+    this.bossMaxHp = this.bossTest
+      ? BOSS_TEST.hp
+      : BOSS_FIRST_HP * BOSS_HP_GROWTH ** this.fightOrder * event.hpMult * this.difficulty.bossHp;
     this.boss = this.enemies.spawn(
       event.boss,
       this.cx + Math.cos(angle) * dist,
       this.cy + Math.sin(angle) * dist,
       this.bossMaxHp,
     );
-    if (this.boss) this.brain.begin(this.boss, event, this.cx, this.cy, BOSS_LOOP_DAMAGE_MULT ** this.fightRound);
+    if (this.boss) this.brain.begin(this.boss, event, this.cx, this.cy, BOSS_LOOP_DAMAGE_MULT ** this.fightRound * this.difficulty.bossDamage);
   }
 
   /** Returns the damage from touching the wall this frame. */

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import type { DifficultyDef } from '../data/difficulty';
 import { miniBossFor, miniBossHp, nextMiniBossTime } from '../data/miniBosses';
 import { BOTNET_EVENTS, CROWD_OVERFLOW, EASY_START, OVERTIME, REFILL, WAVES, type BotnetEventDef, type WaveDef } from '../data/waves';
 import type { Player } from '../entities/Player';
@@ -27,6 +28,7 @@ export class Spawner {
     private readonly camera: Phaser.Cameras.Scene2D.Camera,
     private readonly player: Player,
     private readonly enemies: EnemyManager,
+    private readonly difficulty: DifficultyDef,
     startTime = 0,
   ) {
     this.elapsed = startTime;
@@ -41,7 +43,7 @@ export class Spawner {
 
   /** Multiplies the contact damage of enemies. */
   get damageMult(): number {
-    return 1 + this.overtime * OVERTIME.damage;
+    return (1 + this.overtime * OVERTIME.damage) * this.difficulty.contactDamage;
   }
 
   /** Full minutes past the last wave. */
@@ -57,7 +59,10 @@ export class Spawner {
     // Half the visible world's diagonal reaches the corners in any orientation and zoom
     const ring = Math.hypot(this.camera.displayWidth, this.camera.displayHeight) / 2 + SPAWN_MARGIN;
 
-    const minimum = Math.min(wave.minimum + this.overtime * OVERTIME.extraEnemies, OVERTIME.maxEnemies);
+    const minimum = Math.min(
+      Math.round((wave.minimum + this.overtime * OVERTIME.extraEnemies) * this.difficulty.enemies),
+      OVERTIME.maxEnemies,
+    );
 
     this.intervalLeft -= seconds;
     if (this.intervalLeft <= 0) {
@@ -72,7 +77,7 @@ export class Spawner {
     this.primed = true;
     if (this.enemies.hostileCount >= minimum) this.refillBudget = 0;
     else if (firstFrame) this.refillBudget = minimum;
-    else this.refillBudget += seconds * Math.max(REFILL.minPerSecond, minimum / REFILL.seconds);
+    else this.refillBudget += seconds * Math.max(REFILL.minPerSecond, minimum / REFILL.seconds) * this.difficulty.refillSpeed;
     const cap = firstFrame ? minimum : MAX_REFILL_PER_FRAME;
     for (let i = 0; i < cap && this.refillBudget >= 1 && this.enemies.hostileCount < minimum; i++) {
       this.spawnFrom(wave, ring);
@@ -92,7 +97,7 @@ export class Spawner {
   private spawnMiniBoss(ring: number) {
     const time = this.nextMiniBoss;
     this.pickRingPoint(ring);
-    if (this.enemies.spawn(miniBossFor(time), this.point.x, this.point.y, miniBossHp(time))) {
+    if (this.enemies.spawn(miniBossFor(time), this.point.x, this.point.y, miniBossHp(time) * this.difficulty.enemyHp)) {
       this.nextMiniBoss = nextMiniBossTime(time);
     }
   }
@@ -115,7 +120,10 @@ export class Spawner {
   private spawnFrom(wave: WaveDef, ring: number) {
     const def = wave.enemies[Math.floor(Math.random() * wave.enemies.length)];
     this.pickRingPoint(ring);
-    const hp = this.elapsed < EASY_START.seconds ? EASY_START.hp : def.hp * wave.hpMult * (1 + this.overtime * OVERTIME.hp);
+    const hp =
+      this.elapsed < EASY_START.seconds
+        ? EASY_START.hp
+        : def.hp * wave.hpMult * (1 + this.overtime * OVERTIME.hp) * this.difficulty.enemyHp;
     this.enemies.spawn(def, this.point.x, this.point.y, hp);
   }
 

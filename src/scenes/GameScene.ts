@@ -3,6 +3,7 @@ import { GROUND, PIXEL_SCALE } from '../art/atlas';
 import { BOSS_KILL_HEAL, BOSS_TEST } from '../data/bosses';
 import { BOSS_DROP, MINI_BOSS_DROP } from '../data/drops';
 import { rollGem } from '../data/gems';
+import { DIFFICULTIES, type DifficultyId } from '../data/difficulty';
 import { runData } from '../data/meta';
 import { MINI_BOSS_SLOT_CHANCE, withLuck, type SlotOdds } from '../data/slots';
 import { MAX_PASSIVES, MAX_WEAPONS, PERFECT_TEST } from '../data/upgrades';
@@ -72,6 +73,9 @@ export class GameScene extends Phaser.Scene {
   private scenery!: Scenery;
   private keys!: MoveKeys;
   private perfectTest = false;
+  private difficulty: DifficultyId = 'normal';
+  /** The Workshop's Data Miner times the difficulty's; fixed for the run. */
+  private dataMult = 1;
   private readonly move = new Phaser.Math.Vector2();
 
   constructor() {
@@ -109,12 +113,15 @@ export class GameScene extends Phaser.Scene {
     const bossTest = address.has('bosstest');
     this.perfectTest = address.has('perfect');
     const startTime = this.perfectTest ? PERFECT_TEST.seconds : 0;
+    this.difficulty = progress.difficulty;
+    const difficulty = DIFFICULTIES[this.difficulty];
     this.player = new Player(this, 0, 0);
     this.player.applyBonus(bossTest ? { ...progress.bonus, maxHp: BOSS_TEST.playerHp } : progress.bonus);
+    this.dataMult = this.player.stats.dataMult * difficulty.dataMult;
     this.hpBar = new HpBar(this);
     // After the player, so the wall draws over anything brushing against it
-    this.arena = new Arena(this, this.enemies, this.player, this.bullets, this.zones, bossTest, startTime);
-    this.spawner = new Spawner(this.cameras.main, this.player, this.enemies, startTime);
+    this.arena = new Arena(this, this.enemies, this.player, this.bullets, this.zones, difficulty, bossTest, startTime);
+    this.spawner = new Spawner(this.cameras.main, this.player, this.enemies, difficulty, startTime);
     this.effects = new Effects(this);
     this.pickups = new Pickups(this, this.cameras.main, this.player, this.gems, this.enemies, (odds) => this.openSlot(odds));
     this.breakables = new Breakables(this.cameras.main, this.player, this.enemies, this.pickups, this.effects, (x, y) =>
@@ -141,6 +148,7 @@ export class GameScene extends Phaser.Scene {
       weaponSlots: MAX_WEAPONS + bonusSlots,
       passiveSlots: MAX_PASSIVES + bonusSlots,
       playerSprite: this.player.sprite,
+      hard: this.difficulty === 'hard',
       debugLine: () => `FPS ${Math.round(this.game.loop.actualFps)} ENEMIES ${this.enemies.count} KILLS ${this.enemies.kills}`,
       onReady: (hud) => this.bindHud(hud),
     };
@@ -226,7 +234,7 @@ export class GameScene extends Phaser.Scene {
         this.arena.bossKills,
         this.arena.milestoneKills,
         this.pickups.dataFound,
-        this.player.stats.dataMult,
+        this.dataMult,
       ),
     );
     // Held back during the tutorial, or the first shots would go to a computer instead of its bug
@@ -305,7 +313,8 @@ export class GameScene extends Phaser.Scene {
           milestoneKills: this.arena.milestoneKills,
           weapons: this.weapons.map((weapon) => weapon.def.id),
           dataFound: this.pickups.dataFound,
-          dataMult: this.player.stats.dataMult,
+          dataMult: this.dataMult,
+          difficulty: this.difficulty,
         });
     const data: GameOverSceneData = { ...run, reward };
     this.scene.launch('GameOverScene', data);

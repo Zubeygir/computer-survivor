@@ -12,6 +12,8 @@ export interface HudSceneData {
   passiveSlots: number;
   /** Tinted while the player is hurt. */
   playerSprite: Phaser.GameObjects.Image;
+  /** Hard mode draws the run clock red. */
+  hard: boolean;
   /** The debug line, refreshed twice a second. */
   debugLine: () => string;
   /** Called once everything exists, a frame after the launch; the run binds to the HUD here. */
@@ -44,7 +46,7 @@ export class HudScene extends Phaser.Scene {
 
   create(data: HudSceneData) {
     this.xpBar = new XpBar(this);
-    this.runTimer = new RunTimer(this);
+    this.runTimer = new RunTimer(this, data.hard);
     this.bossBar = new BossBar(this);
     this.dataCounter = new DataCounter(this);
     this.inventory = new InventoryBar(this, data.weaponSlots, data.passiveSlots);

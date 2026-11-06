@@ -1,3 +1,4 @@
+import { HARD_UNLOCK_SECONDS, type DifficultyId } from '../data/difficulty';
 import { STARTING_WEAPONS, WEAPON_PRICES, WORKSHOP } from '../data/meta';
 import { EVOLUTIONS } from '../data/upgrades';
 
@@ -25,8 +26,11 @@ export interface SaveState {
   daily: { date: string; tasks: DailyTaskState[] };
   /** The first-run tutorial has played to the end. */
   tutorialDone: boolean;
-  /** Longest run, in run clock seconds. */
+  /** Longest normal run, in run clock seconds; reaching `HARD_UNLOCK_SECONDS` opens hard mode. */
   bestTime: number;
+  bestTimeHard: number;
+  /** The mode PLAY starts. */
+  difficulty: DifficultyId;
 }
 
 function defaultSave(): SaveState {
@@ -39,6 +43,8 @@ function defaultSave(): SaveState {
     daily: { date: '', tasks: [] },
     tutorialDone: false,
     bestTime: 0,
+    bestTimeHard: 0,
+    difficulty: 'normal',
   };
 }
 
@@ -50,6 +56,7 @@ function maxedSave(): SaveState {
     workshop: Object.fromEntries(WORKSHOP.map((def) => [def.id, def.prices.length])),
     evolutions: EVOLUTIONS.map((evolution) => evolution.into),
     tutorialDone: true,
+    bestTime: HARD_UNLOCK_SECONDS,
   };
 }
 

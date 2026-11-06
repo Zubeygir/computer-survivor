@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { pixelText } from './Button';
+import { COLOR, pixelText } from './Button';
 import { XP_BAR_HEIGHT } from './XpBar';
 
 // Below the debug text row, which is wide enough to reach the center on a narrow phone
@@ -9,8 +9,9 @@ export class RunTimer {
   private readonly text: Phaser.GameObjects.BitmapText;
   private shownSeconds = 0;
 
-  constructor(scene: Phaser.Scene) {
-    this.text = pixelText(scene, scene.scale.width / 2, Y, formatTime(0), { size: 18 })
+  constructor(scene: Phaser.Scene, hard: boolean) {
+    const options = hard ? { size: 18, color: COLOR.danger } : { size: 18 };
+    this.text = pixelText(scene, scene.scale.width / 2, Y, formatTime(0), options)
       .setOrigin(0.5, 0)
       .setDepth(1500);
   }

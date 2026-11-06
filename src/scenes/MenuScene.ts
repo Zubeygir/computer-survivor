@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { ATLAS, GROUND, loadArt } from '../art/atlas';
 import { PLAYER_FRAMES } from '../art/sprites';
+import { DIFFICULTIES, type DifficultyId } from '../data/difficulty';
 import { DAILY_TASK_REWARD } from '../data/meta';
 import { progress, type DailyTaskView } from '../systems/Progress';
 import { addDarkBackdrop, clearScene, COLOR, createButton, dataChip, fitCamera, pixelText } from '../ui/Button';
@@ -24,6 +25,9 @@ const STRIP_LINE_TOP = 2;
 const STRIP_LINE_BOTTOM = 3;
 const PLAY_H = 64;
 const PLAY_SIZE = 24;
+const MODE_H = 36;
+const MODE_GAP = 11;
+const MODES: readonly DifficultyId[] = ['normal', 'hard'];
 const SECONDARY_H = 52;
 const SECONDARY_GAP = 15;
 const JUNK_SCALE = 3;
@@ -58,7 +62,8 @@ export class MenuScene extends Phaser.Scene {
     const compact = height < COMPACT_HEIGHT;
     const gap = compact ? 14 : 28;
 
-    if (progress.bestTime > 0) this.addChip(left, CHIP_Y, `Best ${formatTime(progress.bestTime)}`);
+    const best = progress.bestTimeFor(progress.difficulty);
+    if (best > 0) this.addChip(left, CHIP_Y, `Best ${formatTime(best)}`);
     dataChip(this, right, CHIP_Y, progress.data);
 
     let y = CHIP_Y + CHIP_H + gap;
@@ -89,6 +94,25 @@ export class MenuScene extends Phaser.Scene {
       onClick: () => this.scene.start('GameScene'),
     });
     y += PLAY_H + 16;
+
+    if (progress.hardUnlocked) {
+      const modeW = (columnW - MODE_GAP) / 2;
+      MODES.forEach((id, i) => {
+        createButton(this, left + modeW / 2 + i * (modeW + MODE_GAP), y + MODE_H / 2, {
+          width: modeW,
+          height: MODE_H,
+          label: DIFFICULTIES[id].label,
+          color: id === 'hard' ? COLOR.danger : COLOR.accent,
+          primary: id === progress.difficulty,
+          onClick: () => {
+            if (id === progress.difficulty) return;
+            progress.difficulty = id;
+            this.layout();
+          },
+        });
+      });
+      y += MODE_H + 16;
+    }
 
     const halfW = (columnW - SECONDARY_GAP) / 2;
     const secondary = { width: halfW, height: SECONDARY_H };
