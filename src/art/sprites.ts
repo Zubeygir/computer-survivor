@@ -1510,7 +1510,6 @@ export const SPRITES: Record<string, string[]> = {
   ],
 };
 
-export const PLAYER_FRAMES = { stand: 'tech-stand', walk: ['tech-step-a', 'tech-stand', 'tech-step-b', 'tech-stand'] };
 
 /** A copy with a one pixel ring in `color` around everything that isn't transparent. */
 function outlined(rows: string[], color: string): string[] {

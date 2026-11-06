@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { ATLAS } from '../art/atlas';
-import { characterFrame } from '../art/characters';
+import { CHARACTER_ART, characterFrame } from '../art/characters';
 import {
   characterDef,
   PREMIUM_SKIN,
@@ -65,6 +65,7 @@ export class CharacterScene extends Phaser.Scene {
   private swipeY = 0;
   private swiping = false;
   private stageBottom = 0;
+  private partTimer: Phaser.Time.TimerEvent | null = null;
 
   constructor() {
     super('CharacterScene');
@@ -112,6 +113,7 @@ export class CharacterScene extends Phaser.Scene {
     pedestal(this, cx, floor, PEDESTAL_W, highlight);
     const hero = this.add.image(cx, floor + 2, ATLAS, characterFrame(this.def.id, this.skin, 'stand')).setOrigin(0.5, 1).setScale(heroScale);
     if (hidden) hero.setTintFill(SILHOUETTE);
+    this.animate(hero);
     if (premiumLook) {
       for (const [dx, dy] of SPARKLES) {
         this.add.rectangle(cx + dx, floor + dy, SPARKLE_SHORT, SPARKLE_LONG, COLOR.gold).setOrigin(0);
@@ -136,6 +138,23 @@ export class CharacterScene extends Phaser.Scene {
     addScreenHeader(this, progress.characterUnlocked(this.def) ? this.def.name : '???', null, left, left + columnW, () =>
       this.scene.start('CharactersScene'),
     );
+  }
+
+  /** Plays the character's part animation on the shown hero; the timer is replaced on every rebuild. */
+  private animate(hero: Phaser.GameObjects.Image) {
+    this.partTimer?.remove();
+    this.partTimer = null;
+    const { sequence, stepMs } = CHARACTER_ART[this.def.id];
+    if (sequence.length < 2) return;
+    let step = 0;
+    this.partTimer = this.time.addEvent({
+      delay: stepMs,
+      loop: true,
+      callback: () => {
+        step = (step + 1) % sequence.length;
+        hero.setFrame(characterFrame(this.def.id, this.skin, 'stand', sequence[step]));
+      },
+    });
   }
 
   private addArrow(x: number, y: number, dir: number) {

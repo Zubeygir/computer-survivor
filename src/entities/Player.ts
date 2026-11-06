@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { ATLAS, PIXEL_SCALE } from '../art/atlas';
-import { PLAYER_FRAMES } from '../art/sprites';
+import { characterFrames, type PlayerFrames } from '../art/characters';
+import { STARTING_CHARACTER } from '../data/characters';
 import { BASE_PLAYER_STATS, type PlayerStats } from '../data/player';
 
 const WALK_FRAME_MS = 120;
@@ -21,17 +22,19 @@ export class Player {
   /** Radians per second the move is turning, smoothed because a joystick never holds a steady curve. */
   turnRate = 0;
   private walkTime = 0;
+  /** Runs while standing too: drives the character's part animation, like a spinning propeller. */
+  private partTime = 0;
   private shownFrame: string;
 
   constructor(
     scene: Phaser.Scene,
     x: number,
     y: number,
-    /** The character and skin being played; see `characterFrames`. */
-    private readonly frames: { stand: string; walk: string[] } = PLAYER_FRAMES,
+    /** The character and skin being played. */
+    private readonly frames: PlayerFrames = characterFrames(STARTING_CHARACTER, 0),
   ) {
-    this.shownFrame = frames.stand;
-    this.sprite = scene.add.image(x, y, ATLAS, frames.stand).setScale(PIXEL_SCALE);
+    this.shownFrame = frames.stand[0];
+    this.sprite = scene.add.image(x, y, ATLAS, this.shownFrame).setScale(PIXEL_SCALE);
   }
 
   /** Adds permanent upgrades on top of the base stats. Call once, before the run starts. */
@@ -67,8 +70,11 @@ export class Player {
 
   private animate(moving: boolean, delta: number) {
     this.walkTime = moving ? this.walkTime + delta : 0;
-    const walk = this.frames.walk;
-    const frame = moving ? walk[Math.floor(this.walkTime / WALK_FRAME_MS) % walk.length] : this.frames.stand;
+    const { walk, stand, sequence, stepMs } = this.frames;
+    // Wrapped to one cycle so the float never grows over a long run
+    this.partTime = (this.partTime + delta) % (stepMs * sequence.length);
+    const phase = sequence[Math.floor(this.partTime / stepMs)];
+    const frame = moving ? walk[Math.floor(this.walkTime / WALK_FRAME_MS) % walk.length][phase] : stand[phase];
     if (frame === this.shownFrame) return;
     this.shownFrame = frame;
     this.sprite.setFrame(frame);

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { CharacterId } from '../data/characters';
-import { CHARACTER_ART, CHARACTER_FRAMES, characterFrame } from './characters';
+import { CHARACTER_ART, CHARACTER_FRAMES, CHARACTER_LEGS, characterFrame } from './characters';
 import { FONT_GLYPHS, PALETTE, SPRITES } from './sprites';
 
 /** All pixel sprites live in one texture, so they batch into one draw call. */
@@ -47,7 +47,11 @@ function atlasEntries(): AtlasEntry[] {
     const art = CHARACTER_ART[id];
     art.skins.forEach((colors, skin) => {
       const palette = { ...PALETTE, ...colors };
-      for (const frame of CHARACTER_FRAMES) entries.push({ name: characterFrame(id, skin, frame), rows: art[frame], palette });
+      for (const frame of CHARACTER_FRAMES) {
+        art.bodies.forEach((body, phase) => {
+          entries.push({ name: characterFrame(id, skin, frame, phase), rows: [...body, ...CHARACTER_LEGS[frame]], palette });
+        });
+      }
     });
   }
   return entries;
